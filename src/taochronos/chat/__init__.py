@@ -23,6 +23,7 @@ step.  What then runs passes the scheduler's gauntlet like any call.
 
 from __future__ import annotations
 
+import secrets
 import threading
 import time
 from pathlib import Path
@@ -37,8 +38,8 @@ from ..protocol.schema import fit_arguments, signature
 from ..plugins.userdata.formats import ACCEPTED, MAX_BYTES, Unreadable
 from ..plugins.userdata.service import MyData
 from ..plugins.userdata.store import MAX_DATASETS
-from .catalog import (CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, PARAMETERS, catalog_view, family_counts, llm_tools, offered,
-                      tool_entry)
+from .catalog import (CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, PARAMETERS, catalog_view, chat_schema, family_counts,
+                      llm_tools, offered, tool_entry)
 from .jobs import Jobs
 from .prompt import AGENT_NAME as AGENT_NAME_ZH
 from .prompt import ASSISTANT_NAME, PUBLISHER, STARTERS, system_prompt
@@ -82,6 +83,13 @@ def shape(tool: str, ok: bool, result: Any, error: str | None = None, receipt: d
     else:
         out.update(text=f"ERROR: {error}", error=error, summary=(error or "")[:160], citations=[])
     return out
+
+
+def _session_id() -> str:
+    """The id of a session a conversation starts.  On a server it is the only key to what the run found (``GET
+    /api/session/<id>`` answers whoever names it, and the server's sessions are every visitor's): 128 random bits, where
+    the kernel's own short ids are handles for one person's command line."""
+    return "ses_" + secrets.token_hex(16)
 
 
 class ChatRuntime:
@@ -170,7 +178,7 @@ class ChatRuntime:
                 + [(t["name"], t["family"]) for t in (*ENGINE_TOOLS, *META_TOOLS)])
 
     def _schema(self, name: str) -> dict[str, Any]:
-        return PARAMETERS[name] if name in PARAMETERS else self.h.tools.get(name).input_schema
+        return PARAMETERS[name] if name in PARAMETERS else chat_schema(self.h.tools.get(name))
 
     def _canonical(self, name: str) -> str:
         """The tool a model's name denotes: the name itself (a mesh tool's model name too), or the one tool offered whose
@@ -316,7 +324,7 @@ class ChatRuntime:
         """A discovery research run, start to finish; returns its summary."""
         with self._research:
             engine = self.h.engine()
-            session = engine.start(self._goal(question, **fields))
+            session = engine.start(self._goal(question, **fields), session_id=_session_id())
             self.sessions[session.id] = session
             engine.run(session)
         return self.summary(session)
@@ -357,7 +365,7 @@ class ChatRuntime:
         if job.get("session"):
             session = engine.open(job["session"])  # its log, from the store: the run goes on from its last checkpoint
         else:
-            session = engine.start(self._goal(job["question"], **job.get("arguments", {})))
+            session = engine.start(self._goal(job["question"], **job.get("arguments", {})), session_id=_session_id())
         self.sessions[session.id] = session
         attach(session)
         engine.run(session, stop=stop)

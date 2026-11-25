@@ -7,7 +7,10 @@ when the server stopped is ``interrupted`` once the server is back, its record a
 (:meth:`Jobs.resume`), it is queued again and goes on from its session's last checkpoint.  A run the server has no
 record of is ``unknown``.  ``status`` keeps the words a page of an earlier version reads (queued, running, done, error).
 
-One run at a time, first come first served, and a run waiting says how many are ahead of it.  A run puts its contract's
+One run at a time, first come first served, and a run waiting says how many are ahead of it; QUEUE at most wait, and
+a run asked for beyond that is refused at once (:class:`QueueFull`) rather than queued behind hours of others.  A run's
+id is the only key to it — whoever has it may follow, stop or read the run — so it is 128 random bits, not a short
+handle.  A run puts its contract's
 forbidden assumptions into the anachronism guard, which the harness's hooks hold for every session
 (ResearchEngine._install_goal_hooks): two at once would check each other's claims against the wrong contract.
 
@@ -22,9 +25,9 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import threading
 import time
-import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any, Callable
@@ -32,6 +35,7 @@ from typing import Any, Callable
 HEARTBEAT = 5.0       # seconds between a running run's heartbeats
 KEEP_DAYS = 3         # an ended run's record is kept this long
 KEEP = 200            # and so many at most, the latest
+QUEUE = 20            # runs waiting at most: one runs at a time, a minute or two each on the full corpus
 ENDED = ("completed", "failed", "cancelled")
 UNFINISHED = ("queued", "running", "cancel_requested")
 LEGACY = {"queued": "queued", "running": "running", "cancel_requested": "running", "completed": "done", "failed": "error",
@@ -41,6 +45,10 @@ STOPPED = "cancelled at the visitor's request"  # the reason the session's log r
 # work(record, stop, attach) runs a record's research: `stop()` gives a reason once it is asked to stop, `attach(session)`
 # names the session it runs (started, or opened from the store); it returns the outcome (chat.shape)
 Work = Callable[[dict[str, Any], Callable[[], "str | None"], Callable[[Any], None]], dict[str, Any]]
+
+
+class QueueFull(RuntimeError):
+    """As many runs wait as may: this one is not taken."""
 
 
 def _failure(error: str) -> dict[str, Any]:
@@ -54,9 +62,10 @@ class Jobs:
     directly (``taochronos_research``) holds too; `folder`: where the records are kept, or None (in memory only)."""
 
     def __init__(self, work: Work, *, lock: Any, folder: Path | None = None, clock: Callable[[], float] = time.time,
-                 heartbeat: float = HEARTBEAT) -> None:
+                 heartbeat: float = HEARTBEAT, limit: int = QUEUE) -> None:
         self.work = work
         self.lock = lock
+        self.limit = limit
         self.folder = folder
         self.clock = clock
         self.beat = heartbeat
@@ -71,13 +80,16 @@ class Jobs:
 
     # ------------------------------------------------------------------ asked
     def start(self, question: str, arguments: dict[str, Any] | None = None) -> str:
-        """Queue a run of `question` (its contract's fields in `arguments`); returns its id."""
+        """Queue a run of `question` (its contract's fields in `arguments`); returns its id.  :class:`QueueFull` when as
+        many wait as may."""
         now = self.clock()
-        rec: dict[str, Any] = {"id": "job_" + uuid.uuid4().hex[:12], "question": question, "arguments": dict(arguments or {}),
+        rec: dict[str, Any] = {"id": "job_" + secrets.token_hex(16), "question": question, "arguments": dict(arguments or {}),
                                "state": "queued", "created": now, "queued_at": now, "started": None, "finished": None,
                                "waited": 0.0, "ran": 0.0, "session": None, "progress": None, "progress_at": None,
                                "heartbeat": None, "resumed": 0, "reason": None, "error": None, "outcome": None}
         with self.mu:
+            if len(self.queue) >= self.limit:
+                raise QueueFull(f"研究队列已满（{len(self.queue)} 个研究在等候）：请稍后再试")
             self.records[rec["id"]] = rec
             self._enqueue(rec)
         return rec["id"]
@@ -100,7 +112,7 @@ class Jobs:
         begins, if it had none.  Returns its view."""
         with self.mu:
             rec = self.records.get(job_id)
-            if rec is not None and rec["state"] == "interrupted":
+            if rec is not None and rec["state"] == "interrupted" and len(self.queue) < self.limit:  # else it stays so: asked again later
                 rec.update(resumed=rec["resumed"] + 1, reason=None, queued_at=self.clock(), heartbeat=None)
                 self._enqueue(rec)
         return self.view(job_id)

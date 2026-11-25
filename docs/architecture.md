@@ -153,7 +153,10 @@ into `data/chat-logs/` by a workflow — the relay holds no GitHub token ([ADR 0
 The **Tool Mesh** (`tools/mesh.py`) exposes 58 tools in seven families (philology, retrieval, knowledge,
 analytics, study, literature, validation) plus `research.run_code` (Code Mode). Every call passes the same
 gauntlet — permission → argument schema → budget → `BeforeToolCall` hooks → execution → events →
-`AfterToolCall` hooks — whether a model or a deterministic procedure makes it. An `AfterToolCall` denial withholds the
+`AfterToolCall` hooks — whether a model or a deterministic procedure makes it. An argument that reaches beyond what
+the tool's own permission covers needs one of its own (`ToolSpec.guarded`): a path on the machine the harness runs on
+is `files:read`, which no agent's manifest holds — a conversation's model is not even offered the argument, and
+`taochronos ask --page FILE` grants it to that run alone ([ADR 0034](adr/0034-what-the-site-ships.md)). An `AfterToolCall` denial withholds the
 result (only its hash is kept, the call is marked quarantined), and every call leaves a **receipt** (tool, version,
 actor, principal, hashes of arguments and result, outcome, duration) whose hash chain the run manifest records.
 Capabilities reach tools through views scoped to the caller's reading scope. Consecutive `parallel_safe` calls run

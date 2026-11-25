@@ -42,10 +42,14 @@ from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from . import InvalidArguments
+from .jobs import QueueFull
 from .providers import key_env_for, proxy_hosts, web_providers
 
-PAGES_ORIGIN = "https://chat.impf.ai"  # the published client (GitHub Pages under IMPF-AI's domain)
-PAGES_ORIGINS = (PAGES_ORIGIN, "http://chat.impf.ai", "https://psknlr.github.io")  # before HTTPS is enforced; the old address
+PAGES_ORIGIN = "https://chat.impf.ai"  # the published client
+# and its mirror.  Not the client's address over plain http, admitted while the site was not yet https-only: the site
+# serves no page there now (it redirects), so a page at that origin can only be one somebody on the network put in
+# its place — and it would be given this machine's tools, its 我的资料 and its model keys
+PAGES_ORIGINS = (PAGES_ORIGIN, "https://psknlr.github.io")
 ENV_KEY = "tc-env-key"  # what the client sends as a key when it relies on --env-keys
 LOCAL_NAMES = {"localhost", "127.0.0.1", "::1", "[::1]"}
 FORWARD = ("content-type", "accept", "authorization", "x-api-key", "anthropic-version", "anthropic-beta",
@@ -109,7 +113,7 @@ class ChatServer(ThreadingHTTPServer):
             if name not in self._runtime_files:
                 from .build import home_zip, manifest, package_zip
 
-                pkg, home = package_zip(), home_zip(self.home)
+                pkg, home = package_zip(home=self.home), home_zip(self.home)  # what the policy lets a site carry
                 self._runtime_files.update({"taochronos.zip": pkg, "home.zip": home,
                                             "manifest.json": json.dumps(manifest(pkg, home), ensure_ascii=False).encode()})
             return self._runtime_files[name]
@@ -240,7 +244,10 @@ class Handler(BaseHTTPRequestHandler):
                     fields = rt.research_arguments((data.get("arguments") or data) if isinstance(data, dict) else data)
                 except InvalidArguments as exc:
                     return self._json({"error": str(exc)}, 400)
-                return self._json({"job": rt.start_research(str(fields.pop("question")).strip(), **fields)})
+                try:
+                    return self._json({"job": rt.start_research(str(fields.pop("question")).strip(), **fields)})
+                except QueueFull as exc:  # as many wait as may: told at once, not queued behind hours of others
+                    return self._json({"error": str(exc), "queue_full": True}, 429)
         except Exception as exc:
             return self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
         return self._json({"error": f"no such endpoint {path}"}, 404)

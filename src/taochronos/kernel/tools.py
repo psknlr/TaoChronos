@@ -4,9 +4,10 @@ Consecutive ``parallel_safe`` calls run concurrently; an ``exclusive`` (or
 non-parallel-safe) call forms a barrier and runs alone.  Every call passes the
 same gauntlet, in two separate layers:
 
-* **authorisation, before it runs** — permission → argument schema → budget →
-  BeforeToolCall hooks (e.g. the scope guard: no argument may name withheld
-  material);
+* **authorisation, before it runs** — permission (the tool's, then the one a
+  guarded argument needs when it is given: ``ToolSpec.guarded``) → argument
+  schema → budget → BeforeToolCall hooks (e.g. the scope guard: no argument
+  may name withheld material);
 * **result control, after it ran** — AfterToolCall hooks may redact a result or
   withhold it.  A withheld result is *not returned*: the call fails, the result
   is quarantined (only its hash is kept) and a HookBlocked event says why.
@@ -55,6 +56,9 @@ class ToolSpec:
     cost: float = 0.0
     returns: str = ""
     version: str = "1"
+    # arguments that need a further permission of the caller, {argument: permission}: what the tool's own permission
+    # does not cover — a path on the machine the harness runs on, which a model's arguments must never name
+    guarded: dict[str, str] = field(default_factory=dict)
 
     @property
     def llm_name(self) -> str:
@@ -75,6 +79,7 @@ class ToolSpec:
             "exclusive": self.exclusive,
             "expensive": self.expensive,
             "irreversible": self.irreversible,
+            **({"guarded": dict(self.guarded)} if self.guarded else {}),
         }
 
 
@@ -308,6 +313,11 @@ class ToolScheduler:
             return ToolOutcome(call_id, spec.name, False, error=reason)
 
         arguments = dict(call.arguments or {})
+        for argument, permission in spec.guarded.items():
+            if argument in arguments and not self.policy.allowed(actor, permission):
+                reason = f"{actor.id} lacks permission '{permission}' for the argument '{argument}' of tool {spec.name}"
+                emit(EventType.TOOL_DENIED, {"tool": spec.name, "reason": reason})
+                return ToolOutcome(call_id, spec.name, False, error=reason)
         errors = validate(arguments, spec.input_schema)
         if errors:
             return ToolOutcome(call_id, spec.name, False, error="invalid arguments: " + "; ".join(errors[:5]))

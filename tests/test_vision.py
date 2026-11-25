@@ -106,3 +106,28 @@ def test_vision_through_the_tools_and_the_cli(harness, capsys, tmp_path):
     assert page.startswith("# 版面") and truth in page and "header：伤寒论卷一" in page
     with pytest.raises(ValueError, match="needs a model"):
         harness.capabilities.get("vision").read(b"x")
+
+
+def test_a_file_is_read_only_for_a_caller_that_may_read_files(harness, tmp_path, monkeypatch):
+    """A path on the machine the harness runs on is its operator's to name.  An agent — a conversation's model is one —
+    is refused it by the scheduler unless its run was granted ``files:read``, whatever the tool's own permission; and
+    what is read is a regular file of a page's size, never a device or a pipe that does not end."""
+    segs, truth = layout_text(TEXT, rows=12, max_cols=8)
+    toks, _ = tokens(segs, seed=2)
+    f = tmp_path / "tokens.json"
+    f.write_text(json.dumps([{"text": t.text, "bbox": [t.x, t.y, t.w, t.h]} for t in toks], ensure_ascii=False), encoding="utf-8")
+    assert harness.scheduler.registry.get("vision.layout").metadata()["guarded"] == {"path": "files:read", "format": "files:read"}
+    reader = Actor(id="agent:reader", role="reader", permissions=frozenset({"classics:read"}))
+    for args, argument in [({"path": str(f)}, "path"), ({"path": "/etc/passwd"}, "path"), ({"tokens": [], "format": "alto"}, "format")]:
+        refused = harness.scheduler.execute(ToolCall("vision.layout", args), actor=reader)
+        assert not refused.ok and f"lacks permission 'files:read' for the argument '{argument}'" in refused.error
+    assert harness.scheduler.execute(ToolCall("vision.layout", {"tokens": []}), actor=reader).ok  # no file named: as before
+    granted = Actor(id="agent:reader", role="reader", permissions=frozenset({"classics:read", "files:read"}))
+    assert harness.scheduler.execute(ToolCall("vision.layout", {"path": str(f)}), actor=granted).result["text"] == truth
+    assert harness.scheduler.execute(ToolCall("vision.layout", {"path": str(f)}), actor=Actor.kernel()).ok  # the operator
+    for not_a_file in ("/dev/zero", tmp_path, tmp_path / "absent.json"):
+        with pytest.raises(ValueError, match="not a file"):
+            read_file(not_a_file)
+    monkeypatch.setattr("taochronos.plugins.classics.vision.formats.MAX_FILE", 64)
+    with pytest.raises(ValueError, match="not one page"):
+        read_file(f)

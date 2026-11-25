@@ -79,8 +79,10 @@ class CoreAgent:
     outputs: list[str] = field(default_factory=list)
     rules: list[str] = field(default_factory=list)
 
-    def actor(self) -> Actor:
-        return Actor(id=f"core:{self.id}", role=self.id, principal="agent", permissions=frozenset(self.permissions), name=self.name)
+    def actor(self, grants: frozenset[str] = frozenset()) -> Actor:
+        """The agent as an actor, with what this run grants beyond its manifest (:class:`Executor`)."""
+        return Actor(id=f"core:{self.id}", role=self.id, principal="agent", permissions=frozenset(self.permissions) | grants,
+                     name=self.name)
 
 
 def load_manifests(root: str | Path) -> dict[str, SkillManifest]:
@@ -292,11 +294,16 @@ class WorkflowCompiler:
 
 # ---------------------------------------------------------------- running a plan
 class Executor:
-    def __init__(self, harness: Any, skills: dict[str, SkillManifest], agents: dict[str, CoreAgent], root: str | Path) -> None:
+    """Runs a plan's skills.  ``grants`` are permissions the one who started the run gives its agents for this run only
+    — ``files:read`` when the operator named a file on the command line; a run a conversation starts is given none."""
+
+    def __init__(self, harness: Any, skills: dict[str, SkillManifest], agents: dict[str, CoreAgent], root: str | Path,
+                 *, grants: frozenset[str] | set[str] = frozenset()) -> None:
         self.harness = harness
         self.skills = skills
         self.agents = agents
         self.root = Path(root)
+        self.grants = frozenset(grants)
 
     def run(self, plan: Plan, *, run_id: str | None = None, resume: bool = True) -> dict[str, Any]:
         run_id = run_id or f"run-{plan.digest()}"
@@ -317,7 +324,7 @@ class Executor:
 
     def _skill(self, m: SkillManifest, ctx: dict[str, Any], ws: Path, resume: bool) -> dict[str, Any]:
         agent = self.agents[m.owner]
-        actor = agent.actor()
+        actor = agent.actor(self.grants)
         out: dict[str, Any] = {"skill": m.id, "name": m.name, "agent": agent.id, "calls": 0, "cached": 0, "status": "ok",
                                "results": [], "errors": []}
         for call in m.calls:
@@ -489,7 +496,9 @@ def ask(harness: Any, question: str, *, page: str | None = None, judge: Any = No
     plan = WorkflowCompiler(skills, harness).plan(question, page=page, judge=judge)
     if plan_only:
         return {"plan": plan.to_dict()}
-    run = Executor(harness, skills, agents, Path(harness.data_dir) / "workspaces").run(plan, run_id=run_id, resume=resume)
+    # a page is a file the caller named: only then may the run read a file, and only the command line passes one
+    run = Executor(harness, skills, agents, Path(harness.data_dir) / "workspaces",
+                   grants={"files:read"} if page else ()).run(plan, run_id=run_id, resume=resume)
     report = render_report(run)
     Path(run["workspace"], "report.md").write_text(report, encoding="utf-8")
     run["report"] = report
