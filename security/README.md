@@ -36,7 +36,7 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 
 | 理由 | 分 | 含义 |
 |---|---|---|
-| `honeypot` | 10 | 扫描器路径（见下） |
+| `honeypot` / `honeypot_opened` | 10 / 3 | 扫描器路径（见下）；后者是浏览器的使用者把它当网页打开的头一个 |
 | `traversal` | 6 | 路径穿越 |
 | `no_cf_ip` | 3 | 没有 `CF-Connecting-IP`：不是经边缘进来的请求 |
 | `ua_scanner` / `ua_tool` / `no_ua` / `ua_other` | 6 / 3 / 3 / 1 | 扫描器、HTTP 库、没有 UA、叫不出名字的 UA（仓库自己的客户端 `taochronos-*` 不计） |
@@ -66,7 +66,7 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 | 变量 | 默认 | 含义 |
 |---|---|---|
 | `SENTINEL` | `observe` | `off` 什么都不记；`observe` 记录与标记、从不拒绝；`enforce` 超过 `BLOCK_SCORE` 的地址拒绝 `BLOCK_SECONDS` |
-| `HONEYPOT` | `block` | 扫描器路径的地址拒绝 `HONEYPOT_BLOCK_SECONDS`（默认一天），**observe 模式下也拒绝**——没有人会误把 `/wp-config.php` 当作这两个主机的页面；`observe` 则只记 |
+| `HONEYPOT` | `block` | 扫描器路径的地址拒绝 `HONEYPOT_BLOCK_SECONDS`（默认一天），**observe 模式下也拒绝**——没有人会自己去要这两个主机的 `/wp-config.php`（被别的网站的页面、被一条链接带过来的不算，见「扫描器路径」）；`observe` 则只记 |
 | `FLAG_SCORE` / `BLOCK_SCORE` | 5 / 10 | 从几分起整条记下（含地址）、从几分起拒绝 |
 | `BLOCK_SECONDS` / `HONEYPOT_BLOCK_SECONDS` | 21600 / 86400 | 拒绝多久；扫描器路径的一天只给托管网络的地址，家庭/运营商网络的地址（后面可能有很多人）按 `BLOCK_SECONDS` |
 | `WATCH_DAYS` / `EVENT_KEEP` | 7 / 20000 | 访客行保留几天；未取走的事件最多留多少条（更早的丢弃） |
@@ -77,6 +77,7 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 | 中转：`TOKENS_PER_DAY` / `TOTAL_TOKENS_PER_DAY` | 10,000,000 / 200,000,000 | 回答的 token（输入 + 输出，按模型服务报的用量）每人每天、全体每天的额度，用完拒绝下一次调用（0 不限）。记录里见过的量：一轮 p50 8 万、p90 50 万、最多 150 万；一次对话最多 360 万 |
 | 中转：`[[ratelimits]] BURST` | 10 秒 40 次 | 每个地址每个节点的突发闸门，在问计数对象之前（近似、按节点；精确的按日计数仍在对象里）；`/v1/security/csp` 的报告也经它 |
 | 中转：记录的来源 | — | 默认服务自己的对话记录（`provider: impf`）只收自中转在前 26 小时内答过的地址（按哨兵的键，不随日期变；跨午夜发来的记录照收）；访客用自己 Key 的对话记录只看来源 |
+| 网站：`API_RESEARCH_PER_DAY` | 100 | 每个地址每天**发起**的研究次数，与调用分开计：全量语料一次只跑一项研究（一两分钟），最多二十项排队（`src/taochronos/chat/jobs.py`），一个地址不该把别人都挡在外面。用完答 429（`research_daily`），网页照常读取与调用 |
 | 网站：`API_READS_PER_DAY` / `API_CALLS_PER_DAY` | 6000 / 3000 | 每个地址（IPv6 按 /64）每天的读取（原文、目录、轮询）与调用（工具、研究）上限：抓取者一天拿不走多少，也烧不完账户的 Worker 次数。宽，因为运营商 NAT 后面是很多人（0 不限） |
 
 拒绝时访客看到「该地址因异常访问已被暂时限制，请稍后再试」（403，带 `Retry-After`），不说理由。
@@ -92,12 +93,43 @@ AI 与云的凭据——`/.openai/credentials.json`、`/.anthropic/config.json`�
 **列表是保守的**：网站提供的任何文件类型（`.js .json .wasm .whl .zip .xz .svg .css .html .txt .xml .webmanifest`）和 `/.well-known/` 下的路径都不在内。
 命中：网站不去查静态文件、直接 404；地址被记下并拒绝（网站拒绝的是它的 API，网页本身照常）。
 
+拒绝的是**自己来要**这些路径的地址。读者的浏览器被带到这里的，分三种（[ADR 0034](../docs/adr/0034-what-the-site-ships.md)）：
+
+1. **别的网站的页面让浏览器发来的**（一张指向这里的图片、一个表单、一段脚本）：不记、不计、不拒绝，见下一节。
+2. **浏览器的使用者把它当网页打开的**（`Sec-Fetch-Site: none`、`navigate`、`document`：地址栏、书签、在聊天软件里点开的链接——
+   群里发一条链接就能把群友带过来），而且这个浏览器别的方面都正常：十分钟内的**头一个**只计 3 分（`honeypot_opened`），不拒绝；
+   **第二个不同的**扫描器路径照旧拒绝。
+3. **只是抄了浏览器请求头的**：照旧第一个就拒绝。2026-11 找 `/.ssh/` 的那批扫描器把 Chrome 导航的请求头抄全了，却走 HTTP/1.1——
+   用 HTTP/1.x、没有 `Accept-Language`、UA 是工具、或根本没有 `Sec-Fetch-*` 的，都不算第 2 种。
+
+### 别的网站的页面让读者的浏览器发来的请求
+
+任何网页都能让它的读者的浏览器向这两个主机发请求：三十张指向不存在路径的图片、一张指向扫描器路径的图片、循环读取 API 的脚本。
+读者什么都没选，所以**这些请求不算在读者的地址上**——否则在论坛里贴一张图，就能让看帖的人（运营商 NAT 后面是共用这个地址的所有人）
+被拒绝几个小时。此前正是如此：三十张图让每个读者得 12 分（`referer_foreign`、`burst`、`errors`、`probing`），过了拒绝线；
+指向扫描器路径的一张图就够（2026-11-25 在当时部署的代码上复现）。
+
+- **怎么认**（`ledFrom()`）：浏览器自己说的——`Sec-Fetch-Site` 是 `cross-site` 或 `same-site`（页面的脚本既设不了也去不掉这个头），
+  而且发起的页面（`Origin`，没有就看 `Referer`）不是我们自己的（网页与镜像）。太老、不发这个头的浏览器，只看 `Origin`/`Referer`。
+  `none` 不是：那是使用者自己打开的（见上一节第 2、3 种）。
+- **怎么答**：中转一律 403（`cross_site`），在别的一切之前；网站的 API 403；不存在的路径照旧 404；网站自己的页面照常给——
+  顺着链接来看网页本来就是该有的事（只有当作网页打开的才计入访问统计，被别的网站当图片或框架载入的不计）。
+- **不记什么**：不写访客行、不写事件、不计入当天的次数、不影响分数。Workers Logs 里有一行（`led`：发起页面的来源；没有地址）。
+- **这也是一条访问规则**，哨兵关着（`SENTINEL = "off"`）也一样：读者当天的读取额度不是别的网站可以替他花掉的。
+- 不是浏览器的客户端也可以自己加上这些头：那它要的东西就被拒绝了（403），等于什么也没得到；它自己名义的请求照旧计分。
+
 ### 隐私规则
 
 - 分数低于 `FLAG_SCORE` 的请求**不存地址**：访客行里只有哈希键、按日按接口类别的计数、UA 的短哈希（够数不同的 UA）、网络（ASN/国家）与
   它请求过的 404 路径。网页自己的请求都是这样。
 - 达到 `FLAG_SCORE`、被拒绝或本应拒绝（`shadow`）的请求，整条记为事件：指纹（含地址与请求头）、分数与理由、当时的决定、该访客的累计。
   事件由收集器取走进仓库后在 Worker 里删除。
+- 浏览器的策略报告（`csp`）不论谁发来都记为事件，所以**没被标记的访客的报告不带地址**：只留主机、路径、网络（ASN/国家）、协议、
+  浏览器的种类与版本、应用内浏览器的包名（`anonymous()`）。2026-11-25 之前不是这样：此前取回的 1971 条报告里有 1964 条带着未被标记
+  访客的地址与完整请求头，仍在 `data/security-logs/site/` 里。
+- 研究任务与研究会话的编号是读取它们的唯一凭据，**不进任何一行、事件或日志**：路径记作 `/api/research/…`、`/api/session/…`
+  （`keptPath()`；边缘的记录由 `events.py` 的 `kept_path()` 同样处理）。
+- 别的网站的页面让浏览器发来的请求不记地址（上文）。
 - 对话记录（`data/chat-logs/`）与安全事件是两套存储：记录里没有地址，事件里没有对话（中转的事件只有系统提示与问题的哈希）。
 - `data/security-logs/` 有被标记请求的地址与请求头：**仓库须保持私有**。
 
@@ -243,10 +275,17 @@ data/security-logs/
   cursor.json             两个 Worker 已取回的事件编号
   relay/年/月/日.jsonl    中转哨兵的事件（字段见 data/security-logs/README.md）
   site/年/月/日.jsonl     网站哨兵的事件（含 csp 报告）
-  edge/年/月/日.jsonl     边缘：Cloudflare 的安全事件（kind: firewall）与值得一看的请求组（kind: requests：错误、安全动作、扫描器路径、非浏览器 UA、一天 ≥ 300 次）
-  edge/suspects.json      近 30 天按地址汇总：事件数、拦截数、请求数、扫描器路径数、网络、UA、路径与分数
+  edge/年/月/日.jsonl     边缘：Cloudflare 的安全事件（kind: firewall）与值得一看的请求组（kind: requests：错误、安全动作、扫描器路径、非浏览器 UA、一天 ≥ 300 次，
+                          以及用工具或成批取走运行环境文件的）；运行环境文件每天的下载合计（kind: artifacts，没有地址）
+  edge/suspects.json      近 30 天按地址汇总：事件数、拦截数、请求数、扫描器路径数、取走的运行环境文件数、网络、UA、路径与分数
 ```
 
+- **谁在下载运行环境的文件**（`/runtime/` 下的五个：程序包、主目录、要籍语料、启动信息、清单——公开的静态文件，不经过 Worker，
+  所以只有边缘知道谁取了）：`events.py` 每天按文件、状态（200、206 分段、304 未改……）、方法与 UA 的种类记一条合计（`kind: artifacts`：
+  次数、字节数、多少个不同的地址；**不记地址**——这是每个读者自己的下载）。带地址记下的只有两种：取文件的不是浏览器
+  （`ua_tool`、`ua_empty`，或 `artifact_agent`：既不是浏览器也不是已知工具的 UA），或一个地址一天取同一个文件 ≥ 30 次（`artifact_volume`，
+  `fetched` 是当天的次数）。镜像（GitHub Pages）上的下载哪里都没有记录。更早的日子在计划的保留期内可以补取：
+  `python3 security/events.py pull --day 2026-11-20`。
 - **每周看一眼**：`python3 security/events.py suspects`（按分数排）；`LOG_EXPORT_TOKEN=… python3 security/collect.py summary`（哨兵现在看到什么）。
 - **从 observe 到 enforce**：看两周的 `shadow` 事件（本应拒绝的）。如果没有一条是真实访客（真实访客的特征：浏览器 UA、Sec-Fetch 齐全、中文或英文的 Accept-Language、
   运营商网络、网页形状的请求体），把两个 `wrangler.toml` 的 `SENTINEL` 改为 `"enforce"` 合入 main。如果有：提高 `BLOCK_SCORE`，或把误判的理由在 `assess()` 里调轻。

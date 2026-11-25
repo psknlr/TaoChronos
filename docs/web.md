@@ -668,7 +668,9 @@ time, half an hour at most; forgotten when it answers).  A 429 or 403 that may b
 another, once; a key or a parameter refused is the answer at once.  Each reply says how it came (`X-Tao-Asks`,
 `X-Tao-Via`), the turn's record keeps it (`requests[].asks`, `.via`), and `taochronos records` counts it
 (`asked_again`: how often the page asked again, how often the service needed one ask, which place answered).
-`GET /v1/egress` on the relay shows whether the model service's host answers from each place, and how soon.
+`GET /v1/egress` on the relay, asked with the collector's token, shows whether the model service's host answers from
+each place, and how soon (without the token it says only how a call from where the caller is looks to the second
+model's edge).
 
 **While the model is waited for, the page says so** (`web/js/view/thread.js`, `waitNode`).  From a round's request to
 the first part of its reply: 正在等待模型回应…, with the seconds from the third on; after half a minute, that the service
@@ -901,14 +903,34 @@ taochronos web build -o _site --pyodide cdn # without Pyodide: the page loads it
 python -m http.server -d _site 8000
 ```
 
-The site (about 26 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package), `runtime/home.zip`
-(profiles, domain packs, the demonstration corpus, catalogs with the 要籍 list, agents, skills, gold sets; the lexicon
-harvested from the full corpus is left out), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 13.3 MB;
+The site (about 26 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package as the browser can import it:
+the modules reachable from what the page's worker imports — not the server, the command line, the build, the evaluation
+suites or the corpus pipeline), `runtime/home.zip` (the browser's profiles, domain packs, the demonstration corpus,
+catalogs with the 要籍 list, agents, skills; the lexicon harvested from the full corpus is left out, and so are the gold
+sets and every record), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 13.3 MB;
 built from `corpus/web` by the build, the same bytes for the same pack; `TAOCHRONOS_WEB_XZ_PRESET` trades size for build
 time, the tests use 1), `runtime/boot.json` (the runtime's info and catalogs, for the conversation to start while it
 loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by content in IndexedDB, and the corpus
 once indexed), `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and
 SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are deterministic.  Every path is relative.
+
+**What may ship is written down, and the build enforces it** ([`distribution-policy.yaml`](../distribution-policy.yaml),
+[ADR 0034](adr/0034-what-the-site-ships.md)).  Whatever the site carries can be read and kept by anyone — the files are
+static, and the mirror serves them outside every edge rule — so the line is drawn by what is built in, not at the
+edge.  Every path of the repository has a class (public, restricted, confidential: `data/` and `evals/`); the package
+is derived from the imports, with a `never` list an import may not reach; the home is the files the policy names.  The
+build unpacks the two archives alone, starts the runtime on them in its own process (`boot.json` is that run's output),
+and then audits the finished site: every file the client's or the build's, each archive exactly what it should hold, no
+forbidden name, nothing that reads as a credential or carries the gold sets' mark.  A site that fails is not built.
+
+```bash
+taochronos web audit -o _site               # the same check on any built site: {ok, problems, package_modules, home_files}
+```
+
+To keep a capability on the server, take it out of what the browser's profiles load (`profiles/web-canon.yaml` and the
+three it extends): its modules leave `taochronos.zip` with it, and the build fails if something still imports them.  A
+new file the runtime reads from its home is added to `site.home.ship` — the build fails where it boots, naming the
+file, until it is.
 
 For search engines: the page is a script, so `index.html` carries what a crawler reads without it — a short static
 introduction (`.intro-static`, replaced by the conversation once the script runs), the canonical address, Open Graph and

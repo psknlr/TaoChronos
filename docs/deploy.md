@@ -253,7 +253,7 @@ The last check prints `… OK`.  A `curl: (22) … 404` means a part is not in K
 # the version the workflow would give this commit: the store and every file the image is built from
 store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
 tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt README.md src \
-         architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills evals/gold \
+         architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills \
          cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
 VERSION="${store:0:12}-${tree}"; echo "$VERSION"
 (cd cloud/corpus && npm ci --ignore-scripts --no-audit --no-fund && npx --no -- wrangler deploy --var "VERSION:$VERSION")
@@ -457,7 +457,7 @@ The rules fit the zone's own plan (Free: 5 custom rules, one 10-second rate limi
 | Model spend per address | `TOKENS_PER_DAY`, `PER_DAY` (relay) | 10 M tokens, 600 calls a day; many people behind one hospital or office address share them — raise if they run out |
 | Model spend in all | `TOTAL_TOKENS_PER_DAY`, `TOTAL_PER_DAY` (relay) | the ceiling on a bad day: set it from your MiniMax budget |
 | Reply length | `MAX_OUTPUT_TOKENS` (relay) | 32,768 tokens a reply, its reasoning included; the page writes on an answer cut there (twice at most), so raise it only if the records show many cut answers — the day's token budgets above bound what replies cost |
-| Site's daily caps | `API_READS_PER_DAY`, `API_CALLS_PER_DAY` (site) | 6,000 / 3,000 per address, wide on purpose |
+| Site's daily caps | `API_READS_PER_DAY`, `API_CALLS_PER_DAY`, `API_RESEARCH_PER_DAY` (site) | 6,000 / 3,000 per address, wide on purpose; 100 research runs started per address (the corpus runs one at a time and holds 20 waiting) |
 | Records waiting | `LOG_KEEP` (relay) | 50,000; beyond, new records are refused (`logs full` logged), none dropped |
 | Container | `SLEEP_AFTER`, `instance_type`, `LOCATION_HINT` (`cloud/corpus/wrangler.toml`) | `15m`, `standard-1`, `apac` (right for Singapore and East Asia; fixed when first created) |
 

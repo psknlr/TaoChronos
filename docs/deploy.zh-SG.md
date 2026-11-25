@@ -237,7 +237,7 @@ echo "$sha  cloud/.store/$sha.sqlite.xz" | sha256sum -c && rm -rf cloud/.store/p
 # 工作流会给这个提交的版本：语料，加上构建映像所用的每一个文件
 store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
 tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt README.md src \
-         architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills evals/gold \
+         architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills \
          cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
 VERSION="${store:0:12}-${tree}"; echo "$VERSION"
 (cd cloud/corpus && npm ci --ignore-scripts --no-audit --no-fund && npx --no -- wrangler deploy --var "VERSION:$VERSION")
@@ -430,7 +430,7 @@ git add data/chat-logs && git commit -m "chat-logs: through #$LAST" && git push 
 | 每个地址的模型费用 | 中转的 `TOKENS_PER_DAY`、`PER_DAY` | 每天 1,000 万 token、600 次调用；同一医院或办公室地址后面的许多人共用，不够就调高 |
 | 全体的模型费用 | 中转的 `TOTAL_TOKENS_PER_DAY`、`TOTAL_PER_DAY` | 最坏一天的上限：按 MiniMax 预算设定 |
 | 每次回复的长度 | 中转的 `MAX_OUTPUT_TOKENS` | 每次回复 32,768 token（含思考）；在此处截断的回答由网页接着续写（至多两次），记录里截断的回答多了再调高；回复的花费由上面两项每日 token 额度约束 |
-| 网站的每日上限 | 网站的 `API_READS_PER_DAY`、`API_CALLS_PER_DAY` | 每个地址每天 6,000 / 3,000 次，有意放宽 |
+| 网站的每日上限 | 网站的 `API_READS_PER_DAY`、`API_CALLS_PER_DAY`、`API_RESEARCH_PER_DAY` | 每个地址每天 6,000 / 3,000 次，有意放宽；每个地址每天发起 100 次研究（全量语料一次只跑一项，最多 20 项排队） |
 | 待取走的记录 | 中转的 `LOG_KEEP` | 50,000 条；超出后拒收新记录（并写 `logs full`），已收下的不丢 |
 | 容器 | `cloud/corpus/wrangler.toml` 的 `SLEEP_AFTER`、`instance_type`、`LOCATION_HINT` | `15m`、`standard-1`、`apac`（适合新加坡与东亚；第一次建立时即固定） |
 
