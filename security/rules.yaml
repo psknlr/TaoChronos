@@ -48,19 +48,22 @@ custom_rules:
     expression: >-
       (http.user_agent in {${OWN_AGENTS}})
 
+  # 以点开头的文件与目录（/.git、/.env、/.aws、/.ssh、/.kube、/.npmrc……）在任何一层都拦：这些主机不提供这样的路径
+  # （/.well-known/ 除外，在表达式开头放行）。原先只点名 .git、.env、.aws、.svn、.DS_Store 五个；2026-11 的扫描器改找
+  # AI 与云的凭据（/.openai/credentials.json、/.anthropic/config.json、/.cache/huggingface/token、
+  # /.config/gcloud/application_default_credentials.json、/.ssh/id_rsa、/.kube/config、/.npmrc、/.netrc），点名追不上，
+  # 没点到名的就进了 Worker（答 404）。斜杠写成 %2f 的（/%2f%2eenv：Cloudflare 的规范化把 %2e 还原成点，%2f 保留）一并拦。
+  # 哨兵的 isHoneypot() 同样处理
   - ref: tc-scanner-paths
     description: "[taochronos] 2 scanner paths: nothing of ours (wp-, .git, .env, .php, xmlrpc, …)"
     action: block
     expression: >-
       (not starts_with(http.request.uri.path, "/.well-known/"))
       and (
-        (lower(http.request.uri.path) contains "wp-")
+        (http.request.uri.path contains "/.")
+        or (lower(http.request.uri.path) contains "%2f.")
+        or (lower(http.request.uri.path) contains "wp-")
         or (lower(http.request.uri.path) contains "/wordpress")
-        or (lower(http.request.uri.path) contains "/.git")
-        or (lower(http.request.uri.path) contains "/.env")
-        or (lower(http.request.uri.path) contains "/.aws")
-        or (lower(http.request.uri.path) contains "/.svn")
-        or (lower(http.request.uri.path) contains "/.ds_store")
         or (lower(http.request.uri.path) contains "phpmyadmin")
         or (lower(http.request.uri.path) contains "xmlrpc")
         or (lower(http.request.uri.path) contains "/cgi-bin/")
@@ -109,6 +112,10 @@ custom_rules:
       or (http.host eq "chat-api.impf.ai" and not starts_with(http.request.uri.path, "/v1/")
           and not starts_with(http.request.uri.path, "/.well-known/acme-challenge/") and not starts_with(http.request.uri.path, "/cdn-cgi/"))
 
+  # 抓取工具按名字拦的只有真人读者不会用的：HTTP 库、扫描器，以及 Lightpanda（给自动化与 AI 代理用的无头浏览器，没有界面；
+  # 按站长要求，2026-11-25：它从腾讯云每两三天载入一次首页及其脚本）。HeadlessChrome 不在其列：本项目自己的检查
+  # （Claude Code 里 Playwright 的 Chromium）就是它，拦了它这些检查也过不去；curl、wget 站长自己会用。
+  # UA 谁都能改，这里拦的只是照实自报的
   - ref: tc-tooling-and-spoofed-crawlers
     description: "[taochronos] 4 no agent, scanners, scraping libraries, a crawler's name without Cloudflare's verification, crawlers for AI training"
     action: block
@@ -131,6 +138,7 @@ custom_rules:
         or (lower(http.user_agent) contains "censysinspect")
         or (lower(http.user_agent) contains "paloaltonetworks")
         or (lower(http.user_agent) contains "internetmeasurement")
+        or (lower(http.user_agent) contains "lightpanda")
         or (http.user_agent contains "ChatGPT-User")
         or (http.user_agent contains "OAI-SearchBot")
         or (http.user_agent contains "PerplexityBot")

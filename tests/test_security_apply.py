@@ -276,13 +276,16 @@ GOOGLEBOT_PHONE = ("Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) Ap
 BINGBOT = ("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) "
            "Chrome/116.0.1938.76 Safari/537.36")
 CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+HEADLESS = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36"
 
 
 def test_search_engines_pass_the_edge_and_crawlers_for_ai_training_do_not():
     """Cloudflare's own AI-training block (ai_training: block, its rule BOBA-199) refused the real Googlebot and Bingbot
     (data/security-logs/edge, 2026-10-07 to 10-10), so the site fell out of their indexes.  Training crawlers are refused
     by name in R4 instead — verified or not — and the search engines, verified, pass; a name a crawler claims without
-    Cloudflare's verification is still refused."""
+    Cloudflare's verification is still refused.  Of the scraping tools, the ones no reader browses with are refused by
+    name — the HTTP libraries, and Lightpanda (a headless browser for automation, at the owner's request) — while
+    HeadlessChrome passes: this project's own checks are Playwright's Chromium, and curl is the owner's."""
     from taochronos.chat.build import TRAINING_CRAWLERS
 
     rules = yaml.safe_load(RULES.read_text(encoding="utf-8"))
@@ -300,13 +303,13 @@ def test_search_engines_pass_the_edge_and_crawlers_for_ai_training_do_not():
                   "Bytespider; spider-feedback@bytedance.com)", True),
               req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ChatGPT-User/1.0; +https://openai.com/bot)", True),
               req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +claude-user@anthropic.com)", True),
-              req(CHROME), req("curl/8.5.0"), req("taochronos-collector/1"), req("", path="/.well-known/acme-challenge/x")]
+              req(CHROME), req(HEADLESS), req("curl/8.5.0"), req("taochronos-collector/1"), req("", path="/.well-known/acme-challenge/x")]
     blocked = [req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)", True),
                req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)", True),
                req("CCBot/2.0 (https://commoncrawl.org/faq/)", True), req("meta-externalagent/1.1", True),
                req(GOOGLEBOT), req(BINGBOT),  # the names without Cloudflare's verification
                req("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +claude-user@anthropic.com)"),
-               req("python-requests/2.27.1"), req("Python-urllib/3.10"), req(""), req("Go-http-client/1.1")]
+               req("python-requests/2.27.1"), req("Python-urllib/3.10"), req(""), req("Go-http-client/1.1"), req("Lightpanda/1.0")]
     assert [r["http.user_agent"][:40] for r in passes if evaluate(r4, r)] == []
     assert [r["http.user_agent"][:40] for r in blocked if not evaluate(r4, r)] == []
     # the other rules read the same language: the scanner paths (R2) refuse /.env and let the site's own files through
@@ -314,6 +317,15 @@ def test_search_engines_pass_the_edge_and_crawlers_for_ai_training_do_not():
     path = lambda p: {"http.request.uri.path": p, "http.request.uri": p, "http.host": "chat.impf.ai",  # noqa: E731
                       "http.user_agent": CHROME, "http.request.uri.query": "", "http.request.method": "GET", "cf.client.bot": False}
     assert evaluate(r2, path("/.env")) and evaluate(r2, path("/.git/config")) and not evaluate(r2, path("/js/app.js"))
+    # a file or a directory whose name starts with a dot is refused at any depth — the AI and cloud credentials scanners ask
+    # for now, none of them named one by one — and nothing the hosts serve is, nor anything under /.well-known/
+    dotted = ["/.openai/credentials.json", "/.anthropic/config.json", "/.cache/huggingface/token", "/.ssh/id_rsa", "/.kube/config",
+              "/.config/gcloud/application_default_credentials.json", "/.npmrc", "/.netrc", "/.aws/credentials", "/.svn/wc.db", "/.DS_Store",
+              "/api/.env", "/backend/.git/config", "/@fs/root/.aws/credentials", "/%2F.env", "/%2fadmin%2f.env"]
+    served = ["/", "/about", "/js/llm/anthropic.js", "/css/app.css", "/runtime/corpus.sqlite.xz", "/runtime/boot.json", "/pyodide/pyodide.asm.wasm",
+              "/runtime/taochronos-0.1.0-py3-none-any.whl", "/site.json", "/robots.txt", "/favicon.ico", "/api/info", "/api/research/job_1a2b",
+              "/v1/chat/completions", "/.well-known/security.txt", "/.well-known/acme-challenge/token"]
+    assert [p for p in dotted if not evaluate(r2, path(p))] == [] and [p for p in served if evaluate(r2, path(p))] == []
 
 
 def test_the_relays_take_nothing_another_zones_worker_forwards():
