@@ -9,7 +9,6 @@ zone: impf.ai
 # 中转允许的网页来源（与 relay/wrangler.toml 的 ALLOWED_ORIGINS 一致；R3 在边缘复刻中转自己的检查）
 origins:
   - https://chat.impf.ai
-  - http://chat.impf.ai
   - https://psknlr.github.io
 
 # 仓库自己的客户端（relay/collect.py、security/collect.py、cloud/site/deploy.sh）：免于浏览器完整性检查（它质询

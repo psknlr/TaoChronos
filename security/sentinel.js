@@ -144,12 +144,16 @@ export function ipKey(ip) {
   return `${groups.slice(0, 4).join(":")}::/64`;
 }
 
+/** A path as it is kept.  The id of a research run or of its session is the only key to it (whoever names it may read
+ * what a visitor asked and what was found): it goes into no row, event or log line. */
+export const keptPath = (pathname) => String(pathname || "").replace(/^(\/api\/(?:research|session)\/)[^/]+/, "$1…").slice(0, 200);
+
 /** The request as seen at the edge (a plain object: it travels to the Durable Object and into an event). */
 export function fingerprint(request, now = Date.now()) {
   const url = new URL(request.url);
   const cf = request.cf || {};
   const h = (name) => request.headers.get(name);
-  const fp = { ts: new Date(now).toISOString(), method: request.method, host: url.hostname, path: url.pathname.slice(0, 200),
+  const fp = { ts: new Date(now).toISOString(), method: request.method, host: url.hostname, path: keptPath(url.pathname),
     query: url.search.length > 1 ? url.search.length - 1 : 0 };
   fp.ip = h("CF-Connecting-IP") || "unknown"; // the edge sets it on every request; anything else is a client's claim
   for (const [k, name] of CF) if (cf[name] !== undefined && cf[name] !== null && cf[name] !== "") fp[k] = cf[name];
@@ -243,6 +247,33 @@ export function isHoneypot(pathname) {
   return false;
 }
 
+/**
+ * The origin of the page that made a browser send this request, when that page is not ours — else null.
+ *
+ * A page anywhere can make its readers' browsers ask these hosts for anything: an image or a form pointing at a
+ * scanner's path, thirty images at paths that are not there, a loop of reads of the API.  The reader chose none of it,
+ * so none of it may count against the reader's address — or a link planted on a forum gets that forum's readers (and
+ * behind a carrier's NAT, everyone who shares their address) refused for hours.  The Workers answer such a request
+ * with a refusal and take no note of the address (cloud/site/src/site.js, relay/src/relay.js); a page of the site
+ * itself is served as to anyone.
+ *
+ * What says so is the browser, not the page: Sec-Fetch-Site is "cross-site" or "same-site" (a script can neither set
+ * nor remove it), and the page it names (Origin, else Referer) is not one of ours.  "none" is not that — the address
+ * bar, a bookmark, a link opened from another program — and it is what the scanners that copy a browser's headers send
+ * (data/security-logs/relay, 2026-11: the /.ssh/ probes), so it is read as the visitor's own request.  A browser too
+ * old to send the header is read by its Origin or Referer alone.  A client that is no browser can send all of this
+ * too: it is then refused what it asked for, which is what it would get by it.
+ */
+export function ledFrom(fp, origins = [], self = null) {
+  const ours = (o) => o === self || origins.includes(o);
+  const from = (fp.origin && fp.origin !== "null" ? fp.origin : fp.referer) || fp.origin || null; // "null": an opaque origin
+  if (fp.sfSite === "cross-site" || fp.sfSite === "same-site") return from && ours(from) ? null : from || "unknown";
+  if (fp.sfSite) return null; // same-origin; none
+  const b = browserOf(fp.ua);
+  if (!b || expectsSecFetch(b)) return null; // no browser, or one that would have said
+  return from && !ours(from) ? from : null;
+}
+
 export const SYS_PREFIX = 1024; // the system prompt is hashed by its first characters: the page appends a visitor's own instructions after it
 
 /**
@@ -271,9 +302,14 @@ export async function bodyShape(body) {
 }
 
 // ------------------------------------------------------------------ the score of one request
+// what a browser that opened a scanner's path may have against it and still be a person's: its network, a header some
+// builds leave out
+const OPENED_WITH = new Set(["dc_asn", "warp", "no_ch_ua"]);
+
 /**
  * context: {route, origins, selfOrigin, shape, knownPrompts, ownPrefix}.  Routes: chat, logs (the relay); api-read,
- * api-call, page (the site); honeypot, csp, other (both).  Returns {route, own, score, reasons}.
+ * api-call, api-research (a research run started), page (the site); honeypot, csp, other (both).  Returns {route, own,
+ * score, reasons}.
  */
 export function assess(fp, context = {}) {
   const route = context.route || "other";
@@ -281,7 +317,6 @@ export function assess(fp, context = {}) {
   let score = 0;
   const add = (reason, n) => { reasons.push(reason); score += n; };
   const own = Boolean(context.ownPrefix && fp.ua && fp.ua.startsWith(context.ownPrefix)); // a label: the owner's clients are never exempt
-  if (route === "honeypot") add("honeypot", 10);
   if (fp.traversal) add("traversal", 6);
   if (fp.ip === "unknown") add("no_cf_ip", 3); // not through the edge as expected
   switch (fp.uaClass) {
@@ -301,7 +336,7 @@ export function assess(fp, context = {}) {
     if (fp.enc !== undefined && !/gzip|br|zstd|deflate/i.test(fp.enc)) add("enc_odd", 1); // a browser always compresses
   } else if (fp.chUa && fp.ua) add("ch_ua_odd", 2); // client hints come from Chromium browsers only
   if (fp.sfMode) {
-    const api = route === "chat" || route === "logs" || route === "feedback" || route === "sponsor" || route === "api-call" || route === "api-read";
+    const api = route === "chat" || route === "logs" || route === "feedback" || route === "sponsor" || route.startsWith("api-");
     if (api && fp.sfMode !== "cors" && fp.sfMode !== "same-origin") add("sec_fetch_mode", 2);
     if (api && fp.sfDest && fp.sfDest !== "empty") add("sec_fetch_dest", 1);
   }
@@ -316,6 +351,15 @@ export function assess(fp, context = {}) {
     if (fp.referer && !origins.includes(fp.referer) && fp.referer !== self) add("referer_foreign", 2);
   }
   if (fp.method && !["GET", "POST", "OPTIONS", "HEAD", "PUT"].includes(fp.method)) add("method_odd", 2);
+  if (route === "honeypot") {
+    // a scanner's path opened as a page by the user of a browser nothing else is odd about: someone who followed a
+    // link (one posted in a chat group is enough) — counted, and refused only at a second such path (WatchCore).  The
+    // scanners that copy a browser's headers are told apart by what they cannot copy: they speak HTTP/1.1
+    const opened = fp.method === "GET" && fp.sfSite === "none" && fp.sfMode === "navigate" && fp.sfDest === "document" && Boolean(b)
+      && reasons.every((r) => OPENED_WITH.has(r));
+    if (opened) add("honeypot_opened", 3);
+    else add("honeypot", 10);
+  }
   const s = context.shape;
   if (route === "chat" && s) {
     if (!s.stream) add("no_stream", 1);
@@ -329,6 +373,19 @@ export function assess(fp, context = {}) {
     if (s.stream && fp.accept && !/event-stream|\*\/\*/.test(fp.accept)) add("accept_odd", 1);
   }
   return { route, own, score, reasons };
+}
+
+/**
+ * A fingerprint without what says who sent the request — for the event of a visitor the sentinel has not flagged (a
+ * browser's policy report is kept whoever sent it): the host and path, the network and the kind of browser; not the
+ * address, the place, the agent's full name or the handshake (security/README.md, the privacy rules).
+ */
+export function anonymous(fp) {
+  const out = {};
+  for (const k of ["ts", "method", "host", "path", "asn", "country", "proto", "uaClass", "xrw"]) if (fp[k] !== undefined) out[k] = fp[k];
+  const b = browserOf(fp.ua);
+  if (b) out.browser = `${b.engine}/${b.major}${b.ios ? " ios" : ""}`;
+  return out;
 }
 
 // ------------------------------------------------------------------ the memory behind the score
@@ -399,12 +456,12 @@ export class WatchCore {
     this.promptsWrote = now;
   }
 
-  /** The last ten minutes of this visitor, with this request added: {burst, tenMin, replay, bad, probed}. */
+  /** The last ten minutes of this visitor, with this request added: {burst, tenMin, replay, bad, probed, trapped}. */
   window(who, fp, a, extra, now) {
     let r = this.recent.get(who);
     if (!r) {
       if (this.recent.size >= 5000) this.recent.delete(this.recent.keys().next().value); // the oldest entry goes
-      r = { t: [], q: new Map(), bad: [], paths: new Map(), csp: [], seen: new Set() };
+      r = { t: [], q: new Map(), bad: [], paths: new Map(), traps: new Map(), csp: [], seen: new Set() };
       this.recent.set(who, r);
     }
     const since = now - WINDOW;
@@ -426,6 +483,11 @@ export class WatchCore {
       for (const [p, t] of r.paths) if (t < since) r.paths.delete(p);
       while (r.paths.size > 100) r.paths.delete(r.paths.keys().next().value);
     }
+    if (a.route === "honeypot") { // the scanner's paths apart: a path that is merely not there is no second one
+      r.traps.set(fp.path, now);
+      for (const [p, t] of r.traps) if (t < since) r.traps.delete(p);
+      while (r.traps.size > 20) r.traps.delete(r.traps.keys().next().value);
+    }
     const fresh = [];
     if (extra.kind === "csp") { // the reports not seen from this visitor in the window, within the window's allowance
       for (const report of Array.isArray(extra.reports) ? extra.reports : []) {
@@ -440,7 +502,7 @@ export class WatchCore {
         fresh.push(report);
       }
     }
-    return { burst, tenMin: r.t.length, replay, bad: r.bad.length, probed: r.paths.size, csp: r.csp.length, fresh };
+    return { burst, tenMin: r.t.length, replay, bad: r.bad.length, probed: r.paths.size, trapped: r.traps.size, csp: r.csp.length, fresh };
   }
 
   row(who) {
@@ -510,7 +572,9 @@ export class WatchCore {
     today[a.route] = (today[a.route] || 0) + Math.max(1, Math.floor(Number(extra.count) || 1));
     const flagged = score >= cfg.flagScore;
     const blockedBefore = Number(prev?.blocked_until || 0) > now;
-    const honeypot = a.route === "honeypot";
+    // a scanner's path refuses the address at once — but for the first one a browser's user opened as a page (assess:
+    // honeypot_opened): that is someone who followed a link, and only a second such path within the window is a scanner
+    const honeypot = a.route === "honeypot" && !(reasons.includes("honeypot_opened") && w.trapped < 2);
     const wouldBlock = honeypot || score >= cfg.blockScore;
     const enforce = honeypot ? cfg.honeypot === "block" : cfg.mode === "enforce";
     let until = Number(prev?.blocked_until || 0);
@@ -554,7 +618,8 @@ export class WatchCore {
     if (worth && (extra.kind === "csp" || now - p.event >= (blockedBefore ? 60000 : 10000))) {
       if (extra.kind !== "csp") p.event = now;
       const event = { v: VERSION, kind: extra.kind || (honeypot ? "honeypot" : newBlock ? "block" : blocked ? "blocked" : shadow ? "shadow" : "flag"),
-        who, own: a.own || undefined, score, reasons, route: a.route, status: extra.status ?? null, fp, shape: extra.shape,
+        who, own: a.own || undefined, score, reasons, route: a.route, status: extra.status ?? null,
+        fp: flagged || blocked || shadow ? fp : anonymous(fp), shape: extra.shape, // the address: of a flagged visitor only
         decision: { mode: cfg.mode, blocked, shadow, until: until > now ? new Date(until).toISOString() : undefined },
         state: { n, bad, flagged: Number(prev?.flagged || 0) + p.flagged, blocks, burst: w.burst, tenMin: w.tenMin,
           replay: w.replay, probed: w.probed, uas: uas.length, paths: paths.slice(-5), nets, today } };
@@ -682,7 +747,8 @@ export function logLine(tag, fp, a, w, status, cfg) {
   if (!(score >= 1 || (status && status >= 400) || w?.blocked || w?.shadow || sampled)) return null;
   const line = { sentinel: VERSION, tag, route: a?.route, status: status ?? null, score, reasons: w?.reasons || a?.reasons || [],
     who: w?.who, ip: w?.flagged || w?.blocked || w?.shadow ? fp.ip : undefined, blocked: w?.blocked || undefined, shadow: w?.shadow || undefined,
-    ua: fp.uaClass, asn: fp.asn, cc: fp.country, colo: fp.colo, method: fp.method, path: fp.path, proto: fp.proto, tls: fp.tls, ray: fp.ray };
+    ua: fp.uaClass, asn: fp.asn, cc: fp.country, colo: fp.colo, method: fp.method, path: fp.path, proto: fp.proto, tls: fp.tls, ray: fp.ray,
+    led: a?.led }; // the page of another site that made a browser send it (ledFrom): refused, the address not noted
   for (const k of Object.keys(line)) if (line[k] === undefined) delete line[k];
   console.log(line); // an object: Workers Logs indexes its fields
   return line;

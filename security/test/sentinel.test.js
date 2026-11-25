@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { assess, bodyShape, browserOf, cspReports, DEFAULTS, expectsClientHints, expectsSecFetch, fingerprint, ipKey, isHoneypot, logLine, sentinelConfig,
-  serveSecurity, uaClass, WatchCore } from "../sentinel.js";
+import { anonymous, assess, bodyShape, browserOf, cspReports, DEFAULTS, expectsClientHints, expectsSecFetch, fingerprint, ipKey, isHoneypot, keptPath, ledFrom,
+  logLine, sentinelConfig, serveSecurity, uaClass, WatchCore } from "../sentinel.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
 function sqlStore() {
@@ -253,6 +253,103 @@ test("a scanner path refuses its address for a day, whatever the mode; the owner
   assert.equal(w.records().items.at(-1).event.own, true);
 });
 
+/** A path opened in a browser by its user: typed, a bookmark, a link tapped in another program (Sec-Fetch-Site: none). */
+function opened(url, { ua = CHROME, headers = {}, cf = {}, ip = "198.51.100.77" } = {}) {
+  const req = new Request(url, { headers: { "User-Agent": ua, Accept: "text/html,application/xhtml+xml,*/*;q=0.8", "Accept-Language": "zh-CN,zh;q=0.9",
+    "Sec-Fetch-Site": "none", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document", "Sec-Fetch-User": "?1",
+    "Sec-CH-UA": '"Chromium";v="129", "Not=A?Brand";v="8"', "Sec-CH-UA-Mobile": "?0", "Sec-CH-UA-Platform": '"Windows"', "CF-Connecting-IP": ip, ...headers } });
+  req.cf = { asn: 4134, country: "CN", httpProtocol: "HTTP/2", tlsVersion: "TLSv1.3", clientAcceptEncoding: "gzip, deflate, br, zstd", ...cf };
+  return req;
+}
+
+test("the id of a research run or its session is kept in no path; an unflagged visitor's event says nothing of who", () => {
+  assert.equal(keptPath("/api/research/job_0123456789abcdef0123456789abcdef"), "/api/research/…");
+  assert.equal(keptPath("/api/research/job_0123456789ab/cancel"), "/api/research/…/cancel");
+  assert.equal(keptPath("/api/session/ses_0123456789abcdef0123456789abcdef"), "/api/session/…");
+  for (const same of ["/api/research", "/api/passage", "/api/call", "/v1/chat/completions", "/", "/x/api/research/job_1"]) assert.equal(keptPath(same), same);
+  assert.equal(keptPath(`/${"a".repeat(300)}`).length, 200);
+  assert.equal(fingerprint(new Request("https://chat.impf.ai/api/session/ses_abc?what=report"), T0).path, "/api/session/…");
+  const fp = fingerprint(pageRequest("https://chat.impf.ai/api/security/csp", { ua: WECHAT, headers: { "X-Requested-With": "com.tencent.mm" } }), T0);
+  assert.deepEqual(anonymous(fp), { ts: fp.ts, method: "POST", host: "chat.impf.ai", path: "/api/security/csp", asn: 4134, country: "CN", proto: "HTTP/2",
+    uaClass: "browser", xrw: "com.tencent.mm", browser: "chromium/116" }); // not the address, the city, the agent, the handshake
+  assert.ok(fp.ip && fp.city && fp.ua && fp.ext && fp.ray);
+});
+
+test("a request another site's page made a browser send is told from the visitor's own", () => {
+  const ORIGINS = [PAGE, "https://psknlr.github.io"];
+  const from = (headers, { ua = CHROME, url = "https://chat-api.impf.ai/v1/x.sql" } = {}) =>
+    ledFrom(fingerprint(new Request(url, { headers: { "User-Agent": ua, ...headers } }), T0), ORIGINS, "https://chat.impf.ai");
+  // the browser says another site's page asked (a script can neither set nor remove Sec-Fetch-Site), and names the page
+  assert.equal(from({ "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "image", Referer: "https://forum.example/t/42?x=1" }), "https://forum.example");
+  assert.equal(from({ "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "cors", Origin: "https://evil.example", Referer: "https://evil.example/" }), "https://evil.example");
+  assert.equal(from({ "Sec-Fetch-Site": "same-site", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "iframe", Referer: "https://science.impf.ai/" }), "https://science.impf.ai");
+  assert.equal(from({ "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "image" }), "unknown"); // the page hid its name (no-referrer)
+  assert.equal(from({ "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors", Origin: "null" }), "null"); // a sandboxed frame
+  assert.equal(from({ "Sec-Fetch-Site": "cross-site", Origin: "null", Referer: "https://forum.example/" }), "https://forum.example");
+  // the project's own pages calling the relay, and a policy report of theirs: not that
+  assert.equal(from({ "Sec-Fetch-Site": "same-site", "Sec-Fetch-Mode": "cors", Origin: PAGE, Referer: `${PAGE}/` }), null);
+  assert.equal(from({ "Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "cors", Origin: "https://psknlr.github.io" }), null);
+  assert.equal(from({ "Sec-Fetch-Site": "same-origin", Origin: "null", Referer: `${PAGE}/` }), null); // how browsers send a policy report
+  assert.equal(ledFrom(fingerprint(pageRequest(), T0), ORIGINS), null);
+  // the visitor's own: the address bar, a bookmark, a link opened from another program — and what a scanner copies
+  assert.equal(ledFrom(fingerprint(opened("https://chat-api.impf.ai/v1/x.sql"), T0), ORIGINS), null);
+  // what is no browser says nothing a reader's browser would: its own request, whatever Referer it sends
+  assert.equal(from({ Referer: "https://forum.example/" }, { ua: "curl/8.4.0" }), null);
+  assert.equal(from({ Referer: "https://forum.example/" }), null); // Chrome 129 would have sent Sec-Fetch-Site: a copy of its name
+  assert.equal(from({}, { ua: "" }), null);
+  // a browser too old to send the header is read by where it says it comes from
+  const OLD = "Mozilla/5.0 (Linux; U; Android 9; zh-cn; MI 6 Build/PKQ1) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.126 MQQBrowser/10.1 Mobile Safari/537.36";
+  assert.equal(from({ Referer: "https://forum.example/t/42" }, { ua: OLD }), "https://forum.example");
+  assert.equal(from({ Origin: "https://evil.example" }, { ua: OLD }), "https://evil.example");
+  assert.equal(from({ Referer: `${PAGE}/` }, { ua: OLD }), null);
+  assert.equal(from({}, { ua: OLD }), null);
+});
+
+test("a scanner path opened once as a page by a browser's user is someone who followed a link; a second one is a scanner", async () => {
+  const cfg = cfgOf({ SENTINEL: "enforce" });
+  const hit = (w, req, at) => { const fp = fingerprint(req, at); return w.observe(fp, assess(fp, { route: "honeypot", origins: [PAGE] }), { status: 404 }, cfg, at); };
+  // a link posted in a chat group, tapped: one page asked for, by a browser nothing else is odd about
+  const w = new WatchCore(sqlStore());
+  const first = await hit(w, opened("https://chat-api.impf.ai/v1/backup.sql"), T0);
+  assert.deepEqual([first.reasons, first.score, first.flagged, first.blocked, first.shadow], [["honeypot_opened"], 3, false, false, false]);
+  assert.deepEqual(w.records().items, []); // not flagged: no event, no address
+  assert.equal(w.row(first.who).ip, null);
+  assert.equal((await hit(w, opened("https://chat-api.impf.ai/v1/backup.sql"), T0 + 5000)).blocked, false); // the same link again
+  const visit = fingerprint(pageRequest(undefined, { headers: { "CF-Connecting-IP": "198.51.100.77" } }), T0 + 6000);
+  assert.equal((await w.observe(visit, assess(visit, { route: "chat", origins: [PAGE] }), {}, cfg, T0 + 6000)).blocked, false); // and the page still answers
+  // a second such path within ten minutes: that is a scanner with a browser's whole stack
+  const second = await hit(w, opened("https://chat-api.impf.ai/v1/dump.sql"), T0 + 9000);
+  assert.deepEqual([second.blocked, second.retry], [true, 21600]);
+  assert.deepEqual(w.records().items.map((i) => [i.event.kind, i.event.fp.ip]), [["honeypot", "198.51.100.77"]]);
+  // ten minutes apart they are two links followed, not a scan
+  const slow = new WatchCore(sqlStore());
+  await hit(slow, opened("https://chat-api.impf.ai/v1/a.bak"), T0);
+  assert.equal((await hit(slow, opened("https://chat-api.impf.ai/v1/b.bak"), T0 + 601000)).blocked, false);
+  // a path that is merely not there is not a first one
+  const stale = new WatchCore(sqlStore());
+  const gone = fingerprint(opened("https://chat-api.impf.ai/v1/old-page"), T0);
+  await stale.observe(gone, assess(gone, { route: "other", origins: [PAGE] }), { status: 404 }, cfg, T0);
+  assert.equal((await hit(stale, opened("https://chat-api.impf.ai/v1/a.bak"), T0 + 1000)).blocked, false);
+  // from a VPN's network, or a build that sends no client hints: still a person
+  for (const req of [opened("https://chat-api.impf.ai/v1/a.bak", { cf: { asn: 14061 } }), opened("https://chat-api.impf.ai/v1/a.bak", { headers: { "Sec-CH-UA": "" } }),
+    opened("https://chat-api.impf.ai/v1/a.bak", { ua: IPHONE, headers: { "Sec-CH-UA": "", "Sec-CH-UA-Mobile": "", "Sec-CH-UA-Platform": "" } })]) {
+    const r = await hit(new WatchCore(sqlStore()), req, T0);
+    assert.deepEqual([r.reasons.includes("honeypot_opened"), r.blocked], [true, false], JSON.stringify(r.reasons));
+  }
+  // what only copies a browser is refused at the first path, as before: the scanners of 2026-11 sent every header of a
+  // Chrome navigation over HTTP/1.1 (data/security-logs/relay); a tool, a browser's name without its headers, a POST
+  for (const [req, reason] of [
+    [opened("https://chat-api.impf.ai/.ssh/id_rsa", { cf: { httpProtocol: "HTTP/1.1" } }), "old_proto"],
+    [opened("https://chat-api.impf.ai/v1/a.bak", { headers: { "Accept-Language": "" } }), "no_lang"],
+    [opened("https://chat-api.impf.ai/v1/a.bak", { ua: "curl/8.4.0" }), "ua_tool"],
+    [new Request("https://chat-api.impf.ai/v1/a.bak", { headers: { "User-Agent": CHROME, "CF-Connecting-IP": "198.51.100.78" } }), "no_sec_fetch"],
+    [opened("https://chat-api.impf.ai/v1/a.bak", { headers: { "Sec-Fetch-Dest": "empty", "Sec-Fetch-Mode": "cors" } }), "honeypot"],
+  ]) {
+    const r = await hit(new WatchCore(sqlStore()), req, T0);
+    assert.deepEqual([r.reasons.includes("honeypot"), r.reasons.includes(reason), r.blocked], [true, true, true], JSON.stringify(r.reasons));
+  }
+});
+
 test("over the block score: refused in enforce mode, a shadow in observe mode; the short windows add up", async () => {
   const mk = (ip, t, extra = {}) => {
     const req = new Request("https://chat-api.impf.ai/v1/chat/completions", { method: "POST", headers: { "User-Agent": "python-requests/2.31.0", Origin: PAGE,
@@ -369,6 +466,8 @@ test("the endpoints: the token for export, ack and summary; csp reports from any
   assert.deepEqual([page1.items.length, page1.last, page1.more, page1.items[0].event.kind, page1.items[0].event.fp.ip], [1, 1, true, "honeypot", "93.123.109.101"]);
   const page2 = await (await serve("/v1/security/export?after=1", { headers: auth })).json();
   assert.deepEqual([page2.items.length, page2.items[0].event.kind], [1, "csp"]);
+  // a report is kept whoever sent it — so, of a visitor not flagged, without what says who: the address, the place, the agent
+  assert.deepEqual(page2.items[0].event.fp, { ts: new Date(T0).toISOString(), method: "POST", host: "chat-api.impf.ai", path: "/v1/security/csp", uaClass: "empty" });
   assert.deepEqual(page2.items[0].event.reports, [{ directive: "script-src", blocked: "https://evil.example", document: "https://chat.impf.ai/" }]); // reduced: origins and paths, never a query or a sample
   const ack = await (await serve("/v1/security/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: 2 }) })).json();
   assert.equal(ack.remaining, 0);

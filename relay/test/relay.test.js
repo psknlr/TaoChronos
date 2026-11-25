@@ -257,10 +257,14 @@ test("a visitor sees none of the upstream: its model, its reasoning formats, its
 
 test("preflight: allowed origins only", async () => {
   const r = relay();
-  const ok = await r.call("/v1/chat/completions", { method: "OPTIONS", headers: { Origin: "http://chat.impf.ai", "Access-Control-Request-Method": "POST" } });
+  const ok = await r.call("/v1/chat/completions", { method: "OPTIONS", headers: { Origin: "https://psknlr.github.io", "Access-Control-Request-Method": "POST" } });
   assert.equal(ok.status, 204);
-  assert.equal(ok.headers.get("Access-Control-Allow-Origin"), "http://chat.impf.ai");
+  assert.equal(ok.headers.get("Access-Control-Allow-Origin"), "https://psknlr.github.io");
   assert.match(ok.headers.get("Access-Control-Allow-Headers"), /Content-Type/);
+  // the page's address over plain http is nobody's now: the site redirects it, so a page there is one put in its place
+  const plain = await r.call("/v1/chat/completions", { method: "OPTIONS", headers: { Origin: "http://chat.impf.ai", "Access-Control-Request-Method": "POST" } });
+  assert.deepEqual([plain.status, plain.headers.get("Access-Control-Allow-Origin")], [403, null]);
+  assert.deepEqual(config({}).origins, ["https://chat.impf.ai", "https://psknlr.github.io"]);
   const bad = await r.call("/v1/chat/completions", { method: "OPTIONS", headers: { Origin: "https://evil.example" } });
   assert.equal(bad.status, 403);
   assert.equal(bad.headers.get("Access-Control-Allow-Origin"), null);
@@ -920,6 +924,45 @@ test("a scanner path refuses its address for a day; the page's requests score no
   assert.equal((await (await r.call("/v1/security/export", { headers: auth })).json()).items[0].event.kind, "csp");
 }));
 
+test("what another site's page makes a reader's browser send is refused, and never counts against the reader", () => quiet(async () => {
+  // reproduced before this was so (2026-11-25): a page with thirty images pointed at paths of this host got each of
+  // its readers refused for six hours (referer_foreign, burst, errors, probing: 12), one image at a scanner's path too
+  let t = Date.UTC(2026, 10, 25, 12, 0, 0);
+  const r = relay({ env: { SENTINEL: "enforce" }, now: () => t, cf: { asn: 4134, country: "CN", httpProtocol: "HTTP/2", tlsVersion: "TLSv1.3" } });
+  const planted = (path, headers = {}, init = {}) => r.call(path, { ...init, headers: { ...BROWSER, Accept: "image/avif,image/webp,*/*", "Sec-Fetch-Site": "cross-site",
+    "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Dest": "image", Referer: "https://forum.example/t/42", "CF-Connecting-IP": "203.0.113.7", ...headers } });
+  for (let i = 0; i < 30; i++) {
+    const res = await planted(`/v1/pixel-${i}.png`);
+    assert.equal(res.status, 403);
+    t += 200;
+  }
+  assert.equal((await (await planted("/v1/notes.bak")).json()).error.type, "cross_site"); // a scanner's path
+  assert.equal((await planted("/v1/health")).status, 403); // nothing of this host is another site's to embed
+  assert.equal((await planted("/v1/chat/completions", { "Sec-Fetch-Mode": "cors", "Sec-Fetch-Dest": "empty", Origin: "https://forum.example" }, { method: "OPTIONS" })).status, 403);
+  assert.equal((await planted("/v1/security/csp", { Origin: "https://forum.example", "Content-Type": "text/plain" }, { method: "POST",
+    body: JSON.stringify({ "csp-report": { "violated-directive": "script-src", "blocked-uri": "https://x.example/a.js" } }) })).status, 403);
+  await r.settle();
+  assert.deepEqual(r.watch.summary(t), { ...r.watch.summary(t), visitors: 0, events: 0, blocked: [] }); // not a row, not an event, not a refusal
+  assert.equal(r.calls.length, 0);
+  // the reader then opens the page: served, with nothing against the address
+  const served = await r.call("/v1/chat/completions", post(PAGE_ASK));
+  assert.equal(served.status, 200);
+  await r.settle();
+  const [reader] = r.watch.summary(t).top;
+  assert.deepEqual([reader.n, reader.score, reader.flagged, reader.ip], [1, 0, 0, undefined]);
+  // the project's own pages are not another site's: the page, and its mirror
+  assert.equal((await r.call("/v1/health", { headers: { ...BROWSER, Origin: PAGE } })).status, 200);
+  assert.equal((await r.call("/v1/health", { headers: { ...BROWSER, "Sec-Fetch-Site": "cross-site", Origin: "https://psknlr.github.io" } })).status, 200);
+  // what is no browser gets nothing by saying a page sent it: refused, where its own request is at least answered
+  assert.equal((await r.call("/v1/health", { headers: { "User-Agent": "curl/8.4.0", "CF-Connecting-IP": "198.51.100.9" } })).status, 200);
+  assert.equal((await r.call("/v1/health", { headers: { "User-Agent": "curl/8.4.0", "Sec-Fetch-Site": "cross-site", "CF-Connecting-IP": "198.51.100.9" } })).status, 403);
+  // a scanner's path asked for in the reader's own name still refuses the address
+  const own = await r.call("/v1/notes.bak", { headers: { "User-Agent": "Go-http-client/1.1", "CF-Connecting-IP": "45.138.12.10" } });
+  assert.equal(own.status, 404);
+  await r.settle();
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "45.138.12.10" }))).status, 403);
+}));
+
 test("what is not the page's is scored: served and flagged in observe mode, refused in enforce mode; the owner's clients stay under the line", () => quiet(async () => {
   const script = { "User-Agent": "python-requests/2.31.0", Accept: "application/json", "Accept-Language": "", "Sec-Fetch-Site": "", "Sec-Fetch-Mode": "",
     "Sec-Fetch-Dest": "", "Sec-CH-UA": "", "CF-Connecting-IP": "198.51.100.77" };
@@ -1201,7 +1244,15 @@ test("a region OpenAI refuses from one place is asked from the next; where each 
     assert.equal(url, "https://api.openai.com/cdn-cgi/trace");
     return new Response(`fl=1\nip=2a06:98c0::1\ncolo=${place ? "IAD" : "HKG"}\nloc=${place ? "US" : "HK"}\n`, { status: 200 });
   } });
-  const seen = await (await t.call("/v1/egress", { headers: { Origin: PAGE } })).json();
+  // anyone may see how a call from where they are looks to OpenAI's edge: one request; the rest — from each place,
+  // and of the default model's host — is the owner's diagnostic, with the collector's token: a dozen requests from
+  // several places, seconds waited for each, and where the service calls from
+  for (const headers of [{ Origin: PAGE }, { ...BROWSER, Origin: PAGE }, { Authorization: "Bearer not-the-token-0123456789" }]) {
+    const open = await t.call("/v1/egress", { headers });
+    assert.deepEqual([open.status, await open.json()], [200, { worker: "HKG", direct: { colo: "HKG", loc: "HK" } }]);
+  }
+  assert.deepEqual([traced, sent, t.calls.length], [[], [], 3]); // one trace each, from here: nothing placed, the model's host not asked
+  const seen = await (await t.call("/v1/egress", { headers: { Authorization: `Bearer ${TOKEN}` } })).json();
   const { model, ...openai } = seen;
   assert.deepEqual(openai, { worker: "HKG", direct: { colo: "HKG", loc: "HK" }, places: { enam: { colo: "IAD", loc: "US" }, wnam: { colo: "IAD", loc: "US" } } });
   assert.deepEqual(Object.keys(model), ["direct", "apac"]); // UPSTREAM_VIA
