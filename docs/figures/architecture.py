@@ -15,8 +15,8 @@ c  the deployment — the one chat runtime in the three places it runs, and the 
 
 Every number in the figure is read from this repository (``collect``, written to ``architecture.json``): the agent
 specs, the skill manifests, the tool mesh, the hook registry, the gates, the event types, the capability registry, the
-evaluation suites and their invariants, the layering policy and the imports of ``src/``, ``cloud/store.json`` and
-``corpus/web/books.json``.  None is typed in by hand, so the figure cannot drift from the code without a new run of
+evaluation suites and their invariants, the layering policy and the imports of ``src/``, the corpus catalogues
+(``corpus/catalog``) and ``corpus/web/books.json``.  None is typed in by hand, so the figure cannot drift from the code without a new run of
 this script showing it.
 
 The figure is laid out in millimetres at its printed size — 7 in wide, the text width of a two-column ACM, IEEE or
@@ -91,10 +91,23 @@ def _layering(home: Path) -> dict[str, Any]:
 
 
 def _deployment(home: Path) -> dict[str, Any]:
-    """The two corpora a deployed runtime reads: the site's store and the browser's pack."""
+    """The corpora a deployed runtime reads.  ``corpus`` is the corpus as the catalogues admit it (the books a full
+    build ingests: every entry marked ``ingest``, and every entry of a catalogue curated by hand, which marks none);
+    ``site_store`` is the store the public site deploys, cut from it without the sources whose terms forbid passing
+    their transcriptions on (``excluded``); ``browser_pack`` is what the page itself carries."""
+    from taochronos.protocol.yamlio import load_yaml
+
+    admitted: dict[str, int] = {}
+    for path in sorted((home / "corpus" / "catalog").glob("*.yaml")):
+        catalog = load_yaml(path)
+        if isinstance(catalog, dict) and isinstance(catalog.get("books"), list):
+            n = sum(1 for b in catalog["books"] if b.get("status", "ingest") == "ingest")
+            if n:
+                admitted[(catalog.get("source") or {}).get("id", path.stem)] = n
     store = json.loads((home / "cloud" / "store.json").read_text(encoding="utf-8"))
     books = json.loads((home / "corpus" / "web" / "books.json").read_text(encoding="utf-8"))
-    return {"site_store": {k: store[k] for k in ("books", "passages", "characters")},
+    return {"corpus": {"books": sum(admitted.values()), "by_source": admitted},
+            "site_store": {k: store[k] for k in ("books", "passages", "characters", "excluded")},
             "browser_pack": {"witnesses": len(books), "works": len({b["work"] for b in books})}}
 
 
@@ -721,7 +734,7 @@ def panel_c(cv: Canvas, d: dict[str, Any], x0: float, top: float) -> float:
     """The deployment: the chat runtime (the harness of panel a, as the tools of the model a page talks to) in the
     three places it runs, and the two separate paths of a conversation: model calls and tool calls."""
     dep = d["deployment"]
-    pack, site = dep["browser_pack"], dep["site_store"]
+    pack, corpus = dep["browser_pack"], dep["corpus"]
     cv.panel(x0, top, "c", "Deployment: one chat runtime in three places; model calls and tool calls travel apart")
     c1w, g1, c2w, g2 = 27.0, 12.3, 27.6, 8.0
     c1x = x0
@@ -773,7 +786,7 @@ def panel_c(cv: Canvas, d: dict[str, Any], x0: float, top: float) -> float:
             within=(c3x, py0, c3w, rA + hA - py0))
     named(c3x, rB, c3w, hB, "Container", "Cloudflare", lw=0.7)
     runtime(c3x + 1.2, rB + 4.95)
-    cv.text(c3x + 1.2, rB + 7.85, f"{site['books']} books, on demand", va="middle", within=(c3x, rB, c3w, hB))
+    cv.text(c3x + 1.2, rB + 7.85, f"{corpus['books']} books, on demand", va="middle", within=(c3x, rB, c3w, hB))
     cv.cylinder(c3x, rC - 0.6, c3w, hC + 0.6, ec=INK, lw=0.7, ry=1.0)
     db = rC + 1.75 + CAP * S_SUB * PT
     cv.text(c3x + 1.2, db, "D1 backup", S_SUB, weight="bold", va="baseline")

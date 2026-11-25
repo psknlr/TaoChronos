@@ -39,8 +39,10 @@ of **a**, offered as tools — in one of three places: a container behind the si
 machine, or a Web Worker in the page itself when no server answers. Without a container the site's Worker answers
 from the D1 backup.
 
-Counts are those of the repository when the figure was drawn (`architecture.json`). Paths in grey (`kernel/`,
-`agents/` …) are the packages of `src/taochronos/`; the same names are the layers of **b**.
+Counts are those of the repository when the figure was drawn (`architecture.json`). The corpus is counted from the
+catalogues (`corpus/catalog`: the books a full build admits); the store the public site deploys is cut from it
+without the sources whose terms forbid passing their transcriptions on (`cloud/store.json`). Paths in grey
+(`kernel/`, `agents/` …) are the packages of `src/taochronos/`; the same names are the layers of **b**.
 
 ## What it follows
 

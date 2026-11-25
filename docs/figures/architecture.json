@@ -513,10 +513,27 @@
   }
  },
  "deployment": {
+  "corpus": {
+   "books": 966,
+   "by_source": {
+    "aeam": 7,
+    "cmeta": 11,
+    "hf-tcm-canon": 1,
+    "jicheng": 816,
+    "kanripo": 100,
+    "mcgill": 5,
+    "tcm-ancient-books": 8,
+    "wikisource": 18
+   }
+  },
   "site_store": {
    "books": 958,
    "passages": 2038497,
-   "characters": 122212591
+   "characters": 122212591,
+   "excluded": {
+    "aeam": 7,
+    "hf-tcm-canon": 1
+   }
   },
   "browser_pack": {
    "witnesses": 553,
