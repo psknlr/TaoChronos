@@ -108,7 +108,8 @@ HOOK_ROWS = [
 PERM = {"classics:read": "read the corpus through the research's scoped view", "kg:read": "read the knowledge graph",
         "kg:propose": "propose a change to canonical knowledge", "analysis:run": "run the discovery and statistics engines",
         "literature:read": "read modern literature and real-world data", "codemode:exec": "run code in the sandbox",
-        "validation:run": "run the gates (validators)"}
+        "validation:run": "run the gates (validators)",
+        "mydata:read": "read the user's own data (made anonymous as it is read, never recorded)"}
 
 
 # ------------------------------------------------------------------------------------------------------------ helpers
@@ -230,7 +231,9 @@ def table_core(arch: dict) -> tuple[list[str], list[list]]:
 def table_criteria() -> tuple[list[str], list[list]]:
     detail = json.loads((SD / "fig3_e2e_detail.json").read_text(encoding="utf-8"))
     header = ["Criterion", "Requirement", "Judge", "State when unmet", "H1 in Fig. 3 (observed)"]
-    rows = [[c["id"], c["required"], c["judge"], c["failure_state"], f"{c['status']}: {c['observed']}"]
+    state = {"semantic_support": "inconclusive (a quote contradicts its claim, or its author rejects it); needs_expert "
+                                 "(a quote does not clearly state its claim)"}
+    rows = [[c["id"], c["required"], c["judge"], state.get(c["id"], c["failure_state"]), f"{c['status']}: {c['observed']}"]
             for c in detail["needs_expert"]["criteria"]]
     rows.append(["falsification", "not rejected", "validator:contract", "rejected",
                  "R1 in Fig. 3: " + detail["rejected"]["criteria"][0]["observed"]])
@@ -315,6 +318,28 @@ def notes(arch: dict, rv: dict) -> dict[str, str]:
     n_pred = sum(1 for d in rv["details"] if d["part"] == "end_to_end")
     saturation = float(re.search(r"\(([\d.]+) <", metrics["stop"]["reasons"][0]).group(1))
     judged = [d for d in rv["details"] if d["part"] == "end_to_end" and d.get("held") is not None]
+    with open(SD / "fig3_e2e_tasks.csv", encoding="utf-8") as f:
+        tasks = list(csv.DictReader(f))
+    n_rounds = len({t["round"] for t in tasks})
+    with open(SD / "fig3_e2e_hypotheses.csv", encoding="utf-8") as f:
+        hyps = [h for h in csv.DictReader(f) if h["label"]]
+    report = json.loads((SD / "fig3_e2e_report.json").read_text(encoding="utf-8"))
+    label = {h["id"]: h["label"] for h in hyps}
+    judged_h = {j["hypothesis_id"]: j for j in report["acceptance"]["hypotheses"]}
+    expert = [label[i] for i, j in judged_h.items() if j["status"] == "needs_expert"]
+    clean = [label[i] for i, j in judged_h.items() if j["status"] == "needs_expert"
+             and all(c["status"] == "pass" or c["id"] == "expert_review" for c in j["criteria"])]
+    weak = [x for x in expert if x not in clean]
+    n_inc = sum(1 for j in judged_h.values() if j["status"] == "inconclusive")
+    rejected = [label[i] for i, j in judged_h.items() if j["status"] == "rejected"]
+    order = lambda xs: ", ".join(sorted(xs, key=lambda x: int(x[1:])))  # noqa: E731
+    words = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
+             10: "ten", 11: "eleven", 12: "twelve"}
+    verdict = (f"The contract's verdict: {words[len(expert)]} hypotheses wait for an expert — {words[len(clean)]} "
+               f"({order(clean)}) meet every criterion a machine can check" +
+               (f", and {words[len(weak)]} ({order(weak)}) rest in part on a quotation that does not clearly state "
+                "its claim, which the contract leaves to an expert" if weak else "") +
+               f" — {words[n_inc]} are inconclusive and {words[len(rejected)]} ({order(rejected)}) is rejected.")
     return {
         "eval": (
             "TaoChronos-Eval has forty suites in three layers. The first tests the harness's boundaries: nineteen "
@@ -359,17 +384,18 @@ def notes(arch: dict, rv: dict) -> dict[str, str]:
             "`taochronos research \"肾气丸的组成与主治如何随时代演变？\" --profile web-canon --focus 肾气丸,六味地黄丸 --forbid "
             "消渴=糖尿病`, offline: the rules ran alone and no model was called. The run scoped "
             f"{contract['books_in_scope']} books and "
-            f"{contract['passages_in_scope']:,} passages, planned 30 tasks in three rounds, called {metrics['tool_calls']} "
+            f"{contract['passages_in_scope']:,} passages, planned {len(tasks)} tasks in {words[n_rounds]} rounds, called "
+            f"{metrics['tool_calls']} "
             f"tools (none refused), extracted {metrics['claims']} claims, recorded {metrics['evidence_count']} evidence and "
             f"{metrics['counter_evidence']} counter-evidence records and {metrics['hypotheses']} hypotheses, and stopped "
-            f"after round {metrics['round']}, the last the contract allowed, when new evidence had fallen to "
-            f"{saturation:.1%}, below the 5% of its stop rule. It is deterministic: a second run "
-            "writes the same report. The contract's verdict: one hypothesis (H1) meets every criterion a machine can "
-            "check and waits for an expert, twelve are inconclusive and one (R1) is rejected. Supplementary Data 1 is "
+            f"after round {metrics['round']}, the last the contract allowed, "
+            + ("which added no new evidence." if saturation == 0 else
+               f"when new evidence had fallen to {saturation:.1%}, below the 5% of its stop rule.") + " It is deterministic: a second run "
+            f"writes the same report. {verdict} Supplementary Data 1 is "
             "the whole Discovery Report the run wrote, in Chinese, as a user of the harness receives it; Supplementary "
             "Data 2 is its event log, from which the state replays; Supplementary Tables 9 and 10 list every hypothesis "
             "and objection. "
-            f"Reading each surviving hypothesis against its evidence found five failure modes (Supplementary Fig. 1), "
+            f"Reading each surviving hypothesis against its evidence found six failure modes (Supplementary Fig. 1), "
             f"the largest being that the independence check merged {comp['rules']['harness']['largest_among_evidence_books']} "
             f"of the {comp['evidence_books']} books that supplied evidence into one source family."),
         "predictions": (
@@ -386,16 +412,29 @@ def notes(arch: dict, rv: dict) -> dict[str, str]:
     }
 
 
-FIG_LEGEND = (
-    "**Supplementary Fig. 1 | Where the end-to-end run of Fig. 3 went wrong, and why.** **a**, Books merged into one "
-    "source family under three rules: the harness's (the same work or author, or any transcription or rephrasing link "
-    "between their passages, closed transitively), transcription links only, and the same work or author only. Under "
-    "the harness's rule 35 of the 38 books that supplied evidence, and 182 of the 368 books of the open corpus, fall "
-    "into one family. **b**, The independent families each final hypothesis rests on under the three rules; dashed "
-    "line, the two that G5 requires. Five hypotheses that G5 failed (H4, H5, H9, H12, H13) rest on two to four "
-    "families once rephrasing links are left out. **c**, The failure modes found by reading every surviving hypothesis "
-    "against its evidence, with what each did and the check that would catch it. None is repaired here: the run is "
-    "reported as it happened.")
+def _fig_legend() -> str:
+    comp = json.loads((SD / "fig3_e2e_family_components.json").read_text(encoding="utf-8"))
+    with open(SD / "fig3_e2e_families.csv", encoding="utf-8") as f:
+        fam = list(csv.DictReader(f))
+    h = comp["rules"]["harness"]
+    reach = [r["label"] for r in fam if int(r["transcription_only"]) >= 2 and int(r["harness"]) < 2]
+    most = max(int(r["transcription_only"]) for r in fam if r["label"] in reach) if reach else 2
+    return (
+        "**Supplementary Fig. 1 | Where the end-to-end run of Fig. 3 went wrong, and why.** **a**, Books merged into one "
+        "source family under three rules: the harness's (the same work or author, or any transcription or rephrasing "
+        "link between their passages, closed transitively), transcription links only, and the same work or author "
+        f"only. Under the harness's rule {h['largest_among_evidence_books']} of the {comp['evidence_books']} books that "
+        f"supplied evidence, and {h['largest_in_corpus']} of the {comp['corpus_books']} books of the open corpus, fall "
+        "into one family. **b**, The independent families each final hypothesis rests on under the three rules; dashed "
+        f"line, the two that G5 requires. The hypotheses that G5 failed and that rest on two to "
+        f"{ {3: 'three', 4: 'four', 5: 'five'}.get(most, str(most)) } families once "
+        f"rephrasing links are left out ({', '.join(reach)}) include two (H5, H13) whose evidence is copies of one "
+        "clause, for which one family is right. **c**, The failure modes found by reading every surviving hypothesis "
+        "against its evidence, with what each did and the check that would catch it. None is repaired here: the run "
+        "is reported as it happened.")
+
+
+FIG_LEGEND = _fig_legend()
 
 
 # ---------------------------------------------------------------------------------------------------------------- docx
@@ -498,8 +537,8 @@ def main() -> None:
                                       "they run and the specialists they delegate to", t8, 0),
         ("S9_e2e_hypotheses.csv", "Supplementary Table 9 | Every hypothesis of the end-to-end run (Fig. 3), with its "
                                   "gates, unmet criteria, objections and testable prediction", t9, 0),
-        ("S10_e2e_objections.csv", "Supplementary Table 10 | The Skeptic's 117 objections in the end-to-end run, by "
-                                   "check (each objection is in the CSV file)", (oh, osum), 0),
+        ("S10_e2e_objections.csv", f"Supplementary Table 10 | The Skeptic's {len(ofull)} objections in the end-to-end "
+                                   "run, by check (each objection is in the CSV file)", (oh, osum), 0),
         ("S11_predictions_open_corpus.csv", "Supplementary Table 11 | The predictions of the pipeline run on the past "
                                             "view at 1368 on the open corpus, and their outcomes", t11, 0),
         ("S12_anticipated_links_open_corpus.csv", "Supplementary Table 12 | Topic–cutoff pairs of the open corpus in "

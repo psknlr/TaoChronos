@@ -1,18 +1,18 @@
 {
  "needs_expert": {
   "label": "H1",
-  "id": "hyp_d1436acd2959",
+  "id": "hyp_c19dcbbde26a",
   "kind": "association_rule",
-  "statement": "在主治类记载中，烦躁 并见时多用 六味地黄丸（置信度 1.0，lift 5.1053）：该组合可视为 六味地黄丸 的特征性指征。",
+  "statement": "在主治类记载中，淋、烦躁 并见时多用 六味地黄丸（置信度 1.0，lift 9.7）：该组合可视为 六味地黄丸 的特征性指征。",
   "statistics": {
-   "observation": "obs_d550b68256af",
+   "observation": "obs_9f7a75f528d1",
    "method": "one-sided Fisher exact test on indication claims",
    "null": "the formula is used independently of the finding combination",
    "effect": {
-    "lift": 5.1053,
+    "lift": 9.7,
     "confidence": 1.0
    },
-   "p_value": 0.03673,
+   "p_value": 0.01015,
    "bh_significant": true,
    "fdr": 0.1,
    "n": {
@@ -48,7 +48,7 @@
    "modern_mapping": null,
    "contradiction_penalty": 0.0
   },
-  "discovery_score": 0.7069,
+  "discovery_score": 0.7097,
   "gates": {
    "G0": "pass",
    "G1": "warn",
@@ -171,7 +171,25 @@
   "testable_prediction": "在独立的后世方书中统计该症状组合的用方分布。",
   "evidence": [
    {
-    "id": "evd_cd4fbdd2675f",
+    "id": "evd_9ab3d0fe4f00",
+    "passage_id": "jc_o043.01385",
+    "book_id": "jc_o043",
+    "title": "脉因证治",
+    "dynasty": "清",
+    "year": 1775.0,
+    "quote": "火盛於下，為腎消。病則煩躁，小便濁，淋如膏油之狀。論云：焦煩水易虧者是也。六味地黃丸主之",
+    "span": [
+     0,
+     44
+    ],
+    "chapter": "卷三",
+    "section": "三十一消渴",
+    "stance": "supports",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_b7e9764764f5",
     "passage_id": "jc_o128.00164",
     "book_id": "jc_o128",
     "title": "医学集成",
@@ -187,85 +205,58 @@
     "stance": "supports",
     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
-   },
-   {
-    "id": "evd_b4ab500453c5",
-    "passage_id": "jc_o003.00384",
-    "book_id": "jc_o003",
-    "title": "笔花医镜",
-    "dynasty": "清",
-    "year": 1824.0,
-    "quote": "七福飲主之。口渴者。血虛液燥也。甘露飲主之。煩躁發熱者。虛火亢也。六味地黃丸主之",
-    "span": [
-     0,
-     40
-    ],
-    "chapter": "臟腑證治",
-    "section": "肝部",
-    "stance": "supports",
-    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
-    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
    }
   ]
  },
  "inconclusive": {
-  "label": "H2",
-  "id": "hyp_12a32285d3a3",
-  "parent_id": "hyp_71c99bcff38f",
-  "kind": "lost_knowledge",
-  "statement": "在本次调查的语料范围内，「肾气丸」与「心烦」的关联见于 960 年以前的《新编金匮方论（邓珍本）》、《金匮要略方（吴迁本）》、《脉经》、《脉经》、《新编金匮要略方论》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正）。",
-  "parent_statement": "「肾气丸」与「心烦」的关联见于 960 年以前的《新编金匮方论（邓珍本）》、《金匮要略方（吴迁本）》、《脉经》、《脉经》、《新编金匮要略方论》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。",
-  "revision_note": "针对异议：obj_4d207401e0f9[transcription_dependence] → tradition=single；obj_8087ec945588[single_source] → scope=surveyed_corpus；obj_b52febdf4a90[statistical] → status=exploratory",
+  "label": "H5",
+  "id": "hyp_748f1bdebc6e",
+  "parent_id": "hyp_9dcce49d684f",
+  "kind": "association_rule",
+  "statement": "在本次调查的语料范围内，在主治类记载中，多饮、小便多 并见时多用 肾气丸（置信度 1.0，lift 4.85）：该组合可视为 肾气丸 的特征性指征（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核）。",
+  "parent_statement": "在主治类记载中，多饮、小便多 并见时多用 肾气丸（置信度 1.0，lift 4.85）：该组合可视为 肾气丸 的特征性指征。",
+  "revision_note": "针对异议：obj_9aa9ecf36191[transcription_dependence] → tradition=single；obj_a643b1618deb[single_source] → scope=surveyed_corpus",
   "qualifiers": {
    "tradition": "single",
-   "scope": "surveyed_corpus",
-   "status": "exploratory"
+   "scope": "surveyed_corpus"
   },
   "replication_sources": [
    "cm_jingui_dengzhen",
    "cm_jingui_wuqian",
    "jc_m100",
    "jc_m100a",
-   "jinkui_yaolue"
+   "jinkui_yaolue",
+   "yishuo"
   ],
   "statistics": {
-   "observation": "obs_97e6690a2bec",
-   "method": "P(no later co-occurrence | association persisted at its early rate); conservative max over both terms",
-   "null": "the association persisted after the pivot at its early rate",
+   "observation": "obs_0ef1e8d97122",
+   "method": "one-sided Fisher exact test on indication claims",
+   "null": "the formula is used independently of the finding combination",
    "effect": {
-    "early_rate": 0.3125,
-    "early_rate_ci95_wilson": [
-     0.1416,
-     0.556
-    ],
-    "early_rate_ci95_family_bootstrap": [
-     0.3125,
-     0.3125
-    ]
+    "lift": 4.85,
+    "confidence": 1.0
    },
-   "p_absence": 0.1667,
+   "p_value": 1e-05,
+   "bh_significant": true,
+   "fdr": 0.1,
    "n": {
-    "early_mentions": 16,
-    "late_mentions": 22,
-    "late_passages": 1310
+    "support": 7
    },
    "clusters": 1,
-   "correction": "none (one test per observation; mined candidates are ranked, not selected by p)",
+   "correction": "Benjamini–Hochberg across 6 rule(s), q=0.1",
    "sensitivity": {
-    "leave_one_family_out_p_absence": {
-     "full": 0.0003,
+    "leave_one_family_out_support": {
+     "full": 7,
      "without": {
-      "baoming_ji": 1.0
+      "baoming_ji": 0
      },
-     "min": 1.0,
-     "max": 1.0,
-     "clusters": 1
+     "min": 0,
+     "max": 0,
+     "clusters": 1,
+     "by_family": {
+      "baoming_ji": 7
+     }
     }
-   },
-   "absence": {
-    "level": 2,
-    "statement": "在指定覆盖范围内未见（not found within the stated coverage）",
-    "not_asserted": "历史上的衰落或失传（第 4 层）只能作为待专家判断的假说，不是机器结论"
    }
   },
   "gates": {
@@ -280,11 +271,11 @@
    "G8": "not_applicable"
   },
   "gate_details": {
-   "G0": "5 supporting records; worst=pass",
-   "G1": "5 supporting records; worst=warn",
-   "G2": "5 supporting records; worst=warn",
+   "G0": "6 supporting records; worst=pass",
+   "G1": "6 supporting records; worst=warn",
+   "G2": "6 supporting records; worst=warn",
    "G3": "sense resolution of supporting claims",
-   "G4": "5 supporting records; worst=pass",
+   "G4": "6 supporting records; worst=pass",
    "G5": "1 independent source cluster(s) (need 2): baoming_ji",
    "G6": "verdict=survives; unresolved critical=0 major=0",
    "G8": "historical-text hypothesis: modern validity not asserted"
@@ -294,7 +285,7 @@
     "id": "min_supporting_evidence",
     "status": "pass",
     "judge": "validator:contract",
-    "observed": "5 verified supporting record(s)",
+    "observed": "6 verified supporting record(s)",
     "required": "≥ 2",
     "failure_state": "inconclusive"
    },
@@ -342,7 +333,7 @@
     "id": "alternatives_addressed",
     "status": "pass",
     "judge": "validator:contract",
-    "observed": "all addressed; open: transcription_omission, survival_bias",
+    "observed": "all addressed; open: single_case",
     "required": "every rival explanation of the discovery type excluded or stated as open",
     "failure_state": "inconclusive"
    },
@@ -365,94 +356,112 @@
   ],
   "evidence": [
    {
-    "id": "evd_14619ba6f548",
-    "passage_id": "jinkui_yaolue.003.00499",
+    "id": "evd_95ded364b930",
+    "passage_id": "cm_jingui_dengzhen.00712",
+    "book_id": "cm_jingui_dengzhen",
+    "title": "新编金匮方论（邓珍本）",
+    "dynasty": "东汉",
+    "year": 209.5,
+    "quote": "男子消渴，小便反多，以飲一斗，小便一斗，腎氣丸主之",
+    "span": [
+     0,
+     25
+    ],
+    "chapter": "卷中",
+    "section": "消渴小便利淋病脉證并治第十三",
+    "stance": "supports",
+    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
+    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
+   },
+   {
+    "id": "evd_f43217cd0ad2",
+    "passage_id": "jinkui_yaolue.002.00313",
     "book_id": "jinkui_yaolue",
     "title": "新编金匮要略方论",
     "dynasty": "东汉",
     "year": 209.5,
-    "quote": "問曰婦人病飲食如故煩熱不得卧而反倚息者何也師曰此名轉胞不得溺也以胞絲了戾故致此病但利小便則愈冝腎氣丸主之",
+    "quote": "男子消渇小便反多以飲一斗小便一斗腎氣丸主之",
     "span": [
      0,
-     52
+     21
     ],
-    "chapter": "升",
-    "section": "礬石丸方",
+    "chapter": "○消渴小便利淋病脉證并治第十三",
+    "section": null,
     "stance": "supports",
     "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
     "license": "CC BY-SA 4.0"
    },
    {
-    "id": "evd_6ca081f5d306",
-    "passage_id": "cm_jingui_dengzhen.01094",
-    "book_id": "cm_jingui_dengzhen",
-    "title": "新编金匮方论（邓珍本）",
-    "dynasty": "东汉",
-    "year": 209.5,
-    "quote": "問曰：婦人病飲食如故，煩熱不得臥，而反倚息者，何也？師曰：此名轉胞，不得溺也。以胞系了戾，故致此病。但利小便則愈，宜腎氣丸主之",
-    "span": [
-     0,
-     63
-    ],
-    "chapter": "卷下",
-    "section": "婦人雜病脉證并治第二十二",
-    "stance": "supports",
-    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
-    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
-   },
-   {
-    "id": "evd_6ac00636115e",
-    "passage_id": "cm_jingui_wuqian.00930",
+    "id": "evd_f8583df3d2ec",
+    "passage_id": "cm_jingui_wuqian.00495",
     "book_id": "cm_jingui_wuqian",
     "title": "金匮要略方（吴迁本）",
     "dynasty": "东汉",
     "year": 209.5,
-    "quote": "婦人腹中痛，小建中湯主之。（方見勞中。）問曰：婦人病，食飲如故，煩熱不得臥，而反倚息者，何也？師曰：此病轉胞，不得尿也，以胞繫了戾，故致此病。但利小便則愈，宜腎氣丸",
+    "quote": "男子消渴，小便反多，以飲一斗，腎氣丸主之",
     "span": [
      0,
-     82
+     20
     ],
-    "chapter": "卷下",
-    "section": "婦人襍病脉證並治第二十三",
+    "chapter": "卷中",
+    "section": "消渴小便利淋病脉證並治第十三",
     "stance": "supports",
     "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
     "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
    },
    {
-    "id": "evd_92cd809e0227",
-    "passage_id": "jc_m100.01340",
+    "id": "evd_2effa762457a",
+    "passage_id": "jc_m100.01111",
     "book_id": "jc_m100",
     "title": "脉经",
     "dynasty": "西晋",
     "year": 277.5,
-    "quote": "問曰：有一婦人病，飲食如故，煩熱不得臥，而反倚息者，何也？師曰：得病轉胞，不得溺也。何以故？師曰：此人故肌盛，頭舉身滿，今反羸瘦，頭舉中空感（一作減），胞系了戾，故致此病，但利小便則愈，宜服腎氣丸",
+    "quote": "男子消渴，小便反多，以飲一斗，小便一斗，腎氣丸主之",
     "span": [
      0,
-     98
+     25
     ],
-    "chapter": "卷九",
-    "section": "平陰中寒轉胞陰吹陰生瘡脫下證第七",
+    "chapter": "卷八",
+    "section": "平消渴小便利淋脈證第七",
     "stance": "supports",
     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
    },
    {
-    "id": "evd_73eca855da57",
-    "passage_id": "jc_m100a.00256",
+    "id": "evd_1249854fc192",
+    "passage_id": "jc_m100a.00211",
     "book_id": "jc_m100a",
     "title": "脉经",
     "dynasty": "晋",
     "year": 277.5,
-    "quote": "婦人陰寒，溫中坐藥，蛇床子散主之。婦人著坐藥，強下其經，目眶為痛，足跟難以踐地，心中狀如懸。問曰有一婦人病飲食如故，煩熱不得臥，而反倚息者何也，師曰得病轉胞不得溺也，何以故，師曰此人故肌盛，頭舉身滿，今反羸瘦，頭舉中空（一作減），胞系了戾，故致此病，但利小便則愈，宜服腎氣丸",
+    "quote": "師曰厥陰之為病消渴，氣上衝心，心中疼熱，飢而不欲食，食即吐，下之不肯止。寸口脈浮而遲，浮則為虛，遲則為勞，虛則衛氣不足，遲則榮氣竭，趺陽脈浮而數，浮則為氣，數則消穀而緊（要略，緊作大堅），氣盛則溲數，溲數則緊（要略作堅），緊數相搏，則為消渴。男子消渴，小便反多，以飲一斗小便一斗，腎氣丸主之",
     "span": [
      0,
-     137
+     145
     ],
-    "chapter": "脈經卷之九",
-    "section": "平陰中寒轉胞陰吹陰生瘡脫下證第七",
+    "chapter": "脈經卷之八",
+    "section": "平消渴小便利淋脈證第七",
     "stance": "supports",
     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_3b07ece74618",
+    "passage_id": "yishuo.005.00521",
+    "book_id": "yishuo",
+    "title": "医说",
+    "dynasty": "南宋",
+    "year": 1206.5,
+    "quote": "火力者則是腰腎强盛也常須暖補腎氣飲食得火力則潤上而易消亦免乾渇也故張仲景云宜服腎氣八味丸此病與脚氣雖同為腎虛所致其脚氣始發於二三月盛於五六月衰於七八月凢消渇始發於七八月盛於十一月十二月衰於二三月其故何也夫脚氣壅疾也消渇宣疾也春夏陽氣上故壅疾發則宣疾愈秋冬陽氣下故宣疾發則壅疾愈也審此二者疾可理也猶如善為政者寛以濟猛猛以濟寛随事制度耳仲景云足太陽者膀胱之經也膀胱者腎之腑小便數此為氣盛氣盛則消榖大便硬衰則為消渇也男子消渇飲一斗小便亦得一斗宜八味腎氣丸",
+    "span": [
+     0,
+     224
+    ],
+    "chapter": "消渇",
+    "section": null,
+    "stance": "supports",
+    "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "license": "CC BY-SA 4.0"
    }
   ],
   "objections": [
@@ -462,7 +471,7 @@
     "severity": "major",
     "status": "raised",
     "closure": "",
-    "detail": "5 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+    "detail": "6 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
    },
    {
     "hypothesis": "parent",
@@ -473,20 +482,12 @@
     "detail": "仅有 1 个独立来源（要求 ≥ 2）"
    },
    {
-    "hypothesis": "parent",
-    "check": "statistical",
-    "severity": "major",
-    "status": "raised",
-    "closure": "",
-    "detail": "按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著"
-   },
-   {
     "hypothesis": "revision",
     "check": "transcription_dependence",
     "severity": "major",
     "status": "closed",
     "closure": "scope_restriction",
-    "detail": "5 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+    "detail": "6 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
    },
    {
     "hypothesis": "revision",
@@ -498,19 +499,11 @@
    },
    {
     "hypothesis": "revision",
-    "check": "statistical",
-    "severity": "major",
-    "status": "closed",
-    "closure": "scope_restriction",
-    "detail": "按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著"
-   },
-   {
-    "hypothesis": "revision",
     "check": "transcription_dependence",
     "severity": "major",
     "status": "closed",
     "closure": "scope_restriction",
-    "detail": "5 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
+    "detail": "6 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
    },
    {
     "hypothesis": "revision",
@@ -519,105 +512,163 @@
     "status": "closed",
     "closure": "scope_restriction",
     "detail": "仅有 1 个独立来源（要求 ≥ 2）"
-   },
-   {
-    "hypothesis": "revision",
-    "check": "statistical",
-    "severity": "major",
-    "status": "closed",
-    "closure": "scope_restriction",
-    "detail": "按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著"
    }
   ]
  },
  "rejected": {
   "label": "R1",
-  "id": "hyp_ccbe3e9607db",
+  "id": "hyp_cd02eca5e08b",
   "kind": "lost_knowledge",
-  "statement": "「理中丸」与「发热」的关联见于 960 年以前的《伤寒论（宋本·台北故宫）》、《伤寒论（宋本·安政本）》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。",
+  "statement": "「热」与「上气」的关联见于 960 年以前的《脉经》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。",
   "supporting": [
    {
-    "id": "evd_0c370fcc05c6",
-    "passage_id": "cm_shanghan_zhao_kaimei.01333",
-    "book_id": "cm_shanghan_zhao_kaimei",
-    "title": "伤寒论（宋本·安政本）",
-    "dynasty": "东汉",
-    "year": 209.5,
-    "quote": "霍亂，頭痛，發𤍠，身疼，𤍠多飲水者，五苓散主之。寒多不用水者，理中丸主之",
+    "id": "evd_42cc1137ccc9",
+    "passage_id": "jc_m100a.00136",
+    "book_id": "jc_m100a",
+    "title": "脉经",
+    "dynasty": "晋",
+    "year": 277.5,
+    "quote": "足少陰之脈，起於小指之下，斜趣足心出然骨之下，循內踝之後，別入跟中，以上腨內，出膕中內廉，上股內後廉，貫脊，屬腎，絡膀胱，其直者從腎上貫肝膈，入肺中，循喉嚨俠舌本，其支者，從肺出絡心，注胸中，是動，則病飢而不欲食，面黑如炭色（一作地色），欬唾，則有血，喉鳴而喘，坐而欲起，目〓〓無所見，心懸若飢狀，氣不足，則善恐，心惕惕若人將捕之，是為腎厥（一作痿），是主腎所生病者，口熱舌乾，咽腫上氣，嗌乾及痛煩心心痛，黃疸腸澼、脊股內後廉痛痿厥，嗜臥，足下熱而痛，灸則強食而生害（一作肉），緩帶被髮，大杖重履而步，盛者，則寸口大再倍於人迎，虛者，則寸口反小於人迎也",
     "span": [
-     0,
-     36
+     399,
+     675
     ],
-    "chapter": "卷第七",
-    "section": "辨霍亂病脉證并治",
+    "chapter": "脈經卷之六",
+    "section": "腎足少陰經病證第九",
     "stance": "supports",
-    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
-    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
-   },
-   {
-    "id": "evd_04ebbee17452",
-    "passage_id": "cm_shanghan_npm.01676",
-    "book_id": "cm_shanghan_npm",
-    "title": "伤寒论（宋本·台北故宫）",
-    "dynasty": "东汉",
-    "year": 209.5,
-    "quote": "霍亂，頭痛，發𤍠，身疼，𤍠多飲水者，五苓散主之。寒多不用水者，理中丸主之",
-    "span": [
-     0,
-     36
-    ],
-    "chapter": "卷第七",
-    "section": "辨霍亂病脉證并治第十三",
-    "stance": "supports",
-    "source": "數位中醫校書郎 CMETA（中醫善本典籍協作校訂平台）",
-    "license": "CC BY 4.0（本站校訂與編輯成果，須標示「數位中醫校書郎 CMETA」）；底本文字屬公有領域；影像依各典藏機構（故宮 Open Data、柏林國家圖書館 PDM 1.0、Wikimedia Commons 公有領域）"
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
    }
   ],
   "counter": [
    {
-    "id": "evd_4b5ab61cecae",
-    "passage_id": "jc_e009.00395",
-    "book_id": "jc_e009",
-    "title": "增订叶评伤暑全书",
-    "dynasty": "清",
-    "year": 1675.0,
-    "quote": "萬密齋治縣丞李天泉，六月中暑腹痛，渠有婢外家，醫謂病寒，進理中湯一劑痛止，乃發熱，一身骨節盡痛，又進十神湯，發汗熱退身不痛矣。",
+    "id": "evd_db3bbbe65e13",
+    "passage_id": "jc_o097.03854",
+    "book_id": "jc_o097",
+    "title": "万病回春",
+    "dynasty": "明",
+    "year": 1615.0,
+    "quote": "風寒暑濕、氣血痰熱邪氣有干於心肺，病在上脘，隨症解之，邪氣散則天籟鳴矣",
     "span": [
-     0,
-     63
+     22,
+     57
     ],
-    "chapter": "古今名醫暑證匯論",
-    "section": "《名醫類案》《增補名醫類案》",
+    "chapter": "卷之五",
+    "section": "咽喉",
     "stance": "contradicts",
     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
    },
    {
-    "id": "evd_df38acbd0f52",
-    "passage_id": "jc_d041.00588",
-    "book_id": "jc_d041",
-    "title": "时方妙用",
-    "dynasty": "清",
-    "year": 1803.0,
-    "quote": "人觸之則生暑病。即為中熱。無非動以得之。他若畏熱求涼。涼襲於外。則為發熱惡寒頭痛項強等症。宜九味羌活湯以散之。涼中於中。則為吐瀉腸痛。宜理中湯",
+    "id": "evd_f4ffd2e02058",
+    "passage_id": "bencao_gangmu_skqs.039.01732",
+    "book_id": "bencao_gangmu_skqs",
+    "title": "本草纲目",
+    "dynasty": "明",
+    "year": 1565.0,
+    "quote": "茅根切葛根切各半斤水三升煎一升半毎温飲一〓噦止即停同上）反胃上氣（食入即吐茅根芦根二兩水四升煮二升頓服得下良聖濟總録）肺熱氣喘（生茅根一握咬咀水二盞煎一盞食後温服甚者三服止名如神湯聖恵方）虚後水腫（因飲水多小便不利用白茅根一大把小豆三升水三升煮乾去茅食豆水隨小便下也",
     "span": [
-     0,
-     71
+     132,
+     265
     ],
-    "chapter": "卷三",
-    "section": "暑症",
+    "chapter": null,
+    "section": null,
+    "stance": "contradicts",
+    "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "license": "CC BY-SA 4.0"
+   },
+   {
+    "id": "evd_1d9e33843341",
+    "passage_id": "bencao_jingshu.004.01101",
+    "book_id": "bencao_jingshu",
+    "title": "神农本草经疏",
+    "dynasty": "明",
+    "year": 1625.0,
+    "quote": "邪火上衝則心下有逆氣及驚喘陽明之邪熱甚則口乾舌焦不能息邪熱結於腹中則腹中堅痛邪熱不散則神昏譫語同乎",
+    "span": [
+     83,
+     132
+    ],
+    "chapter": "簡誤",
+    "section": null,
+    "stance": "contradicts",
+    "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "license": "CC BY-SA 4.0"
+   },
+   {
+    "id": "evd_337ffeb232d0",
+    "passage_id": "bencao_jingshu.008.01511",
+    "book_id": "bencao_jingshu",
+    "title": "神农本草经疏",
+    "dynasty": "明",
+    "year": 1625.0,
+    "quote": "主中風傷寒頭痛温瘧發表出汗去邪熱氣止欬逆上氣除寒熱破癥堅積聚五臟邪氣緩急風脇痛字乳餘疾止好唾通腠理疎傷寒頭疼解肌洩邪惡氣消赤黑斑毒不可多服令人虛",
+    "span": [
+     9,
+     81
+    ],
+    "chapter": "簡誤",
+    "section": null,
+    "stance": "contradicts",
+    "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "license": "CC BY-SA 4.0"
+   },
+   {
+    "id": "evd_0aa46378b899",
+    "passage_id": "jc_k009.00006",
+    "book_id": "jc_k009",
+    "title": "针经节要",
+    "dynasty": "元",
+    "year": 1315.0,
+    "quote": "無所見心懸若飢狀氣不足則善恐心惕惕若人將捕之是謂骨厥主腎所生病口熱舌乾咽腫上氣嗌干及痛煩心心痛黃膽腸癖脊股內後廉痛痿厥嗜臥足下熱而痛",
+    "span": [
+     32,
+     98
+    ],
+    "chapter": "十二經是動所生之病",
+    "section": "足少陰腎之經",
     "stance": "contradicts",
     "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
     "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_f53bfeb5143f",
+    "passage_id": "jc_h018.00776",
+    "book_id": "jc_h018",
+    "title": "幼科类萃",
+    "dynasty": "明",
+    "year": 1534.0,
+    "quote": "治陽明病外證身熱汗出而不惡寒但惡熱宜服之陽明病脈逆發熱頭眩小便難此欲發疸必宜服之陽明病脅下硬滿大便秘而嘔口燥者此湯主之陽明病中風其脈浮大短氣心痛鼻干嗜臥不得汗一身盡黃小便難有潮熱而噦此湯主之傷寒三日少陽受病口乾燥目眩宜服之少陽病脅下堅滿乾嘔不食往來寒熱若未吐下其脈沉緊此湯主之少陽病若已吐下發汗　語者此湯主之少陽中風兩耳無所聞目赤胸中滿而煩不可吐下吐下則悸而驚此湯主之少陰病惡寒時時自煩不欲濃衣此湯主之少陰病下利清水色青者心下必痛口乾燥者此湯主之傷寒六日陽脈澀陰脈弦常腹中急痛此湯主之傷寒六日下之胸滿煩驚小便不利　語一身不可轉側此湯主之傷寒發熱汗出不解心不痞硬嘔吐不利此湯主之傷寒十余日熱結在裡往來寒熱及陽明病汗出　語腹中滿痛並陽明少陰合病下利脈滑而數此湯主之傷寒六七日目中不了了睛不和無表裡證大便難身微熱此湯主之傷寒七八日脈浮數病患煩熱汗出解後又如瘧狀日晡發潮熱脈滑者宜服之小青龍湯　治停寒溫疫表未解惡寒體熱水傷心下乾嘔發熱嗽喘急及生肺脹胸滿鼻塞清涕咳逆上氣喘鳴迫塞仲景曰治表不解心下有水氣乾嘔發熱而嗽或渴或和或小便不利或噎或滿喘者主之麻黃（三分去節）　赤芍藥（三分）　半夏（三分）　細辛　乾薑　甘草（炙）　桂枝（去粗皮各三分）　五味子（五錢）",
+    "span": [
+     0,
+     523
+    ],
+    "chapter": "卷之十五‧傷寒門",
+    "section": "傷寒諸方",
+    "stance": "contradicts",
+    "source": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
+    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）"
+   },
+   {
+    "id": "evd_7d95c5b0c492",
+    "passage_id": "shanghan_jianzheng.001.00145",
+    "book_id": "shanghan_jianzheng",
+    "title": "伤寒兼证析义",
+    "dynasty": "清",
+    "year": 1667.0,
+    "quote": "是動則病飢不欲食（隂火上乗雖飢不欲食也）面如漆柴（腎水枯也）欬唾則有血（真隂損而延及其母也）喝喝而喘（腎水不能上通於肺也）口乾咯血坐而欲起（隂虚陽擾而不能靜也）目昏>昏>如無所見（目之明在瞳子瞳子者骨之精腎氣内奪故目昏>昏>如無所見也）心如懸若飢狀（心腎不交則精神離散故心如懸隂虚則内餒故常若飢狀）氣不足則善恐心惕惕如人將捕之（腎在志為恐腎氣怯故惕惕如人將捕之）是主腎所生病者耳鳴遺泄口熱舌乾咽腫上氣嗌乾及痛（厥氣走而不能言手足青大便自利口熱如膠）煩心心痛（痛引腰脊欲得嘔）黄癉（水虚土實故為癉其額上必黑）腸澼（腎開竅于二隂故為腸澼寒則利清榖熱則便膿血）脊股内後亷痛痿厥嗜臥泄利下重足下熱而痛小腹急痛腰下冷痛自言腹脹滿而實不滿脛腫煩寃（煩為煩擾寃為寃熱）骨痿不能起䏚中青（䏚音抄季脇下也",
+    "span": [
+     137,
+     480
+    ],
+    "chapter": "經脈",
+    "section": null,
+    "stance": "contradicts",
+    "source": "漢籍リポジトリ Kanseki Repository（Christian Wittern 等）",
+    "license": "CC BY-SA 4.0"
    }
   ],
   "objections": [
-   {
-    "check": "transcription_dependence",
-    "severity": "major",
-    "status": "raised",
-    "detail": "2 部书的证据只构成 1 个独立来源（同一作者或转录关系）"
-   },
    {
     "check": "single_source",
     "severity": "major",
@@ -631,16 +682,22 @@
     "detail": "缺失的显著性依赖单一来源家族：逐一剔除早期来源家族后 p 最高为 1.0（1 个家族）"
    },
    {
+    "check": "partial_persistence",
+    "severity": "major",
+    "status": "raised",
+    "detail": "后世文献仍以相近表述将「热」与「气血、益气、脾气」相联（jc_o097.03854），与「上气」同属一类，关联可能是转化而非失传"
+   },
+   {
     "check": "earliest_source",
     "severity": "major",
     "status": "raised",
-    "detail": "960 年后仍有 1 处文本同时提及二者（如 jc_e009.00395），失传结论需限定为“不再形成明确记载”"
+    "detail": "960 年后仍有 21 处文本同时提及二者（如 bencao_gangmu_skqs.039.01732），失传结论需限定为“不再形成明确记载”"
    },
    {
     "check": "restated_after",
     "severity": "critical",
     "status": "raised",
-    "detail": "960 年后仍有 1 部书（1 个来源家族）明确陈述二者的关联（如 jc_d041.00588「人觸之則生暑病。即為中熱。無非動以得之。他若畏熱求涼。涼襲於外。則為發熱惡寒頭痛」），“后世不再出现”不成立；若这些后世来源只是转录早期文本，可改为“仅见于转录”另行论证"
+    "detail": "960 年后仍有 3 部书（3 个来源家族）明确陈述二者的关联（如 jc_k009.00006「無所見心懸若飢狀氣不足則善恐心惕惕若人將捕之是謂骨厥主腎所生病口熱舌乾咽腫上氣嗌」），“后世不再出现”不成立"
    }
   ],
   "criteria": [

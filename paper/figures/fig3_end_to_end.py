@@ -7,6 +7,7 @@ no model called); `e2e_case.py` writes its source data from the event log and st
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -18,6 +19,7 @@ from nature_style import C, Canvas, text_width_mm, tint, wrap_mm
 HERE = Path(__file__).resolve().parent
 SD = HERE / "source_data"
 PT = 0.3528  # mm per point
+NUM = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
 GATES = ["G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8"]
 CRITERIA = [("min_supporting_evidence", "≥ 2 verified records"), ("semantic_support", "Quote states claim"),
             ("source_dependence", "≥ 2 source families"), ("falsification_review", "Skeptic review"),
@@ -34,13 +36,13 @@ AGENTS = [("director", "Director"), ("curator", "Curator"), ("philologist", "Phi
           ("evolution", "Evolution"), ("hypothesis", "Hypothesis"), ("skeptic", "Skeptic"),
           ("meta_reviewer", "Meta-reviewer"), ("validator", "Validators")]
 # the hypotheses in words (track; what is claimed); the statements themselves are in fig3_e2e_hypotheses.csv
-SHORT = {"H1": ("D4", "烦躁 → 六味地黄丸 (indication rule)"), "H2": ("D1", "肾气丸 with 心烦, not after 960"),
-         "H3": ("D1", "《下經》, a book cited but not held"), "H4": ("D2", "中风, Song–Yuan → Ming"),
-         "H5": ("D2", "中风, Ming → Qing"), "H6": ("D1", "肾气丸 with 腹痛, not after 960"),
-         "H7": ("D4", "壮热 → 六味地黄丸 (indication rule)"), "H8": ("D1", "《集验方》, a lost book cited once"),
-         "H9": ("D2", "伤寒, Han → Song–Yuan"), "H10": ("D5", "痰: 校注妇人良方 against 内科摘要"),
-         "H11": ("D5", "痰: the same two works, other passages"), "H12": ("D4", "呕吐 → 六味地黄丸 (graph link)"),
-         "H13": ("D4", "痰饮 → 六味地黄丸 (graph link)"), "R1": ("D1", "理中丸 with 发热, not after 960")}
+SHORT = {"H1": ("D4", "淋、烦躁 → 六味地黄丸 (indication rule)"), "H2": ("D2", "中风, Ming → Qing"),
+         "H3": ("D2", "中风, Song–Yuan → Ming"), "H4": ("D2", "伤寒, Han → Sui–Tang"),
+         "H5": ("D4", "多饮、小便多 → 肾气丸 (indication rule)"), "H6": ("D1", "《下經》, a book cited but not held"),
+         "H7": ("D1", "《集验方》, a lost book cited twice"), "H8": ("D1", "肾气丸 with 腹痛, not after 960"),
+         "H9": ("D5", "痰: 外科精要 against 内科摘要"), "H10": ("D5", "痰: 校注妇人良方 against 内科摘要"),
+         "H11": ("D5", "痰: 重订济阴纲目 against 内科摘要"), "H12": ("D4", "淋 → 肾气丸 (graph link)"),
+         "H13": ("D4", "疮 → 肾气丸 (graph link)"), "R1": ("D1", "热 with 上气, not after 960")}
 # the Skeptic's checks, named by what they found in this run (fig3_e2e_objections.csv, column detail)
 CHECKS = [("single_source", "Single source"), ("transcription_dependence", "Transcription dependence"),
           ("statistical", "Not significant"), ("homonym", "Homonym"), ("sample_size", "Sample size"),
@@ -180,7 +182,15 @@ def main() -> dict:
         pos1[hid] = cur[v1[hid]]
         cur[v1[hid]] += u
     cands = [h for h in order0 if v1[h] != "reject"]
-    seg3 = {"needs_expert": top, "inconclusive": top + u + gap}
+    n_exp = sum(1 for h in cands if final[h] == "needs_expert")
+    seg3 = {"needs_expert": top, "inconclusive": top + n_exp * u + gap}
+    label_of = dict(zip(hyps["id"], hyps["label"]))
+
+    def labels(ids: list[str]) -> str:
+        nums = sorted(int(label_of[children.get(h, h)][1:]) for h in ids)
+        if len(nums) > 2 and nums == list(range(nums[0], nums[-1] + 1)):
+            return f"H{nums[0]}–H{nums[-1]}"
+        return ", ".join(f"H{k}" for k in nums)
     pos3, cur = {}, dict(seg3)
     for hid in cands:
         pos3[hid] = cur[final[hid]]
@@ -215,10 +225,13 @@ def main() -> dict:
             va="center", fontsize=5)
     ax.text(col_x[1] + hw + 0.8, seg1["revise"] + len(revised) * u / 2, f"{len(revised)} narrowed", ha="left",
             va="center", fontsize=5)
-    ax.text(col_x[1] + hw + 0.8, seg1["reject"] + len(rejected) * u / 2, "1 rejected (R1)", ha="left",
-            va="center", fontsize=5, color=C["vermillion"])
+    rej_labels = ", ".join(label_of[h] for h in rejected.hypothesis)
+    ax.text(col_x[1] + hw + 0.8, seg1["reject"] + len(rejected) * u / 2, f"{len(rejected)} rejected ({rej_labels})",
+            ha="left", va="center", fontsize=5, color=C["vermillion"])
     n_inc = sum(1 for h in cands if final[h] == "inconclusive")
-    ax.text(col_x[3] + hw + 0.8, seg3["needs_expert"] + u / 2, "1 needs\nexpert (H1)", ha="left", va="top",
+    expert = [h for h in cands if final[h] == "needs_expert"]
+    ax.text(col_x[3] + hw + 0.8, seg3["needs_expert"] + n_exp * u / 2,
+            f"{n_exp} need{'s' if n_exp == 1 else ''}\nexpert ({labels(expert)})", ha="left", va="center",
             fontsize=5, color=C["blue"], linespacing=1.1)
     ax.text(col_x[3] + hw + 0.8, seg3["inconclusive"] + n_inc * u / 2, f"{n_inc}\ninconclusive", ha="left",
             va="center", fontsize=5, linespacing=1.1)
@@ -323,19 +336,25 @@ def main() -> dict:
         col = VERDICT[key][1]
         rbox(axc, 0.25, 0.25, cw_ - 0.5, ch_ - 0.5, ec=col, lw=0.6)
         d = detail[key]
-        head = {"needs_expert": "H1 · meets every machine criterion; waits for an expert",
-                "inconclusive": "H2 · five witnesses, one source family",
-                "rejected": "R1 · falsified by a later book"}[key]
+        crit = d.get("criteria", [])
+        met = sum(c["status"] == "pass" for c in crit)
+        head = {"needs_expert": f"{d['label']} · meets every machine criterion; waits for an expert",
+                "inconclusive": f"{d['label']} · six books, one source family",
+                "rejected": f"{d['label']} · falsified by later books"}[key]
         axc.text(1.6, 1.5, head, ha="left", va="top", fontsize=6, fontweight="bold", color=col)
         w = cw_ - 3.4
         if key == "needs_expert":
             s = d["statistics"]
-            yy = para(axc, 1.6, 4.6, "In indication claims, 烦躁 (restlessness) goes with 六味地黄丸: confidence 1.0, "
-                      f"lift {s['effect']['lift']:.1f}; one-sided Fisher exact P = {s['p_value']:.3f}, retained after "
-                      f"Benjamini–Hochberg correction across 6 rules (q = {s['fdr']}).", w, 5.5)
+            yy = para(axc, 1.6, 4.6, "In indication claims, 淋 (strangury) with 烦躁 (restlessness) goes with "
+                      f"六味地黄丸: confidence {s['effect']['confidence']:.1f}, lift {s['effect']['lift']:.1f}; "
+                      f"one-sided Fisher exact P = {s['p_value']:.3f}, retained after Benjamini–Hochberg correction "
+                      f"across 6 rules (q = {s['fdr']}).", w, 5.5)
             for e in d["evidence"]:
                 q = e["quote"]
-                q = "…" + q[q.index("其證"):] if "其證" in q else q[q.index("煩躁"):] if "煩躁" in q else q
+                if "病則" in q:
+                    q = "…" + q[q.index("病則"):q.index("之狀") + 2] + "……" + q[q.index("六味"):]
+                elif "其證" in q:
+                    q = "…" + q[q.index("其證"):]
                 when = "Qing" if e["year"] == 1777.5 else f"Qing, {int(e['year'])}"
                 yy = para(axc, 1.6, yy + 0.8, f"{e['title']} ({when}) · {e['passage_id']}", w, 5.5,
                           weight="bold")
@@ -343,40 +362,46 @@ def main() -> dict:
             yy = para(axc, 1.6, yy + 0.9, "Two independent source families (G5 pass). Rival explanations: the same "
                       "formula under another name, a single case and one passage copied are excluded; another "
                       "formula under the same name stays open.", w, 5.5)
-            para(axc, 1.6, yy + 0.8, "8 of 9 contract criteria met; only an expert may set G7.", w, 5.5,
-                 weight="bold", color=col)
+            para(axc, 1.6, yy + 0.8, f"{met} of {len(crit)} contract criteria met; only an expert may set G7.", w,
+                 5.5, weight="bold", color=col)
         elif key == "inconclusive":
             s = d["statistics"]
-            yy = para(axc, 1.6, 4.6, "肾气丸 with 心烦 (vexation) is written before 960 and not after; had the "
-                      f"early rate persisted, finding no later instance would have P = {s['p_absence']:.2f}.", w, 5.5)
-            e = next(v for v in d["evidence"] if v["passage_id"].startswith("cm_jingui_dengzhen"))
-            q = e["quote"]
-            yy = para(axc, 1.6, yy + 0.8, "The clause on 转胞 (retention of urine in women)", w, 5.5, weight="bold")
-            yy = para(axc, 1.6, yy + 0.2, f"「{q[q.index('煩熱'):q.index('倚息') + 2]}……{q[q.index('但利'):]}」", w, 6)
-            wits = ["新编金匮方论, Deng Zhen print (CMETA)", "金匮要略方, Wu Qian manuscript (CMETA)",
-                    "新编金匮要略方论 (Kanseki Repository)", "脉经, two witnesses (JiCheng)"]
-            yy = para(axc, 1.6, yy + 0.6, "Witnesses: " + "; ".join(wits) + ". The 脉经 copies the 金匮 clause.",
+            mant, exp = f"{s['p_value']:.0e}".split("e")
+            yy = para(axc, 1.6, 4.6, "In indication claims, 多饮 (much drinking) with 小便多 (copious urine) goes "
+                      f"with 肾气丸: confidence {s['effect']['confidence']:.1f}, lift {s['effect']['lift']:.2f}; "
+                      f"Fisher P = {int(mant)} × 10$^{{{int(exp)}}}$.",
                       w, 5.5)
-            yy = para(axc, 1.6, yy + 0.8, "Skeptic: transcription dependence, one source, absence not significant. "
-                      "The claim was narrowed (one tradition, surveyed corpus, exploratory) and a validator closed "
-                      "the three objections.", w, 5.5)
+            e = next(v for v in d["evidence"] if v["passage_id"].startswith("cm_jingui_dengzhen"))
+            yy = para(axc, 1.6, yy + 0.8, "The 消渴 clause of the Jingui yaolüe (chapter 13)", w, 5.5, weight="bold")
+            yy = para(axc, 1.6, yy + 0.2, f"「{e['quote']}」", w, 6)
+            yy = para(axc, 1.6, yy + 0.6, "Witnesses: the Deng Zhen print and the Wu Qian manuscript, which lacks "
+                      "小便一斗 (CMETA); 新编金匮要略方论 (Kanseki Repository); 脉经, two witnesses (JiCheng), which "
+                      "copies the clause; 医说 (1206), which cites Zhang Zhongjing for it.", w, 5.5)
+            yy = para(axc, 1.6, yy + 0.8, "Skeptic: transcription dependence and a single source. The claim was "
+                      "narrowed (one tradition, surveyed corpus) and a validator closed the objections; without its "
+                      "one family no support is left.", w, 5.5)
             para(axc, 1.6, yy + 0.8, "G5 warns: one independent family, two required.", w, 5.5, weight="bold",
                  color=col)
         else:
-            yy = para(axc, 1.6, 4.6, "理中丸 with 发热 (fever) is written before 960 and not after.", w, 5.5)
-            yy = para(axc, 1.6, yy + 0.8, "伤寒论, two Song-print witnesses (CMETA)", w, 5.5, weight="bold")
-            yy = para(axc, 1.6, yy + 0.2, "a cholera clause listing fever, headache and body pain, ending", w, 5.5)
             q = d["supporting"][0]["quote"]
-            yy = para(axc, 1.6, yy + 0.2, f"「…{q[q.index('寒多'):]}」", w, 6)
-            e = next(v for v in d["counter"] if v["passage_id"] == "jc_d041.00588")
+            yy = para(axc, 1.6, 4.6, "热 (heat) with 上气 (counterflow qi) is written before 960 and not after.", w,
+                      5.5)
+            yy = para(axc, 1.6, yy + 0.8, "脉经, the illnesses of the foot shaoyin channel (JiCheng)", w, 5.5,
+                      weight="bold")
+            yy = para(axc, 1.6, yy + 0.2, f"「…{q[q.index('是主腎'):q.index('及痛') + 2]}…」", w, 6)
+            e = next(v for v in d["counter"] if v["passage_id"] == "jc_k009.00006")
             q = e["quote"]
-            yy = para(axc, 1.6, yy + 0.8, f"Counter-evidence: {e['title']} (Qing, {int(e['year'])}) · "
+            yy = para(axc, 1.6, yy + 0.8, f"Counter-evidence: {e['title']} (Yuan, {int(e['year'])}) · "
                       f"{e['passage_id']}", w, 5.5, weight="bold")
-            yy = para(axc, 1.6, yy + 0.2, f"「…{q[q.index('則為發熱'):]}」", w, 6)
-            yy = para(axc, 1.6, yy + 0.8, "Critical objection: the link is restated after 960, so G6 fails and "
-                      "the hypothesis is rejected.", w, 5.5, weight="bold", color=col)
-            para(axc, 1.6, yy + 0.6, "Neither passage gives 理中 for fever itself: the rules read co-occurrence "
-                 "as association (Supplementary Fig. 1).", w, 5.5, color=C["dark"])
+            yy = para(axc, 1.6, yy + 0.2, f"「…{q[q.index('主腎所生病'):q.index('及痛') + 2]}…」", w, 6)
+            later = next(o for o in d["objections"] if o["check"] == "restated_after")
+            books = re.search(r"(\d+) 部书（(\d+) 个来源家族）", later["detail"])
+            yy = para(axc, 1.6, yy + 0.8, f"Critical objection: {NUM[int(books.group(1))]} later books, in "
+                      f"{NUM[int(books.group(2))]} source families, state the link, so G6 fails and the hypothesis "
+                      "is rejected.", w, 5.5, weight="bold", color=col)
+            para(axc, 1.6, yy + 0.6, "Both passages list 口熱 (a hot mouth) and 上氣 among the channel's illnesses, "
+                 "and the later one copies the canonical list: the rules read two findings of one list as an "
+                 "association (Supplementary Fig. 1).", w, 5.5, color=C["dark"])
     cv.label(2, 119.8, "e")
     return cv.save("fig3_end_to_end", HERE / "out")
 

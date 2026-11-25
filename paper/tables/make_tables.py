@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections import Counter
 from pathlib import Path
 
 import yaml
@@ -59,6 +60,7 @@ def table1() -> dict:
          "10,001 records (787 linked to 179 works): title, date, print or manuscript, shelfmark, IIIF manifest"],
     ]
     total = ["Total", "", str(len(wit)), "≈123", "2.05 M passages; 761 distinct works; analysis periods 475 BCE–1949"]
+    pack = Counter(b["source"] for b in json.load(open(HOME / "corpus/web/books.json", encoding="utf-8")))
     return {
         "title": "Extended Data Table 1 | Sources of the corpus",
         "header": ["Source", "Licence", "Works admitted", "Characters (millions)", "Transcription and notes"],
@@ -70,11 +72,11 @@ def table1() -> dict:
             "terms forbid redistribution.",
             "§JiCheng releases its selection, arrangement, punctuation and notes on public-domain texts under CC0 1.0 "
             "and its own writing under CC BY 4.0 (https://jicheng.tw/tcm/copyright.html, consulted 29 September 2026); "
-            "the open web corpus carries 250 JiCheng witnesses under these terms, crediting JiCheng. The modern "
+            f"the open web corpus carries {pack['jicheng']} JiCheng witnesses under these terms, crediting JiCheng. The modern "
             "editors' part of the few texts JiCheng transcribed from modern reconstructions of lost books is not "
             "covered.",
             "‖Mostly simplified-character copies of JiCheng texts; de-duplication removes every copy, and the 8 texts "
-            "kept match no JiCheng text. The 4 in the open web corpus are carried on the decision of the releasing "
+            f"kept match no JiCheng text. The {pack['tcm-ancient-books']} in the open web corpus are carried on the decision of the releasing "
             "institute (IMPF-AI); the others are used for local research only.",
             "‡Kyoto University (Fujikawa), Staatsbibliothek zu Berlin (Unschuld), Kyushu University, Keio University "
             "(Fujikawa), University of Tokyo (two libraries), Kenikai, Waseda University, National Diet Library, "

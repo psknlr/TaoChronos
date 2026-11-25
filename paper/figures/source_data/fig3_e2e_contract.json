@@ -52,16 +52,16 @@
   "expert_review_required_for_publication": true
  },
  "goal_digest": "255a516498e9d09349a75f824c3c0ed884ddd7784ab7594867f5e689c564ae45",
- "books_in_scope": 206,
- "passages_in_scope": 1399,
+ "books_in_scope": 273,
+ "passages_in_scope": 1620,
  "passages_by_period": {
-  "先秦两汉": 51,
-  "魏晋南北朝": 15,
-  "隋唐五代": 23,
-  "宋金元": 293,
-  "明": 624,
-  "清": 392,
-  "民国": 1
+  "先秦两汉": 22,
+  "魏晋南北朝": 13,
+  "隋唐五代": 16,
+  "宋金元": 211,
+  "明": 708,
+  "清": 648,
+  "民国": 2
  },
  "profile": "web-canon",
  "llm_calls": 0

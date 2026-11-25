@@ -10,14 +10,14 @@
  "stroke_widths_pt": [
   0.6
  ],
- "n_texts": 53,
+ "n_texts": 55,
  "width_mm": 183.0,
  "height_mm": 58.0,
  "fonts": [
   "Arial-BoldMT",
   "ArialMT"
  ],
- "live_text_chars": 1004,
+ "live_text_chars": 1011,
  "files": [
   "/home/user/TaoChronos/paper/figures/out/extfig3_resources.pdf",
   "/home/user/TaoChronos/paper/figures/out/extfig3_resources.svg",

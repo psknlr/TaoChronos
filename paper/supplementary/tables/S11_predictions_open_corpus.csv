@@ -1,32 +1,32 @@
 Topic,Split,Hypothesis,Kind,Review status,Prediction,Subject,Object,Held (strict),Held (loose),Later books,Note
-disease:消渴,dev,hyp_ec73bbdaf1a2,hidden_association,rejected,link_appears,symptom:咳,formula:五苓散,no,no,1,already written before the cutoff
+disease:消渴,dev,hyp_5608172ffb13,hidden_association,rejected,link_appears,symptom:咳,formula:五苓散,no,no,1,already written before the cutoff
 disease:消渴,dev,hyp_af6d5b43f7af,lost_source,survived,link_appears,work:wupu_bencao,,not judged,not judged,,not judged by this benchmark
-disease:消渴,dev,hyp_651fa1673f25,concept_drift,survived,sense_shift,disease:消渴,消渴#病·多饮多尿,yes,yes,,
-disease:消渴,dev,hyp_7a1ec44e1bfd,association_rule,survived,cooccurrence_after,"symptom:头痛,symptom:无大热",formula:越婢汤,not judged,not judged,,
-disease:消渴,dev,hyp_4ad17f25a523,lost_knowledge,survived,absent_after,formula:五苓散,disease:消渴,no,no,4,
-disease:消渴,dev,hyp_2f86959af8d4,lost_knowledge,survived,absent_after,etiology:寒,disease:消渴,yes,no,0,
+disease:消渴,dev,hyp_a80a336128c2,concept_drift,survived,sense_shift,disease:消渴,消渴#病·多饮多尿,yes,yes,,
+disease:消渴,dev,hyp_4ad17f25a523,lost_knowledge,survived,absent_after,formula:五苓散,disease:消渴,no,no,5,
+disease:消渴,dev,hyp_576a55a1ac17,formula_evolution,survived,herb_retained,herb:半夏,,not judged,not judged,,not judged by this benchmark
 disease:消渴,dev,hyp_dc5e204b197e,lost_source,survived,link_appears,work:jingxin_lu,,not judged,not judged,,not judged by this benchmark
-disease:消渴,dev,hyp_ae44900af968,contradiction,survived,resolution,disease:伤寒,contradiction,not judged,not judged,,not judged by this benchmark
 disease:消渴,dev,hyp_9f1c3f0ed371,formula_evolution,survived,herb_retained,"herb:猪苓,herb:白术,herb:茯苓",,not judged,not judged,,not judged by this benchmark
 disease:消渴,dev,hyp_823d383ae14e,contradiction,survived,resolution,disease:伤寒,contradiction,not judged,not judged,,not judged by this benchmark
+disease:消渴,dev,hyp_7027c95205fd,association_rule,survived,cooccurrence_after,"symptom:不渴,symptom:头痛",formula:越婢汤,no,no,,
+disease:消渴,dev,hyp_4f0e6de21e7e,association_rule,survived,cooccurrence_after,"symptom:头痛,symptom:无大热",formula:越婢汤,not judged,not judged,,
 disease:消渴,dev,hyp_b4c92c32c385,contradiction,survived,resolution,disease:伤寒,contradiction,not judged,not judged,,not judged by this benchmark
-disease:消渴,dev,hyp_72149189a2f4,association_rule,survived,cooccurrence_after,"symptom:不渴,symptom:头痛",formula:越婢汤,no,no,,
+disease:消渴,dev,hyp_27c77e0fa40a,formula_evolution,survived,herb_retained,"formula:苓桂术甘汤,formula:细辛散",,not judged,not judged,,not judged by this benchmark
 disease:消渴,dev,hyp_514347a5ab71,hidden_association,survived,link_appears,symptom:小便不利,formula:麻黄汤,no,no,0,
 disease:消渴,dev,hyp_08b2269de51a,lost_knowledge,survived,absent_after,etiology:服石,disease:消渴,yes,no,0,
-disease:中风,dev,hyp_b556c451a515,lost_knowledge,rejected,absent_after,etiology:风,disease:中风,no,no,8,
-disease:中风,dev,hyp_6391fe879596,lost_source,survived,link_appears,work:yingru_fang,,not judged,not judged,,not judged by this benchmark
+disease:中风,dev,hyp_b556c451a515,lost_knowledge,rejected,absent_after,etiology:风,disease:中风,no,no,12,
+disease:中风,dev,hyp_cd4f103599a3,hidden_association,rejected,link_appears,symptom:不恶寒,formula:桂枝汤,no,no,0,
+disease:中风,dev,hyp_057d771c5611,lost_source,survived,link_appears,work:主治秘要,,not judged,not judged,,not judged by this benchmark
 disease:中风,dev,hyp_3495600970d8,contradiction,survived,resolution,pathogenesis:里寒,contradiction,not judged,not judged,,not judged by this benchmark
 disease:中风,dev,hyp_194ef9aa2f95,contradiction,survived,resolution,disease:中风,conditional,not judged,not judged,,not judged by this benchmark
-disease:中风,dev,hyp_373d31ba6e0d,concept_drift,survived,sense_shift,disease:中风,,not judged,not judged,,
-disease:中风,dev,hyp_aa95d8eaed27,association_rule,survived,cooccurrence_after,"pulse:微,symptom:头痛",formula:鸡屎白散,no,no,,
+disease:中风,dev,hyp_d1a0a9a4aa27,hidden_association,survived,link_appears,symptom:喘,formula:小柴胡汤,no,no,0,
+disease:中风,dev,hyp_6a5c759c767b,association_rule,survived,cooccurrence_after,"symptom:下利,symptom:半身不遂",formula:姜附汤,not judged,not judged,,
 disease:中风,dev,hyp_89303484a9d1,formula_evolution,survived,herb_retained,"herb:大枣,herb:甘草,herb:生姜,herb:芍药",,not judged,not judged,,not judged by this benchmark
 disease:中风,dev,hyp_51f54da65656,lost_source,survived,link_appears,work:玉函,,not judged,not judged,,not judged by this benchmark
+disease:中风,dev,hyp_dca3de12f279,association_rule,survived,cooccurrence_after,"pulse:微,symptom:头痛",formula:鸡屎白散,no,no,,
 disease:中风,dev,hyp_d83e15e95ac8,lost_knowledge,survived,absent_after,formula:五苓散,disease:中风,no,no,6,
 disease:中风,dev,hyp_e0c76e58ffd1,formula_evolution,survived,herb_retained,"herb:杏仁,herb:甘草,herb:石膏,herb:麻黄",,not judged,not judged,,not judged by this benchmark
 disease:中风,dev,hyp_5ed6252ce76e,formula_evolution,survived,herb_retained,"herb:甘草,herb:葛根,herb:黄芩",,not judged,not judged,,not judged by this benchmark
-disease:中风,dev,hyp_1c0f22705407,association_rule,survived,cooccurrence_after,"symptom:下利,symptom:半身不遂",formula:姜附汤,not judged,not judged,,
-disease:中风,dev,hyp_3bffbbea414e,hidden_association,survived,link_appears,symptom:喘,formula:小柴胡汤,no,no,0,
-disease:中风,dev,hyp_4dbf0e894295,hidden_association,survived,link_appears,symptom:短气,formula:小柴胡汤,yes,yes,2,
+disease:中风,dev,hyp_14b5ea5d7a81,concept_drift,survived,sense_shift,disease:中风,,not judged,not judged,,
 disease:胸痹,heldout,hyp_4af9e0e3e79c,lost_source,survived,link_appears,work:gujin_luyan,,not judged,not judged,,not judged by this benchmark
 disease:胸痹,heldout,hyp_5ebe75623097,formula_evolution,survived,herb_retained,"herb:栝楼实,herb:薤白",,not judged,not judged,,not judged by this benchmark
 disease:胸痹,heldout,hyp_a43b2b13831c,formula_evolution,survived,herb_retained,"herb:甘草,herb:白术,herb:茯苓",,not judged,not judged,,not judged by this benchmark
@@ -37,47 +37,47 @@ disease:胸痹,heldout,hyp_d05ebd4bb9c5,contradiction,survived,resolution,diseas
 disease:胸痹,heldout,hyp_664857ebf4f8,contradiction,survived,resolution,disease:胸痹,contradiction,not judged,not judged,,not judged by this benchmark
 disease:胸痹,heldout,hyp_ae095c1a8d06,association_rule,survived,cooccurrence_after,"pulse:微,symptom:拘急",formula:附子汤,no,no,,
 disease:胸痹,heldout,hyp_a5b35de6aeeb,hidden_association,survived,link_appears,symptom:咳,formula:薤白汤,no,no,0,
-disease:胸痹,heldout,hyp_6d7c0046ef32,hidden_association,survived,link_appears,disease:胸痹,herb:栝楼实,no,no,0,
-disease:胸痹,heldout,hyp_90aded69eb74,concept_drift,survived,sense_shift,disease:胸痹,,not judged,not judged,,
+disease:胸痹,heldout,hyp_6d7c0046ef32,hidden_association,survived,link_appears,disease:胸痹,herb:栝楼实,no,no,1,
+disease:胸痹,heldout,hyp_27916a874d7c,concept_drift,survived,sense_shift,disease:胸痹,,not judged,not judged,,
 disease:霍乱,heldout,hyp_1101b63a75f5,hidden_association,rejected,link_appears,disease:少阴病,formula:五苓散,no,no,0,
-disease:霍乱,heldout,hyp_a640f4ce86db,concept_drift,survived,sense_shift,disease:霍乱,,not judged,not judged,,
+disease:霍乱,heldout,hyp_4e38ff74790d,concept_drift,survived,sense_shift,disease:霍乱,,not judged,not judged,,
 disease:霍乱,heldout,hyp_64658eb3b657,hidden_association,rejected,link_appears,symptom:心烦,formula:四逆汤,no,no,0,
 disease:霍乱,heldout,hyp_fab01fabcef8,lost_source,survived,link_appears,work:廣志,,not judged,not judged,,not judged by this benchmark
-disease:霍乱,heldout,hyp_631d624ae984,association_rule,survived,cooccurrence_after,"pulse:细,symptom:心烦",formula:橘皮汤,not judged,not judged,,
 disease:霍乱,heldout,hyp_01ac93cc8c2c,lost_source,survived,link_appears,work:jinxiao_fang,,not judged,not judged,,not judged by this benchmark
 disease:霍乱,heldout,hyp_24329942a5fb,contradiction,survived,resolution,disease:伤寒,contradiction,not judged,not judged,,not judged by this benchmark
+disease:霍乱,heldout,hyp_756adeeaf009,association_rule,survived,cooccurrence_after,"pulse:细,symptom:心烦",formula:橘皮汤,not judged,not judged,,
+disease:霍乱,heldout,hyp_2d929f9cfa0d,association_rule,survived,cooccurrence_after,"pulse:弦,symptom:心烦",formula:橘皮汤,not judged,not judged,,
 disease:霍乱,heldout,hyp_e2d7d528bdc3,lost_knowledge,survived,absent_after,etiology:生冷,disease:霍乱,yes,no,0,
 disease:霍乱,heldout,hyp_6a1c6ff4847d,lost_knowledge,survived,absent_after,etiology:湿,disease:霍乱,no,no,3,
 disease:霍乱,heldout,hyp_fb3ec7b257f7,formula_evolution,survived,herb_retained,"herb:桂心,herb:泽泻,herb:猪苓,herb:白术,herb:茯苓",,not judged,not judged,,not judged by this benchmark
 disease:霍乱,heldout,hyp_5ddb1771ada9,contradiction,survived,resolution,disease:伤寒,contradiction,not judged,not judged,,not judged by this benchmark
-disease:霍乱,heldout,hyp_63d3fa4367b7,association_rule,survived,cooccurrence_after,"pulse:弦,symptom:心烦",formula:橘皮汤,not judged,not judged,,
+disease:霍乱,heldout,hyp_0bd7235e7c93,formula_evolution,survived,herb_retained,"formula:桂枝汤,formula:桂枝加厚朴杏仁汤,formula:桂枝加芍药汤,formula:桂枝加葛根汤,formula:桂枝加黄芪汤",,not judged,not judged,,not judged by this benchmark
 disease:霍乱,heldout,hyp_6bbe7b001ba1,formula_evolution,survived,herb_retained,"herb:桔梗,herb:白术,herb:葛根",,not judged,not judged,,not judged by this benchmark
-disease:霍乱,heldout,hyp_cbd5c278d27e,formula_evolution,survived,herb_retained,"herb:地黄,herb:桂心,herb:白芍药",,not judged,not judged,,not judged by this benchmark
 disease:虚劳,heldout,hyp_6e2c442d68f4,lost_source,survived,link_appears,work:gujin_luyan,,not judged,not judged,,not judged by this benchmark
 disease:虚劳,heldout,hyp_eb599602bc5b,hidden_association,rejected,link_appears,disease:虚劳,formula:阳旦汤,no,no,0,
-disease:虚劳,heldout,hyp_9bf01dd41feb,concept_drift,survived,sense_shift,disease:虚劳,,not judged,not judged,,
+disease:虚劳,heldout,hyp_981dfc9b5035,concept_drift,survived,sense_shift,disease:虚劳,,not judged,not judged,,
 disease:虚劳,heldout,hyp_71c8050c5b39,contradiction,survived,resolution,symptom:喘,contradiction,not judged,not judged,,not judged by this benchmark
 disease:虚劳,heldout,hyp_7f5d2b067426,lost_source,survived,link_appears,work:虗勞脉證第六,,not judged,not judged,,not judged by this benchmark
-disease:虚劳,heldout,hyp_ef9914bc5ca5,hidden_association,rejected,link_appears,disease:中风,formula:桂枝汤,yes,yes,2,already written before the cutoff
-disease:虚劳,heldout,hyp_e83081eba4fd,formula_evolution,survived,herb_retained,"herb:人参,herb:地黄,herb:茯苓",,not judged,not judged,,not judged by this benchmark
-disease:虚劳,heldout,hyp_fe67ebeb0ff0,formula_evolution,survived,herb_retained,herb:姜,,not judged,not judged,,not judged by this benchmark
+disease:虚劳,heldout,hyp_ef9914bc5ca5,hidden_association,rejected,link_appears,disease:中风,formula:桂枝汤,yes,yes,3,already written before the cutoff
+disease:虚劳,heldout,hyp_69154ca7fc1d,association_rule,survived,cooccurrence_after,"pulse:微,symptom:拘急",formula:附子汤,no,no,,
+disease:虚劳,heldout,hyp_3d09581465f5,formula_evolution,survived,herb_retained,herb:地黄,,not judged,not judged,,not judged by this benchmark
+disease:虚劳,heldout,hyp_bcd3d8772231,association_rule,survived,cooccurrence_after,"symptom:心烦,symptom:鼻衄",formula:小建中汤,not judged,not judged,,
 disease:虚劳,heldout,hyp_757226e1d312,contradiction,survived,resolution,disease:虚劳,contradiction,not judged,not judged,,not judged by this benchmark
-disease:虚劳,heldout,hyp_23d926167618,association_rule,survived,cooccurrence_after,"symptom:心烦,symptom:鼻衄",formula:小建中汤,not judged,not judged,,
-disease:虚劳,heldout,hyp_8146f24b4b41,lost_knowledge,survived,absent_after,pathogenesis:痰,disease:虚劳,no,no,2,
-disease:虚劳,heldout,hyp_ce997dbb3574,formula_evolution,survived,herb_retained,"herb:人参,herb:白术,herb:陈皮",,not judged,not judged,,not judged by this benchmark
+disease:虚劳,heldout,hyp_8146f24b4b41,lost_knowledge,survived,absent_after,pathogenesis:痰,disease:虚劳,no,no,3,
+disease:虚劳,heldout,hyp_5507d6f5ac8e,formula_evolution,survived,herb_retained,"herb:人参,herb:甘草,herb:麦冬",,not judged,not judged,,not judged by this benchmark
 disease:虚劳,heldout,hyp_35e9d86013f7,lost_knowledge,survived,absent_after,formula:桂枝汤,disease:虚劳,yes,yes,0,
-disease:虚劳,heldout,hyp_daaa09c2954a,association_rule,survived,cooccurrence_after,"pulse:微,symptom:拘急",formula:附子汤,no,no,,
+disease:虚劳,heldout,hyp_24bee37e9aba,formula_evolution,survived,herb_retained,"herb:姜,herb:黄芪",,not judged,not judged,,not judged by this benchmark
 disease:痰饮,heldout,hyp_6e2c442d68f4,lost_source,survived,link_appears,work:gujin_luyan,,not judged,not judged,,not judged by this benchmark
 disease:痰饮,heldout,hyp_5299b6d78bc6,hidden_association,rejected,link_appears,symptom:下利,formula:甘草汤,no,no,0,
 disease:痰饮,heldout,hyp_5730b22d8213,lost_source,survived,link_appears,work:jiyan_fang,,not judged,not judged,,not judged by this benchmark
 disease:痰饮,heldout,hyp_a5e57687fd43,hidden_association,rejected,link_appears,symptom:呕吐,formula:泽泻汤,no,no,0,
 disease:痰饮,heldout,hyp_40c55f5cfa8a,formula_evolution,survived,herb_retained,"herb:厚朴,herb:葛根,herb:陈皮",,not judged,not judged,,not judged by this benchmark
-disease:痰饮,heldout,hyp_3196175ee3f3,association_rule,survived,cooccurrence_after,"pulse:微,symptom:拘急",formula:附子汤,no,no,,
-disease:痰饮,heldout,hyp_50b7cabffc3b,concept_drift,survived,sense_shift,disease:痰饮,,not judged,not judged,,
-disease:痰饮,heldout,hyp_0ccd266e27f9,association_rule,survived,cooccurrence_after,pulse:微,formula:附子汤,no,no,,
-disease:痰饮,heldout,hyp_db0d098c3ba7,lost_knowledge,survived,absent_after,etiology:寒,disease:痰饮,no,no,2,
+disease:痰饮,heldout,hyp_de003d6e5453,lost_knowledge,survived,absent_after,etiology:寒,disease:痰饮,no,no,4,
 disease:痰饮,heldout,hyp_c4211fadc6e5,lost_knowledge,survived,absent_after,formula:小半夏汤,disease:痰饮,yes,yes,0,
+disease:痰饮,heldout,hyp_aebb0187f181,concept_drift,survived,sense_shift,disease:痰饮,,not judged,not judged,,
 disease:痰饮,heldout,hyp_d4166477be17,concept_drift,survived,sense_shift,disease:伤寒,伤寒#广义,no,no,,
-disease:痰饮,heldout,hyp_992d7302feb3,formula_evolution,survived,herb_retained,"herb:人参,herb:甘草,herb:白术",,not judged,not judged,,not judged by this benchmark
+disease:痰饮,heldout,hyp_6682c9b596f1,association_rule,survived,cooccurrence_after,"pulse:微,symptom:拘急",formula:附子汤,no,no,,
+disease:痰饮,heldout,hyp_ae8cc119ea3c,association_rule,survived,cooccurrence_after,pulse:微,formula:附子汤,no,no,,
+disease:痰饮,heldout,hyp_529d6ca54699,formula_evolution,survived,herb_retained,"herb:人参,herb:白术",,not judged,not judged,,not judged by this benchmark
 disease:痰饮,heldout,hyp_20f5f4132d38,concept_drift,survived,sense_shift,disease:中风,风#外风,no,no,,
 disease:痰饮,heldout,hyp_c2c854128b6c,contradiction,survived,resolution,disease:痰饮,contradiction,not judged,not judged,,not judged by this benchmark

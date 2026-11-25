@@ -1,118 +1,103 @@
 Hypothesis,Label,Reviewer task,Review verdict,Check,Severity,Kind,Status,Closed by,Closure,Detail
+hyp_00ee5a11ff84,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_00ee5a11ff84,,r1.falsify,revise,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
 hyp_01f85940a40d,,r1.falsify,revise,homonym,major,interpretive,raised,,,「痰」在 6 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
 hyp_01f85940a40d,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
 hyp_01f85940a40d,,r1.falsify,revise,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
 hyp_01f85940a40d,,r1.falsify,revise,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
-hyp_1ebef0b387ae,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_1ebef0b387ae,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_1ebef0b387ae,,r1.falsify,revise,transcription_dependence,minor,interpretive,raised,,,6 部书的证据只构成 4 个独立来源（同一作者或转录关系）
 hyp_1ebef0b387ae,,r1.falsify,revise,sample_size,major,interpretive,raised,,,1 个时期的用例少于 3 条（sui_tang）
-hyp_1ebef0b387ae,,r1.falsify,revise,statistical,major,interpretive,raised,,,语境差异未通过置换检验 + BH 校正（p=0.596）
-hyp_32bbf0aeb230,,r1.falsify,revise,homonym,major,interpretive,raised,,,「伤寒」在 5 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_32bbf0aeb230,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_32bbf0aeb230,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_32bbf0aeb230,,r1.falsify,revise,sample_size,major,interpretive,raised,,,"3 个时期的用例少于 3 条（qin_han, song_jin_yuan, qing）"
-hyp_32bbf0aeb230,,r1.falsify,revise,statistical,major,interpretive,raised,,,语境差异未通过置换检验 + BH 校正（p=0.952）
-hyp_412994ed6551,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_412994ed6551,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_412994ed6551,,r1.falsify,revise,counterexample,major,interpretive,raised,,,二者已在 4 处文本中共现（如 jc_f014.00176），并非完全隐性的关联
-hyp_44172aa26142,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_44172aa26142,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_44172aa26142,,r1.falsify,revise,statistical,major,interpretive,raised,,,按早期关联率推算，后世未见共现的概率为 0.36，缺失并不显著
-hyp_44172aa26142,,r1.falsify,revise,partial_persistence,major,interpretive,raised,,,后世文献仍以相近表述将「肾气丸」与「痛痒、腰痛」相联（jufang_fahui.001.00046），与「腹痛」同属一类，关联可能是转化而非失传
-hyp_44172aa26142,,r1.falsify,revise,earliest_source,major,interpretive,raised,,,960 年后仍有 1 处文本同时提及二者（如 jc_i002.00396），失传结论需限定为“不再形成明确记载”
-hyp_539ab225761b,,r1.falsify,revise,homonym,major,interpretive,raised,,,「痰」在 7 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_539ab225761b,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_539ab225761b,,r1.falsify,revise,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_539ab225761b,,r1.falsify,revise,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
-hyp_53c77f1a68e3,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,4 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_53c77f1a68e3,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_53c77f1a68e3,,r1.falsify,revise,sample_size,major,interpretive,raised,,,"2 个时期的用例少于 3 条（qin_han, ming）"
-hyp_53c77f1a68e3,,r1.falsify,revise,statistical,major,interpretive,raised,,,语境差异未通过置换检验 + BH 校正（p=0.542）
-hyp_5730b22d8213,H8,r1.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_71c99bcff38f,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_71c99bcff38f,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_71c99bcff38f,,r1.falsify,revise,statistical,major,interpretive,raised,,,按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著
-hyp_8bec39add14d,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,3 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_8bec39add14d,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_8bec39add14d,,r1.falsify,revise,counterexample,major,interpretive,raised,,,二者已在 4 处文本中共现（如 jc_g011.00061），并非完全隐性的关联
-hyp_ccbe3e9607db,R1,r1.falsify,reject,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_ccbe3e9607db,R1,r1.falsify,reject,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_ccbe3e9607db,R1,r1.falsify,reject,transcription_dependence,major,interpretive,raised,,,缺失的显著性依赖单一来源家族：逐一剔除早期来源家族后 p 最高为 1.0（1 个家族）
-hyp_ccbe3e9607db,R1,r1.falsify,reject,earliest_source,major,interpretive,raised,,,960 年后仍有 1 处文本同时提及二者（如 jc_e009.00395），失传结论需限定为“不再形成明确记载”
-hyp_ccbe3e9607db,R1,r1.falsify,reject,restated_after,critical,hard,raised,,,960 年后仍有 1 部书（1 个来源家族）明确陈述二者的关联（如 jc_d041.00588「人觸之則生暑病。即為中熱。無非動以得之。他若畏熱求涼。涼襲於外。則為發熱惡寒頭痛」），“后世不再出现”不成立；若这些后世来源只是转录早期文本，可改为“仅见于转录”另行论证
-hyp_dc14fa336232,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_e2ebd991ae10,H3,r1.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_0af4af4a83db,H7,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_12a32285d3a3,H2,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_12a32285d3a3,H2,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_12a32285d3a3,H2,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著
-hyp_18f4717f2182,H11,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 6 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_18f4717f2182,H11,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_18f4717f2182,H11,r1.falsify_revisions,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_18f4717f2182,H11,r1.falsify_revisions,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
-hyp_24368056df5c,H4,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,4 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_24368056df5c,H4,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_24368056df5c,H4,r1.falsify_revisions,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,"2 个时期的用例少于 3 条（qin_han, ming）"
-hyp_24368056df5c,H4,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.542）
-hyp_3849a6721ca0,H5,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_3849a6721ca0,H5,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_3849a6721ca0,H5,r1.falsify_revisions,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,1 个时期的用例少于 3 条（sui_tang）
-hyp_3849a6721ca0,H5,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.596）
-hyp_502e05814d54,H10,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 7 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_502e05814d54,H10,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_502e05814d54,H10,r1.falsify_revisions,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_502e05814d54,H10,r1.falsify_revisions,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
-hyp_7c62e0a0d161,H13,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,3 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_7c62e0a0d161,H13,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_7c62e0a0d161,H13,r1.falsify_revisions,survives,counterexample,major,interpretive,closed,validator:gates,scope_restriction,二者已在 4 处文本中共现（如 jc_g011.00061），并非完全隐性的关联
-hyp_80883924c519,H12,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_80883924c519,H12,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_80883924c519,H12,r1.falsify_revisions,survives,counterexample,major,interpretive,closed,validator:gates,scope_restriction,二者已在 4 处文本中共现（如 jc_f014.00176），并非完全隐性的关联
-hyp_de35c2a355f0,H6,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_de35c2a355f0,H6,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_de35c2a355f0,H6,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,按早期关联率推算，后世未见共现的概率为 0.36，缺失并不显著
-hyp_de35c2a355f0,H6,r1.falsify_revisions,survives,partial_persistence,major,interpretive,closed,validator:gates,scope_restriction,后世文献仍以相近表述将「肾气丸」与「痛痒、腰痛」相联（jufang_fahui.001.00046），与「腹痛」同属一类，关联可能是转化而非失传
-hyp_de35c2a355f0,H6,r1.falsify_revisions,survives,earliest_source,major,interpretive,closed,validator:gates,scope_restriction,960 年后仍有 1 处文本同时提及二者（如 jc_i002.00396），失传结论需限定为“不再形成明确记载”
-hyp_ed4b5625f057,H9,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「伤寒」在 5 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_ed4b5625f057,H9,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_ed4b5625f057,H9,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_ed4b5625f057,H9,r1.falsify_revisions,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,"3 个时期的用例少于 3 条（qin_han, song_jin_yuan, qing）"
-hyp_ed4b5625f057,H9,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.952）
-hyp_0af4af4a83db,H7,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_12a32285d3a3,H2,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_12a32285d3a3,H2,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_12a32285d3a3,H2,r2.falsify,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,按早期关联率推算，后世未见共现的概率为 0.1667，缺失并不显著
-hyp_18f4717f2182,H11,r2.falsify,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 6 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_18f4717f2182,H11,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_18f4717f2182,H11,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_18f4717f2182,H11,r2.falsify,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
-hyp_24368056df5c,H4,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,4 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_24368056df5c,H4,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_24368056df5c,H4,r2.falsify,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,"2 个时期的用例少于 3 条（qin_han, ming）"
-hyp_24368056df5c,H4,r2.falsify,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.542）
-hyp_3849a6721ca0,H5,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_3849a6721ca0,H5,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_3849a6721ca0,H5,r2.falsify,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,1 个时期的用例少于 3 条（sui_tang）
-hyp_3849a6721ca0,H5,r2.falsify,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.596）
-hyp_502e05814d54,H10,r2.falsify,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 7 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_502e05814d54,H10,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_502e05814d54,H10,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_502e05814d54,H10,r2.falsify,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
-hyp_5730b22d8213,H8,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_7c62e0a0d161,H13,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,3 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_7c62e0a0d161,H13,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_7c62e0a0d161,H13,r2.falsify,survives,counterexample,major,interpretive,closed,validator:gates,scope_restriction,二者已在 4 处文本中共现（如 jc_g011.00061），并非完全隐性的关联
-hyp_80883924c519,H12,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_80883924c519,H12,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_80883924c519,H12,r2.falsify,survives,counterexample,major,interpretive,closed,validator:gates,scope_restriction,二者已在 4 处文本中共现（如 jc_f014.00176），并非完全隐性的关联
-hyp_de35c2a355f0,H6,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_de35c2a355f0,H6,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_de35c2a355f0,H6,r2.falsify,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,按早期关联率推算，后世未见共现的概率为 0.36，缺失并不显著
-hyp_de35c2a355f0,H6,r2.falsify,survives,partial_persistence,major,interpretive,closed,validator:gates,scope_restriction,后世文献仍以相近表述将「肾气丸」与「痛痒、腰痛」相联（jufang_fahui.001.00046），与「腹痛」同属一类，关联可能是转化而非失传
-hyp_de35c2a355f0,H6,r2.falsify,survives,earliest_source,major,interpretive,closed,validator:gates,scope_restriction,960 年后仍有 1 处文本同时提及二者（如 jc_i002.00396），失传结论需限定为“不再形成明确记载”
-hyp_e2ebd991ae10,H3,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
-hyp_ed4b5625f057,H9,r2.falsify,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「伤寒」在 5 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
-hyp_ed4b5625f057,H9,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
-hyp_ed4b5625f057,H9,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
-hyp_ed4b5625f057,H9,r2.falsify,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,"3 个时期的用例少于 3 条（qin_han, song_jin_yuan, qing）"
-hyp_ed4b5625f057,H9,r2.falsify,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.952）
+hyp_1ebef0b387ae,,r1.falsify,revise,statistical,major,interpretive,raised,,,语境差异未通过置换检验 + BH 校正（p=0.664）
+hyp_6050f468fdcf,,r1.falsify,revise,homonym,major,interpretive,raised,,,「伤寒」在 4 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_6050f468fdcf,,r1.falsify,revise,transcription_dependence,minor,interpretive,raised,,,6 部书的证据只构成 2 个独立来源（同一作者或转录关系）
+hyp_6050f468fdcf,,r1.falsify,revise,sample_size,major,interpretive,raised,,,"2 个时期的用例少于 3 条（qin_han, sui_tang）"
+hyp_6050f468fdcf,,r1.falsify,revise,statistical,major,interpretive,raised,,,语境差异未通过置换检验 + BH 校正（p=0.976）
+hyp_6ffa899e3703,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_6ffa899e3703,,r1.falsify,revise,statistical,major,interpretive,raised,,,按早期关联率推算，后世未见共现的概率为 0.4019，缺失并不显著
+hyp_6ffa899e3703,,r1.falsify,revise,partial_persistence,major,interpretive,raised,,,后世文献仍以相近表述将「肾气丸」与「腰痛」相联（jc_d045.00003），与「腹痛」同属一类，关联可能是转化而非失传
+hyp_6ffa899e3703,,r1.falsify,revise,earliest_source,major,interpretive,raised,,,960 年后仍有 1 处文本同时提及二者（如 jc_i002.00396），失传结论需限定为“不再形成明确记载”
+hyp_8d1ea31b9d9a,,r1.falsify,revise,transcription_dependence,minor,interpretive,raised,,,6 部书的证据只构成 3 个独立来源（同一作者或转录关系）
+hyp_8d1ea31b9d9a,,r1.falsify,revise,sample_size,major,interpretive,raised,,,1 个时期的用例少于 3 条（qin_han）
+hyp_8d1ea31b9d9a,,r1.falsify,revise,statistical,major,interpretive,raised,,,语境差异未通过置换检验 + BH 校正（p=0.892）
+hyp_93968335aee1,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_93968335aee1,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_95577d14638d,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_95577d14638d,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_95577d14638d,,r1.falsify,revise,counterexample,major,interpretive,raised,,,二者已在 1 处文本中共现（如 jc_i013.00716），并非完全隐性的关联
+hyp_9dcce49d684f,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_9dcce49d684f,,r1.falsify,revise,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_b7aadb438d6b,,r1.falsify,revise,homonym,major,interpretive,raised,,,「痰」在 2 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_b7aadb438d6b,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_b7aadb438d6b,,r1.falsify,revise,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_b7aadb438d6b,,r1.falsify,revise,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_b8a726ad7aef,,r1.falsify,revise,homonym,major,interpretive,raised,,,「痰」在 3 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_b8a726ad7aef,,r1.falsify,revise,transcription_dependence,major,interpretive,raised,,,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_b8a726ad7aef,,r1.falsify,revise,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_b8a726ad7aef,,r1.falsify,revise,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_cd02eca5e08b,R1,r1.falsify,reject,single_source,major,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_cd02eca5e08b,R1,r1.falsify,reject,transcription_dependence,major,interpretive,raised,,,缺失的显著性依赖单一来源家族：逐一剔除早期来源家族后 p 最高为 1.0（1 个家族）
+hyp_cd02eca5e08b,R1,r1.falsify,reject,partial_persistence,major,interpretive,raised,,,后世文献仍以相近表述将「热」与「气血、益气、脾气」相联（jc_o097.03854），与「上气」同属一类，关联可能是转化而非失传
+hyp_cd02eca5e08b,R1,r1.falsify,reject,earliest_source,major,interpretive,raised,,,960 年后仍有 21 处文本同时提及二者（如 bencao_gangmu_skqs.039.01732），失传结论需限定为“不再形成明确记载”
+hyp_cd02eca5e08b,R1,r1.falsify,reject,restated_after,critical,hard,raised,,,960 年后仍有 3 部书（3 个来源家族）明确陈述二者的关联（如 jc_k009.00006「無所見心懸若飢狀氣不足則善恐心惕惕若人將捕之是謂骨厥主腎所生病口熱舌乾咽腫上氣嗌」），“后世不再出现”不成立
+hyp_e2ebd991ae10,H6,r1.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_18f4717f2182,H10,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 6 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_18f4717f2182,H10,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_18f4717f2182,H10,r1.falsify_revisions,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_18f4717f2182,H10,r1.falsify_revisions,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_266b1439da88,H7,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_266b1439da88,H7,r1.falsify_revisions,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_44606b0576bb,H3,r1.falsify_revisions,survives,transcription_dependence,minor,interpretive,raised,,,6 部书的证据只构成 3 个独立来源（同一作者或转录关系）
+hyp_44606b0576bb,H3,r1.falsify_revisions,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,1 个时期的用例少于 3 条（qin_han）
+hyp_44606b0576bb,H3,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.892）
+hyp_505a55a4cb6b,H4,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「伤寒」在 4 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_505a55a4cb6b,H4,r1.falsify_revisions,survives,transcription_dependence,minor,interpretive,raised,,,6 部书的证据只构成 2 个独立来源（同一作者或转录关系）
+hyp_505a55a4cb6b,H4,r1.falsify_revisions,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,"2 个时期的用例少于 3 条（qin_han, sui_tang）"
+hyp_505a55a4cb6b,H4,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.976）
+hyp_675ae4dcc3a3,H13,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_675ae4dcc3a3,H13,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_675ae4dcc3a3,H13,r1.falsify_revisions,survives,counterexample,major,interpretive,closed,validator:gates,scope_restriction,二者已在 1 处文本中共现（如 jc_i013.00716），并非完全隐性的关联
+hyp_748f1bdebc6e,H5,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_748f1bdebc6e,H5,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_81b0e8188593,H2,r1.falsify_revisions,survives,transcription_dependence,minor,interpretive,raised,,,6 部书的证据只构成 4 个独立来源（同一作者或转录关系）
+hyp_81b0e8188593,H2,r1.falsify_revisions,survives,sample_size,major,interpretive,closed,validator:gates,scope_restriction,1 个时期的用例少于 3 条（sui_tang）
+hyp_81b0e8188593,H2,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,语境差异未通过置换检验 + BH 校正（p=0.664）
+hyp_97cca9a0a038,H9,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 3 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_97cca9a0a038,H9,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_97cca9a0a038,H9,r1.falsify_revisions,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_97cca9a0a038,H9,r1.falsify_revisions,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_dfcf54b7ed92,H12,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_dfcf54b7ed92,H12,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_eb8e94beb10d,H11,r1.falsify_revisions,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 2 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_eb8e94beb10d,H11,r1.falsify_revisions,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_eb8e94beb10d,H11,r1.falsify_revisions,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_eb8e94beb10d,H11,r1.falsify_revisions,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_f81fd13de194,H8,r1.falsify_revisions,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_f81fd13de194,H8,r1.falsify_revisions,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,按早期关联率推算，后世未见共现的概率为 0.4019，缺失并不显著
+hyp_f81fd13de194,H8,r1.falsify_revisions,survives,partial_persistence,major,interpretive,closed,validator:gates,scope_restriction,后世文献仍以相近表述将「肾气丸」与「腰痛」相联（jc_d045.00003），与「腹痛」同属一类，关联可能是转化而非失传
+hyp_f81fd13de194,H8,r1.falsify_revisions,survives,earliest_source,major,interpretive,closed,validator:gates,scope_restriction,960 年后仍有 1 处文本同时提及二者（如 jc_i002.00396），失传结论需限定为“不再形成明确记载”
+hyp_18f4717f2182,H10,r2.falsify,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 6 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_18f4717f2182,H10,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_18f4717f2182,H10,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_18f4717f2182,H10,r2.falsify,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_266b1439da88,H7,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_266b1439da88,H7,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_675ae4dcc3a3,H13,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_675ae4dcc3a3,H13,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_675ae4dcc3a3,H13,r2.falsify,survives,counterexample,major,interpretive,closed,validator:gates,scope_restriction,二者已在 1 处文本中共现（如 jc_i013.00716），并非完全隐性的关联
+hyp_748f1bdebc6e,H5,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,6 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_748f1bdebc6e,H5,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_97cca9a0a038,H9,r2.falsify,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 3 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_97cca9a0a038,H9,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_97cca9a0a038,H9,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_97cca9a0a038,H9,r2.falsify,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_dfcf54b7ed92,H12,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,5 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_dfcf54b7ed92,H12,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_e2ebd991ae10,H6,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_eb8e94beb10d,H11,r2.falsify,survives,homonym,major,interpretive,closed,validator:gates,scope_restriction,「痰」在 2 处证据中存在同名异义风险（义项判定概率 < 0.6），关联可能混合了不同义项
+hyp_eb8e94beb10d,H11,r2.falsify,survives,transcription_dependence,major,interpretive,closed,validator:gates,scope_restriction,2 部书的证据只构成 1 个独立来源（同一作者或转录关系）
+hyp_eb8e94beb10d,H11,r2.falsify,survives,single_source,minor,interpretive,raised,,,仅有 1 个独立来源（要求 ≥ 2）
+hyp_eb8e94beb10d,H11,r2.falsify,survives,school,minor,interpretive,raised,,,两说出自同一学派，可能是学派内部的争鸣而非范式转换
+hyp_f81fd13de194,H8,r2.falsify,survives,single_source,major,interpretive,closed,validator:gates,scope_restriction,仅有 1 个独立来源（要求 ≥ 2）
+hyp_f81fd13de194,H8,r2.falsify,survives,statistical,major,interpretive,closed,validator:gates,scope_restriction,按早期关联率推算，后世未见共现的概率为 0.4019，缺失并不显著
+hyp_f81fd13de194,H8,r2.falsify,survives,partial_persistence,major,interpretive,closed,validator:gates,scope_restriction,后世文献仍以相近表述将「肾气丸」与「腰痛」相联（jc_d045.00003），与「腹痛」同属一类，关联可能是转化而非失传
+hyp_f81fd13de194,H8,r2.falsify,survives,earliest_source,major,interpretive,closed,validator:gates,scope_restriction,960 年后仍有 1 处文本同时提及二者（如 jc_i002.00396），失传结论需限定为“不再形成明确记载”

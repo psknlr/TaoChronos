@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-29T14:15:03.735009</dc:date>
+    <dc:date>2026-10-19T00:20:14.613768</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -35,7 +35,7 @@ L 513.070866 17.007874
 L 513.070866 49.322835 
 L 5.669291 49.322835 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #faeac7"/>
+" clip-path="url(#p566f74598a)" style="fill: #faeac7"/>
    </g>
    <g id="patch_3">
     <path d="M 5.669291 52.724409 
@@ -43,7 +43,7 @@ L 513.070866 52.724409
 L 513.070866 138.330709 
 L 5.669291 138.330709 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #e6f1f7"/>
+" clip-path="url(#p566f74598a)" style="fill: #e6f1f7"/>
    </g>
    <g id="patch_4">
     <path d="M 5.669291 154.771654 
@@ -51,7 +51,7 @@ L 513.070866 154.771654
 L 513.070866 178.582677 
 L 5.669291 178.582677 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #e9e9e9"/>
+" clip-path="url(#p566f74598a)" style="fill: #e9e9e9"/>
    </g>
    <g id="patch_5">
     <path d="M 5.669291 181.984252 
@@ -59,7 +59,7 @@ L 513.070866 181.984252
 L 513.070866 216.566929 
 L 5.669291 216.566929 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ededed"/>
+" clip-path="url(#p566f74598a)" style="fill: #ededed"/>
    </g>
    <g id="patch_6">
     <path d="M 5.669291 219.968504 
@@ -67,7 +67,7 @@ L 513.070866 219.968504
 L 513.070866 267.023622 
 L 5.669291 267.023622 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
     <path d="M 45.92126 19.559055 
@@ -80,7 +80,7 @@ Q 43.937008 46.771654 43.937008 44.787402
 L 43.937008 21.543307 
 Q 43.937008 19.559055 45.92126 19.559055 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #e69f00; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #e69f00; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_8">
     <path d="M 125.858268 19.559055 
@@ -93,7 +93,7 @@ Q 123.874016 46.771654 123.874016 44.787402
 L 123.874016 21.543307 
 Q 123.874016 19.559055 125.858268 19.559055 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #e69f00; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #e69f00; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_9">
     <path d="M 375.023622 19.559055 
@@ -106,7 +106,7 @@ Q 373.03937 46.771654 373.03937 44.787402
 L 373.03937 21.543307 
 Q 373.03937 19.559055 375.023622 19.559055 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #e69f00; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #e69f00; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_10">
     <path d="M 45.637795 62.929134 
@@ -119,7 +119,7 @@ Q 43.937008 79.937008 43.937008 78.23622
 L 43.937008 64.629921 
 Q 43.937008 62.929134 45.637795 62.929134 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_11">
     <path d="M 116.787402 65.76378 
@@ -132,7 +132,7 @@ C 115.392618 68.132888 115.228346 67.736301 115.228346 67.322835
 C 115.228346 66.909368 115.392618 66.512781 115.684983 66.220416 
 C 115.977348 65.928051 116.373935 65.76378 116.787402 65.76378 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_12">
     <path d="M 45.637795 81.212598 
@@ -145,7 +145,7 @@ Q 43.937008 98.220472 43.937008 96.519685
 L 43.937008 82.913386 
 Q 43.937008 81.212598 45.637795 81.212598 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_13">
     <path d="M 116.787402 84.047244 
@@ -158,7 +158,7 @@ C 115.392618 86.416353 115.228346 86.019765 115.228346 85.606299
 C 115.228346 85.192833 115.392618 84.796246 115.684983 84.503881 
 C 115.977348 84.211516 116.373935 84.047244 116.787402 84.047244 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_14">
     <path d="M 125.574803 62.929134 
@@ -171,7 +171,7 @@ Q 123.874016 79.937008 123.874016 78.23622
 L 123.874016 64.629921 
 Q 123.874016 62.929134 125.574803 62.929134 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_15">
     <path d="M 199.275591 65.76378 
@@ -184,7 +184,7 @@ C 197.880807 68.132888 197.716535 67.736301 197.716535 67.322835
 C 197.716535 66.909368 197.880807 66.512781 198.173172 66.220416 
 C 198.465537 65.928051 198.862124 65.76378 199.275591 65.76378 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_16">
     <path d="M 125.574803 81.212598 
@@ -197,7 +197,7 @@ Q 123.874016 98.220472 123.874016 96.519685
 L 123.874016 82.913386 
 Q 123.874016 81.212598 125.574803 81.212598 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_17">
     <path d="M 199.275591 84.047244 
@@ -210,7 +210,7 @@ C 197.880807 86.416353 197.716535 86.019765 197.716535 85.606299
 C 197.716535 85.192833 197.880807 84.796246 198.173172 84.503881 
 C 198.465537 84.211516 198.862124 84.047244 199.275591 84.047244 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_18">
     <path d="M 125.574803 99.496063 
@@ -223,7 +223,7 @@ Q 123.874016 116.503937 123.874016 114.80315
 L 123.874016 101.19685 
 Q 123.874016 99.496063 125.574803 99.496063 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_19">
     <path d="M 199.275591 102.330709 
@@ -236,7 +236,7 @@ C 197.880807 104.699817 197.716535 104.30323 197.716535 103.889764
 C 197.716535 103.476298 197.880807 103.07971 198.173172 102.787345 
 C 198.465537 102.494981 198.862124 102.330709 199.275591 102.330709 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_20">
     <path d="M 125.574803 117.779528 
@@ -249,7 +249,7 @@ Q 123.874016 134.787402 123.874016 133.086614
 L 123.874016 119.480315 
 Q 123.874016 117.779528 125.574803 117.779528 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_21">
     <path d="M 199.275591 120.614173 
@@ -262,7 +262,7 @@ C 197.880807 122.983282 197.716535 122.586695 197.716535 122.173228
 C 197.716535 121.759762 197.880807 121.363175 198.173172 121.07081 
 C 198.465537 120.778445 198.862124 120.614173 199.275591 120.614173 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_22">
     <path d="M 208.062992 62.929134 
@@ -275,7 +275,7 @@ Q 206.362205 79.937008 206.362205 78.23622
 L 206.362205 64.629921 
 Q 206.362205 62.929134 208.062992 62.929134 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_23">
     <path d="M 281.76378 65.76378 
@@ -288,7 +288,7 @@ C 280.368996 68.132888 280.204724 67.736301 280.204724 67.322835
 C 280.204724 66.909368 280.368996 66.512781 280.661361 66.220416 
 C 280.953726 65.928051 281.350313 65.76378 281.76378 65.76378 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_24">
     <path d="M 208.062992 81.212598 
@@ -301,7 +301,7 @@ Q 206.362205 98.220472 206.362205 96.519685
 L 206.362205 82.913386 
 Q 206.362205 81.212598 208.062992 81.212598 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_25">
     <path d="M 281.76378 84.047244 
@@ -314,7 +314,7 @@ C 280.368996 86.416353 280.204724 86.019765 280.204724 85.606299
 C 280.204724 85.192833 280.368996 84.796246 280.661361 84.503881 
 C 280.953726 84.211516 281.350313 84.047244 281.76378 84.047244 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_26">
     <path d="M 208.062992 99.496063 
@@ -327,7 +327,7 @@ Q 206.362205 116.503937 206.362205 114.80315
 L 206.362205 101.19685 
 Q 206.362205 99.496063 208.062992 99.496063 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_27">
     <path d="M 281.76378 102.330709 
@@ -340,7 +340,7 @@ C 280.368996 104.699817 280.204724 104.30323 280.204724 103.889764
 C 280.204724 103.476298 280.368996 103.07971 280.661361 102.787345 
 C 280.953726 102.494981 281.350313 102.330709 281.76378 102.330709 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_28">
     <path d="M 290.551181 62.929134 
@@ -353,7 +353,7 @@ Q 288.850394 79.937008 288.850394 78.23622
 L 288.850394 64.629921 
 Q 288.850394 62.929134 290.551181 62.929134 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_29">
     <path d="M 365.952756 65.76378 
@@ -366,7 +366,7 @@ C 364.557973 68.132888 364.393701 67.736301 364.393701 67.322835
 C 364.393701 66.909368 364.557973 66.512781 364.850337 66.220416 
 C 365.142702 65.928051 365.53929 65.76378 365.952756 65.76378 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_30">
     <path d="M 290.551181 81.212598 
@@ -379,7 +379,7 @@ Q 288.850394 98.220472 288.850394 96.519685
 L 288.850394 82.913386 
 Q 288.850394 81.212598 290.551181 81.212598 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_31">
     <path d="M 365.952756 84.047244 
@@ -392,7 +392,7 @@ C 364.557973 86.416353 364.393701 86.019765 364.393701 85.606299
 C 364.393701 85.192833 364.557973 84.796246 364.850337 84.503881 
 C 365.142702 84.211516 365.53929 84.047244 365.952756 84.047244 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_32">
     <path d="M 290.551181 99.496063 
@@ -405,7 +405,7 @@ Q 288.850394 116.503937 288.850394 114.80315
 L 288.850394 101.19685 
 Q 288.850394 99.496063 290.551181 99.496063 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_33">
     <path d="M 365.952756 102.330709 
@@ -418,7 +418,7 @@ C 364.557973 104.699817 364.393701 104.30323 364.393701 103.889764
 C 364.393701 103.476298 364.557973 103.07971 364.850337 102.787345 
 C 365.142702 102.494981 365.53929 102.330709 365.952756 102.330709 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_34">
     <path d="M 290.551181 117.779528 
@@ -431,7 +431,7 @@ Q 288.850394 134.787402 288.850394 133.086614
 L 288.850394 119.480315 
 Q 288.850394 117.779528 290.551181 117.779528 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_35">
     <path d="M 365.952756 120.614173 
@@ -444,7 +444,7 @@ C 364.557973 122.983282 364.393701 122.586695 364.393701 122.173228
 C 364.393701 121.759762 364.557973 121.363175 364.850337 121.07081 
 C 365.142702 120.778445 365.53929 120.614173 365.952756 120.614173 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_36">
     <path d="M 374.740157 62.929134 
@@ -457,7 +457,7 @@ Q 373.03937 79.937008 373.03937 78.23622
 L 373.03937 64.629921 
 Q 373.03937 62.929134 374.740157 62.929134 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_37">
     <path d="M 434.551181 65.76378 
@@ -470,7 +470,7 @@ C 433.156398 68.132888 432.992126 67.736301 432.992126 67.322835
 C 432.992126 66.909368 433.156398 66.512781 433.448763 66.220416 
 C 433.741127 65.928051 434.137715 65.76378 434.551181 65.76378 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_38">
     <path d="M 443.338583 62.929134 
@@ -483,7 +483,7 @@ Q 441.637795 79.937008 441.637795 78.23622
 L 441.637795 64.629921 
 Q 441.637795 62.929134 443.338583 62.929134 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_39">
     <path d="M 507.11811 65.76378 
@@ -496,7 +496,7 @@ C 505.723327 68.132888 505.559055 67.736301 505.559055 67.322835
 C 505.559055 66.909368 505.723327 66.512781 506.015692 66.220416 
 C 506.308057 65.928051 506.704644 65.76378 507.11811 65.76378 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_40">
     <path d="M 443.338583 81.212598 
@@ -509,7 +509,7 @@ Q 441.637795 98.220472 441.637795 96.519685
 L 441.637795 82.913386 
 Q 441.637795 81.212598 443.338583 81.212598 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_41">
     <path d="M 507.11811 84.047244 
@@ -522,24 +522,24 @@ C 505.723327 86.416353 505.559055 86.019765 505.559055 85.606299
 C 505.559055 85.192833 505.723327 84.796246 506.015692 84.503881 
 C 506.308057 84.211516 506.704644 84.047244 507.11811 84.047244 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_42">
     <path d="M 372.233824 71.433071 
 L 371.338583 71.433071 
 L 371.338583 126.283465 
 L 370.443342 126.283465 
-" clip-path="url(#p50d7936bca)" style="fill: none; stroke: #0072b2; stroke-width: 0.5; stroke-linecap: round"/>
+" clip-path="url(#p566f74598a)" style="fill: none; stroke: #0072b2; stroke-width: 0.5; stroke-linecap: round"/>
     <path d="M 371.133824 70.833071 
 L 372.233824 71.433071 
 L 371.133824 72.033071 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.5; stroke-linecap: round"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.5; stroke-linecap: round"/>
     <path d="M 371.543342 126.883465 
 L 370.443342 126.283465 
 L 371.543342 125.683465 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.5; stroke-linecap: round"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.5; stroke-linecap: round"/>
    </g>
    <g id="patch_43">
     <path d="M 45.92126 157.322835 
@@ -552,7 +552,7 @@ Q 43.937008 176.031496 43.937008 174.047244
 L 43.937008 159.307087 
 Q 43.937008 157.322835 45.92126 157.322835 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #4d4d4d; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #4d4d4d; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_44">
     <path d="M 45.92126 184.535433 
@@ -565,7 +565,7 @@ Q 43.937008 214.015748 43.937008 212.031496
 L 43.937008 186.519685 
 Q 43.937008 184.535433 45.92126 184.535433 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_45">
     <path d="M 125.858268 184.535433 
@@ -578,7 +578,7 @@ Q 123.874016 214.015748 123.874016 212.031496
 L 123.874016 186.519685 
 Q 123.874016 184.535433 125.858268 184.535433 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_46">
     <path d="M 290.834646 184.535433 
@@ -591,7 +591,7 @@ Q 288.850394 214.015748 288.850394 212.031496
 L 288.850394 186.519685 
 Q 288.850394 184.535433 290.834646 184.535433 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_47">
     <path d="M 375.023622 184.535433 
@@ -604,7 +604,7 @@ Q 373.03937 214.015748 373.03937 212.031496
 L 373.03937 186.519685 
 Q 373.03937 184.535433 375.023622 184.535433 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_48">
     <path d="M 443.622047 184.535433 
@@ -617,7 +617,7 @@ Q 441.637795 214.015748 441.637795 212.031496
 L 441.637795 186.519685 
 Q 441.637795 184.535433 443.622047 184.535433 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_49">
     <path d="M 45.92126 222.80315 
@@ -630,7 +630,7 @@ Q 43.937008 264.188976 43.937008 262.204724
 L 43.937008 224.787402 
 Q 43.937008 222.80315 45.92126 222.80315 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #e6f1f7; stroke: #0072b2; stroke-width: 0.55; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #e6f1f7; stroke: #0072b2; stroke-width: 0.55; stroke-linejoin: miter"/>
    </g>
    <g id="patch_50">
     <path d="M 125.291339 232.724409 
@@ -643,7 +643,7 @@ Q 123.874016 248.314961 123.874016 246.897638
 L 123.874016 234.141732 
 Q 123.874016 232.724409 125.291339 232.724409 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_51">
     <path d="M 190.251969 232.724409 
@@ -656,7 +656,7 @@ Q 188.834646 248.314961 188.834646 246.897638
 L 188.834646 234.141732 
 Q 188.834646 232.724409 190.251969 232.724409 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_52">
     <path d="M 255.212598 232.724409 
@@ -669,7 +669,7 @@ Q 253.795276 248.314961 253.795276 246.897638
 L 253.795276 234.141732 
 Q 253.795276 232.724409 255.212598 232.724409 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_53">
     <path d="M 320.173228 232.724409 
@@ -682,7 +682,7 @@ Q 318.755906 248.314961 318.755906 246.897638
 L 318.755906 234.141732 
 Q 318.755906 232.724409 320.173228 232.724409 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_54">
     <path d="M 385.133858 232.724409 
@@ -695,7 +695,7 @@ Q 383.716535 248.314961 383.716535 246.897638
 L 383.716535 234.141732 
 Q 383.716535 232.724409 385.133858 232.724409 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_55">
     <path d="M 450.094488 232.724409 
@@ -708,7 +708,7 @@ Q 448.677165 248.314961 448.677165 246.897638
 L 448.677165 234.141732 
 Q 448.677165 232.724409 450.094488 232.724409 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_56">
     <path d="M 125.291339 249.448819 
@@ -721,7 +721,7 @@ Q 123.874016 265.03937 123.874016 263.622047
 L 123.874016 250.866142 
 Q 123.874016 249.448819 125.291339 249.448819 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_57">
     <path d="M 190.251969 249.448819 
@@ -734,7 +734,7 @@ Q 188.834646 265.03937 188.834646 263.622047
 L 188.834646 250.866142 
 Q 188.834646 249.448819 190.251969 249.448819 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_58">
     <path d="M 255.212598 249.448819 
@@ -747,7 +747,7 @@ Q 253.795276 265.03937 253.795276 263.622047
 L 253.795276 250.866142 
 Q 253.795276 249.448819 255.212598 249.448819 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_59">
     <path d="M 320.173228 249.448819 
@@ -760,7 +760,7 @@ Q 318.755906 265.03937 318.755906 263.622047
 L 318.755906 250.866142 
 Q 318.755906 249.448819 320.173228 249.448819 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_60">
     <path d="M 385.133858 249.448819 
@@ -773,9 +773,22 @@ Q 383.716535 265.03937 383.716535 263.622047
 L 383.716535 250.866142 
 Q 383.716535 249.448819 385.133858 249.448819 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_61">
+    <path d="M 450.094488 249.448819 
+L 509.385827 249.448819 
+Q 510.80315 249.448819 510.80315 250.866142 
+L 510.80315 263.622047 
+Q 510.80315 265.03937 509.385827 265.03937 
+L 450.094488 265.03937 
+Q 448.677165 265.03937 448.677165 263.622047 
+L 448.677165 250.866142 
+Q 448.677165 249.448819 450.094488 249.448819 
+z
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #999999; stroke-width: 0.4; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_62">
     <path d="M 10.204724 271.984252 
 C 10.618191 271.984252 11.014778 272.148524 11.307143 272.440889 
 C 11.599508 272.733253 11.76378 273.129841 11.76378 273.543307 
@@ -786,20 +799,20 @@ C 8.809941 274.353361 8.645669 273.956773 8.645669 273.543307
 C 8.645669 273.129841 8.809941 272.733253 9.102306 272.440889 
 C 9.394671 272.148524 9.791258 271.984252 10.204724 271.984252 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #0072b2; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_62">
-    <path d="M 160.110236 271.984252 
-C 160.523702 271.984252 160.92029 272.148524 161.212655 272.440889 
-C 161.505019 272.733253 161.669291 273.129841 161.669291 273.543307 
-C 161.669291 273.956773 161.505019 274.353361 161.212655 274.645726 
-C 160.92029 274.93809 160.523702 275.102362 160.110236 275.102362 
-C 159.69677 275.102362 159.300183 274.93809 159.007818 274.645726 
-C 158.715453 274.353361 158.551181 273.956773 158.551181 273.543307 
-C 158.551181 273.129841 158.715453 272.733253 159.007818 272.440889 
-C 159.300183 272.148524 159.69677 271.984252 160.110236 271.984252 
+   <g id="patch_63">
+    <path d="M 155.016486 271.984252 
+C 155.429952 271.984252 155.82654 272.148524 156.118905 272.440889 
+C 156.411269 272.733253 156.575541 273.129841 156.575541 273.543307 
+C 156.575541 273.956773 156.411269 274.353361 156.118905 274.645726 
+C 155.82654 274.93809 155.429952 275.102362 155.016486 275.102362 
+C 154.60302 275.102362 154.206433 274.93809 153.914068 274.645726 
+C 153.621703 274.353361 153.457431 273.956773 153.457431 273.543307 
+C 153.457431 273.129841 153.621703 272.733253 153.914068 272.440889 
+C 154.206433 272.148524 154.60302 271.984252 155.016486 271.984252 
 z
-" clip-path="url(#p50d7936bca)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
+" clip-path="url(#p566f74598a)" style="fill: #ffffff; stroke: #0072b2; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(8.503937 32.262635)">Human</text>
@@ -825,8 +838,8 @@ z
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="46.771654" y="25.547457" transform="rotate(-0 46.771654 25.547457)">Scientist</text>
    </g>
    <g id="text_7">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 32.737929)">asks the question and scopes</text>
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 38.836367)">it in time</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 32.737929)">asks the question and scopes it</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 38.836367)">in time</text>
    </g>
    <g id="text_8">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="126.708661" y="25.547457" transform="rotate(-0 126.708661 25.547457)">Research contract</text>
@@ -1016,8 +1029,8 @@ z
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(44.787402 110.368788)">stop rule is met</text>
    </g>
    <g id="text_68">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(442.488189 104.708632)">historical hypotheses mark</text>
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(442.488189 110.399257)">G8 not applicable</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(442.488189 104.739101)">historical hypotheses mark G8</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(442.488189 110.368788)">not applicable</text>
    </g>
    <g id="text_69">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start; fill: #d55e00" x="125.291339" y="151.735155" transform="rotate(-0 125.291339 151.735155)">▼ BeforeClaimCommit: provenance · semantic support · anachronism</text>
@@ -1078,13 +1091,12 @@ z
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="46.771654" y="228.791552" transform="rotate(-0 46.771654 228.791552)">Corpus store</text>
    </g>
    <g id="text_86">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 235.952727)">dated, layered witnesses,</text>
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 241.583586)">read only through scoped</text>
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 247.244914)">views (past views for blind</text>
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 252.875774)">tests)</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 235.952727)">dated, layered witnesses, read</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 241.583586)">only through scoped views</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(46.771654 247.244914)">(past views for blind tests)</text>
    </g>
    <g id="text_87">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="124.440945" y="228.791552" transform="rotate(-0 124.440945 228.791552)">Tool mesh: 73 tools, each behind one permission; every call passes the BeforeToolCall scope guard and the AfterToolCall result firewall</text>
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="124.440945" y="228.791552" transform="rotate(-0 124.440945 228.791552)">Tool mesh: 85 tools, each behind one permission; every call passes the BeforeToolCall scope guard and the AfterToolCall result firewall</text>
    </g>
    <g id="text_88">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="126.425197" y="238.287615" transform="rotate(-0 126.425197 238.287615)">retrieval 5</text>
@@ -1096,7 +1108,7 @@ z
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="126.425197" y="245.010215" transform="rotate(-0 126.425197 245.010215)">search, passages, lineage</text>
    </g>
    <g id="text_91">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="191.385827" y="238.287615" transform="rotate(-0 191.385827 238.287615)">study 35</text>
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="191.385827" y="238.287615" transform="rotate(-0 191.385827 238.287615)">study 41</text>
    </g>
    <g id="text_92">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end; fill: #4d4d4d" x="248.409449" y="237.923601" transform="rotate(-0 248.409449 237.923601)">C</text>
@@ -1186,20 +1198,29 @@ z
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="386.267717" y="261.734625" transform="rotate(-0 386.267717 261.734625)">sandboxed code</text>
    </g>
    <g id="text_121">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="13.606299" y="274.837204" transform="rotate(-0 13.606299 274.837204)">may consult a model where the rules leave a case uncertain</text>
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="451.228346" y="255.012024" transform="rotate(-0 451.228346 255.012024)">mydata 6</text>
    </g>
    <g id="text_122">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="163.511811" y="274.837204" transform="rotate(-0 163.511811 274.837204)">rules only</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end; fill: #4d4d4d" x="508.251969" y="254.648011" transform="rotate(-0 508.251969 254.648011)">M</text>
    </g>
    <g id="text_123">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start; fill: #4d4d4d" x="196.433071" y="274.837204" transform="rotate(-0 196.433071 274.837204)">Permissions: C classics:read · K kg:read · P kg:propose · A analysis:run · L literature:read · X codemode:exec · V validation:run</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="451.228346" y="261.734625" transform="rotate(-0 451.228346 261.734625)">the user's own data</text>
    </g>
    <g id="text_124">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="13.606299" y="274.837204" transform="rotate(-0 13.606299 274.837204)">may consult a model where the rules leave a case uncertain</text>
+   </g>
+   <g id="text_125">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="158.418061" y="274.837204" transform="rotate(-0 158.418061 274.837204)">rules only</text>
+   </g>
+   <g id="text_126">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start; fill: #4d4d4d" x="189.745571" y="274.837204" transform="rotate(-0 189.745571 274.837204)">Permissions: C classics:read · K kg:read · P kg:propose · A analysis:run · L literature:read · X codemode:exec · V validation:run · M mydata:read</text>
+   </g>
+   <g id="text_127">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start; fill: #4d4d4d" x="8.503937" y="282.207282" transform="rotate(-0 8.503937 282.207282)">Gates: G0 source, G1 transcription, G2 philology, G3 sense, G4 claim provenance, G5 independent sources, G6 falsification, G7 expert, G8 modern evidence</text>
    </g>
   </g>
   <g id="axes_2">
-   <g id="patch_63">
+   <g id="patch_64">
     <path d="M 182.834646 325.890142 
 C 183.511227 325.890142 184.160188 326.15895 184.638603 326.637365 
 C 185.117018 327.11578 185.385827 327.764742 185.385827 328.441323 
@@ -1210,9 +1231,9 @@ C 180.552273 329.766865 180.283465 329.117904 180.283465 328.441323
 C 180.283465 327.764742 180.552273 327.11578 181.030688 326.637365 
 C 181.509103 326.15895 182.158065 325.890142 182.834646 325.890142 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #0072b2"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #0072b2"/>
    </g>
-   <g id="patch_64">
+   <g id="patch_65">
     <path d="M 207.496063 325.890142 
 C 208.172644 325.890142 208.821605 326.15895 209.30002 326.637365 
 C 209.778436 327.11578 210.047244 327.764742 210.047244 328.441323 
@@ -1223,9 +1244,9 @@ C 205.21369 329.766865 204.944882 329.117904 204.944882 328.441323
 C 204.944882 327.764742 205.21369 327.11578 205.692106 326.637365 
 C 206.170521 326.15895 206.819482 325.890142 207.496063 325.890142 
 z
-" clip-path="url(#p1a1fc99be9)"/>
+" clip-path="url(#pea6e3ec213)"/>
    </g>
-   <g id="patch_65">
+   <g id="patch_66">
     <path d="M 232.15748 327.449197 
 C 232.420595 327.449197 232.672969 327.553734 232.859019 327.739784 
 C 233.04507 327.925834 233.149606 328.178208 233.149606 328.441323 
@@ -1236,9 +1257,9 @@ C 231.269891 328.956812 231.165354 328.704438 231.165354 328.441323
 C 231.165354 328.178208 231.269891 327.925834 231.455941 327.739784 
 C 231.641992 327.553734 231.894365 327.449197 232.15748 327.449197 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_66">
+   <g id="patch_67">
     <path d="M 256.818898 325.890142 
 C 257.495479 325.890142 258.14444 326.15895 258.622855 326.637365 
 C 259.10127 327.11578 259.370079 327.764742 259.370079 328.441323 
@@ -1249,9 +1270,9 @@ C 254.536525 329.766865 254.267717 329.117904 254.267717 328.441323
 C 254.267717 327.764742 254.536525 327.11578 255.01494 326.637365 
 C 255.493355 326.15895 256.142317 325.890142 256.818898 325.890142 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
-   <g id="patch_67">
+   <g id="patch_68">
     <path d="M 182.834646 338.575748 
 C 183.511227 338.575748 184.160188 338.844557 184.638603 339.322972 
 C 185.117018 339.801387 185.385827 340.450348 185.385827 341.126929 
@@ -1262,9 +1283,9 @@ C 180.552273 342.452471 180.283465 341.80351 180.283465 341.126929
 C 180.283465 340.450348 180.552273 339.801387 181.030688 339.322972 
 C 181.509103 338.844557 182.158065 338.575748 182.834646 338.575748 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #0072b2"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #0072b2"/>
    </g>
-   <g id="patch_68">
+   <g id="patch_69">
     <path d="M 207.496063 338.575748 
 C 208.172644 338.575748 208.821605 338.844557 209.30002 339.322972 
 C 209.778436 339.801387 210.047244 340.450348 210.047244 341.126929 
@@ -1275,9 +1296,9 @@ C 205.21369 342.452471 204.944882 341.80351 204.944882 341.126929
 C 204.944882 340.450348 205.21369 339.801387 205.692106 339.322972 
 C 206.170521 338.844557 206.819482 338.575748 207.496063 338.575748 
 z
-" clip-path="url(#p1a1fc99be9)"/>
+" clip-path="url(#pea6e3ec213)"/>
    </g>
-   <g id="patch_69">
+   <g id="patch_70">
     <path d="M 232.15748 338.575748 
 C 232.834061 338.575748 233.483023 338.844557 233.961438 339.322972 
 C 234.439853 339.801387 234.708661 340.450348 234.708661 341.126929 
@@ -1288,9 +1309,9 @@ C 229.875108 342.452471 229.606299 341.80351 229.606299 341.126929
 C 229.606299 340.450348 229.875108 339.801387 230.353523 339.322972 
 C 230.831938 338.844557 231.480899 338.575748 232.15748 338.575748 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #e69f00"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #e69f00"/>
    </g>
-   <g id="patch_70">
+   <g id="patch_71">
     <path d="M 256.818898 338.575748 
 C 257.495479 338.575748 258.14444 338.844557 258.622855 339.322972 
 C 259.10127 339.801387 259.370079 340.450348 259.370079 341.126929 
@@ -1301,9 +1322,9 @@ C 254.536525 342.452471 254.267717 341.80351 254.267717 341.126929
 C 254.267717 340.450348 254.536525 339.801387 255.01494 339.322972 
 C 255.493355 338.844557 256.142317 338.575748 256.818898 338.575748 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
-   <g id="patch_71">
+   <g id="patch_72">
     <path d="M 182.834646 348.261165 
 C 183.511227 348.261165 184.160188 348.529974 184.638603 349.008389 
 C 185.117018 349.486804 185.385827 350.135765 185.385827 350.812346 
@@ -1314,9 +1335,9 @@ C 180.552273 352.137889 180.283465 351.488928 180.283465 350.812346
 C 180.283465 350.135765 180.552273 349.486804 181.030688 349.008389 
 C 181.509103 348.529974 182.158065 348.261165 182.834646 348.261165 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #0072b2"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #0072b2"/>
    </g>
-   <g id="patch_72">
+   <g id="patch_73">
     <path d="M 207.496063 349.82022 
 C 207.759178 349.82022 208.011552 349.924757 208.197602 350.110807 
 C 208.383652 350.296858 208.488189 350.549232 208.488189 350.812346 
@@ -1327,9 +1348,9 @@ C 206.608474 351.327835 206.503937 351.075461 206.503937 350.812346
 C 206.503937 350.549232 206.608474 350.296858 206.794524 350.110807 
 C 206.980574 349.924757 207.232948 349.82022 207.496063 349.82022 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_73">
+   <g id="patch_74">
     <path d="M 232.15748 349.82022 
 C 232.420595 349.82022 232.672969 349.924757 232.859019 350.110807 
 C 233.04507 350.296858 233.149606 350.549232 233.149606 350.812346 
@@ -1340,9 +1361,9 @@ C 231.269891 351.327835 231.165354 351.075461 231.165354 350.812346
 C 231.165354 350.549232 231.269891 350.296858 231.455941 350.110807 
 C 231.641992 349.924757 231.894365 349.82022 232.15748 349.82022 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_74">
+   <g id="patch_75">
     <path d="M 256.818898 348.261165 
 C 257.495479 348.261165 258.14444 348.529974 258.622855 349.008389 
 C 259.10127 349.486804 259.370079 350.135765 259.370079 350.812346 
@@ -1353,9 +1374,9 @@ C 254.536525 352.137889 254.267717 351.488928 254.267717 350.812346
 C 254.267717 350.135765 254.536525 349.486804 255.01494 349.008389 
 C 255.493355 348.529974 256.142317 348.261165 256.818898 348.261165 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
-   <g id="patch_75">
+   <g id="patch_76">
     <path d="M 182.834646 362.505827 
 C 183.097761 362.505827 183.350134 362.610363 183.536185 362.796414 
 C 183.722235 362.982464 183.826772 363.234838 183.826772 363.497953 
@@ -1366,9 +1387,9 @@ C 181.947056 364.013441 181.84252 363.761068 181.84252 363.497953
 C 181.84252 363.234838 181.947056 362.982464 182.133107 362.796414 
 C 182.319157 362.610363 182.571531 362.505827 182.834646 362.505827 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_76">
+   <g id="patch_77">
     <path d="M 207.496063 360.946772 
 C 208.172644 360.946772 208.821605 361.21558 209.30002 361.693995 
 C 209.778436 362.17241 210.047244 362.821372 210.047244 363.497953 
@@ -1379,9 +1400,9 @@ C 205.21369 364.823495 204.944882 364.174534 204.944882 363.497953
 C 204.944882 362.821372 205.21369 362.17241 205.692106 361.693995 
 C 206.170521 361.21558 206.819482 360.946772 207.496063 360.946772 
 z
-" clip-path="url(#p1a1fc99be9)"/>
+" clip-path="url(#pea6e3ec213)"/>
    </g>
-   <g id="patch_77">
+   <g id="patch_78">
     <path d="M 232.15748 362.505827 
 C 232.420595 362.505827 232.672969 362.610363 232.859019 362.796414 
 C 233.04507 362.982464 233.149606 363.234838 233.149606 363.497953 
@@ -1392,9 +1413,9 @@ C 231.269891 364.013441 231.165354 363.761068 231.165354 363.497953
 C 231.165354 363.234838 231.269891 362.982464 231.455941 362.796414 
 C 231.641992 362.610363 231.894365 362.505827 232.15748 362.505827 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_78">
+   <g id="patch_79">
     <path d="M 256.818898 360.946772 
 C 257.495479 360.946772 258.14444 361.21558 258.622855 361.693995 
 C 259.10127 362.17241 259.370079 362.821372 259.370079 363.497953 
@@ -1405,9 +1426,9 @@ C 254.536525 364.823495 254.267717 364.174534 254.267717 363.497953
 C 254.267717 362.821372 254.536525 362.17241 255.01494 361.693995 
 C 255.493355 361.21558 256.142317 360.946772 256.818898 360.946772 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
-   <g id="patch_79">
+   <g id="patch_80">
     <path d="M 182.834646 375.191433 
 C 183.097761 375.191433 183.350134 375.29597 183.536185 375.48202 
 C 183.722235 375.66807 183.826772 375.920444 183.826772 376.183559 
@@ -1418,9 +1439,9 @@ C 181.947056 376.699048 181.84252 376.446674 181.84252 376.183559
 C 181.84252 375.920444 181.947056 375.66807 182.133107 375.48202 
 C 182.319157 375.29597 182.571531 375.191433 182.834646 375.191433 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_80">
+   <g id="patch_81">
     <path d="M 207.496063 373.632378 
 C 208.172644 373.632378 208.821605 373.901186 209.30002 374.379602 
 C 209.778436 374.858017 210.047244 375.506978 210.047244 376.183559 
@@ -1431,9 +1452,9 @@ C 205.21369 377.509101 204.944882 376.86014 204.944882 376.183559
 C 204.944882 375.506978 205.21369 374.858017 205.692106 374.379602 
 C 206.170521 373.901186 206.819482 373.632378 207.496063 373.632378 
 z
-" clip-path="url(#p1a1fc99be9)"/>
+" clip-path="url(#pea6e3ec213)"/>
    </g>
-   <g id="patch_81">
+   <g id="patch_82">
     <path d="M 232.15748 373.632378 
 C 232.834061 373.632378 233.483023 373.901186 233.961438 374.379602 
 C 234.439853 374.858017 234.708661 375.506978 234.708661 376.183559 
@@ -1444,9 +1465,9 @@ C 229.875108 377.509101 229.606299 376.86014 229.606299 376.183559
 C 229.606299 375.506978 229.875108 374.858017 230.353523 374.379602 
 C 230.831938 373.901186 231.480899 373.632378 232.15748 373.632378 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #e69f00"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #e69f00"/>
    </g>
-   <g id="patch_82">
+   <g id="patch_83">
     <path d="M 256.818898 373.632378 
 C 257.495479 373.632378 258.14444 373.901186 258.622855 374.379602 
 C 259.10127 374.858017 259.370079 375.506978 259.370079 376.183559 
@@ -1457,9 +1478,9 @@ C 254.536525 377.509101 254.267717 376.86014 254.267717 376.183559
 C 254.267717 375.506978 254.536525 374.858017 255.01494 374.379602 
 C 255.493355 373.901186 256.142317 373.632378 256.818898 373.632378 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
-   <g id="patch_83">
+   <g id="patch_84">
     <path d="M 182.834646 384.87685 
 C 183.097761 384.87685 183.350134 384.981387 183.536185 385.167437 
 C 183.722235 385.353488 183.826772 385.605861 183.826772 385.868976 
@@ -1470,9 +1491,9 @@ C 181.947056 386.384465 181.84252 386.132091 181.84252 385.868976
 C 181.84252 385.605861 181.947056 385.353488 182.133107 385.167437 
 C 182.319157 384.981387 182.571531 384.87685 182.834646 384.87685 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_84">
+   <g id="patch_85">
     <path d="M 207.496063 383.317795 
 C 208.172644 383.317795 208.821605 383.586604 209.30002 384.065019 
 C 209.778436 384.543434 210.047244 385.192395 210.047244 385.868976 
@@ -1483,9 +1504,9 @@ C 205.21369 387.194519 204.944882 386.545558 204.944882 385.868976
 C 204.944882 385.192395 205.21369 384.543434 205.692106 384.065019 
 C 206.170521 383.586604 206.819482 383.317795 207.496063 383.317795 
 z
-" clip-path="url(#p1a1fc99be9)"/>
+" clip-path="url(#pea6e3ec213)"/>
    </g>
-   <g id="patch_85">
+   <g id="patch_86">
     <path d="M 232.15748 383.317795 
 C 232.834061 383.317795 233.483023 383.586604 233.961438 384.065019 
 C 234.439853 384.543434 234.708661 385.192395 234.708661 385.868976 
@@ -1496,9 +1517,9 @@ C 229.875108 387.194519 229.606299 386.545558 229.606299 385.868976
 C 229.606299 385.192395 229.875108 384.543434 230.353523 384.065019 
 C 230.831938 383.586604 231.480899 383.317795 232.15748 383.317795 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #e69f00"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #e69f00"/>
    </g>
-   <g id="patch_86">
+   <g id="patch_87">
     <path d="M 256.818898 384.87685 
 C 257.082013 384.87685 257.334386 384.981387 257.520437 385.167437 
 C 257.706487 385.353488 257.811024 385.605861 257.811024 385.868976 
@@ -1509,9 +1530,9 @@ C 255.931308 386.384465 255.826772 386.132091 255.826772 385.868976
 C 255.826772 385.605861 255.931308 385.353488 256.117359 385.167437 
 C 256.303409 384.981387 256.555783 384.87685 256.818898 384.87685 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_87">
+   <g id="patch_88">
     <path d="M 182.834646 394.562268 
 C 183.097761 394.562268 183.350134 394.666804 183.536185 394.852855 
 C 183.722235 395.038905 183.826772 395.291279 183.826772 395.554394 
@@ -1522,9 +1543,9 @@ C 181.947056 396.069882 181.84252 395.817509 181.84252 395.554394
 C 181.84252 395.291279 181.947056 395.038905 182.133107 394.852855 
 C 182.319157 394.666804 182.571531 394.562268 182.834646 394.562268 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_88">
+   <g id="patch_89">
     <path d="M 207.496063 394.562268 
 C 207.759178 394.562268 208.011552 394.666804 208.197602 394.852855 
 C 208.383652 395.038905 208.488189 395.291279 208.488189 395.554394 
@@ -1535,9 +1556,9 @@ C 206.608474 396.069882 206.503937 395.817509 206.503937 395.554394
 C 206.503937 395.291279 206.608474 395.038905 206.794524 394.852855 
 C 206.980574 394.666804 207.232948 394.562268 207.496063 394.562268 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_89">
+   <g id="patch_90">
     <path d="M 232.15748 393.003213 
 C 232.834061 393.003213 233.483023 393.272021 233.961438 393.750436 
 C 234.439853 394.228851 234.708661 394.877813 234.708661 395.554394 
@@ -1548,9 +1569,9 @@ C 229.875108 396.879936 229.606299 396.230975 229.606299 395.554394
 C 229.606299 394.877813 229.875108 394.228851 230.353523 393.750436 
 C 230.831938 393.272021 231.480899 393.003213 232.15748 393.003213 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #e69f00"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #e69f00"/>
    </g>
-   <g id="patch_90">
+   <g id="patch_91">
     <path d="M 256.818898 394.562268 
 C 257.082013 394.562268 257.334386 394.666804 257.520437 394.852855 
 C 257.706487 395.038905 257.811024 395.291279 257.811024 395.554394 
@@ -1561,9 +1582,9 @@ C 255.931308 396.069882 255.826772 395.817509 255.826772 395.554394
 C 255.826772 395.291279 255.931308 395.038905 256.117359 394.852855 
 C 256.303409 394.666804 256.555783 394.562268 256.818898 394.562268 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_91">
+   <g id="patch_92">
     <path d="M 182.834646 404.247685 
 C 183.097761 404.247685 183.350134 404.352222 183.536185 404.538272 
 C 183.722235 404.724322 183.826772 404.976696 183.826772 405.239811 
@@ -1574,9 +1595,9 @@ C 181.947056 405.7553 181.84252 405.502926 181.84252 405.239811
 C 181.84252 404.976696 181.947056 404.724322 182.133107 404.538272 
 C 182.319157 404.352222 182.571531 404.247685 182.834646 404.247685 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_92">
+   <g id="patch_93">
     <path d="M 207.496063 404.247685 
 C 207.759178 404.247685 208.011552 404.352222 208.197602 404.538272 
 C 208.383652 404.724322 208.488189 404.976696 208.488189 405.239811 
@@ -1587,9 +1608,9 @@ C 206.608474 405.7553 206.503937 405.502926 206.503937 405.239811
 C 206.503937 404.976696 206.608474 404.724322 206.794524 404.538272 
 C 206.980574 404.352222 207.232948 404.247685 207.496063 404.247685 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_93">
+   <g id="patch_94">
     <path d="M 232.15748 402.68863 
 C 232.834061 402.68863 233.483023 402.957438 233.961438 403.435854 
 C 234.439853 403.914269 234.708661 404.56323 234.708661 405.239811 
@@ -1600,9 +1621,9 @@ C 229.875108 406.565353 229.606299 405.916392 229.606299 405.239811
 C 229.606299 404.56323 229.875108 403.914269 230.353523 403.435854 
 C 230.831938 402.957438 231.480899 402.68863 232.15748 402.68863 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #e69f00"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #e69f00"/>
    </g>
-   <g id="patch_94">
+   <g id="patch_95">
     <path d="M 256.818898 402.68863 
 C 257.495479 402.68863 258.14444 402.957438 258.622855 403.435854 
 C 259.10127 403.914269 259.370079 404.56323 259.370079 405.239811 
@@ -1613,9 +1634,9 @@ C 254.536525 406.565353 254.267717 405.916392 254.267717 405.239811
 C 254.267717 404.56323 254.536525 403.914269 255.01494 403.435854 
 C 255.493355 402.957438 256.142317 402.68863 256.818898 402.68863 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
-   <g id="patch_95">
+   <g id="patch_96">
     <path d="M 182.834646 416.933291 
 C 183.097761 416.933291 183.350134 417.037828 183.536185 417.223878 
 C 183.722235 417.409929 183.826772 417.662302 183.826772 417.925417 
@@ -1626,9 +1647,9 @@ C 181.947056 418.440906 181.84252 418.188532 181.84252 417.925417
 C 181.84252 417.662302 181.947056 417.409929 182.133107 417.223878 
 C 182.319157 417.037828 182.571531 416.933291 182.834646 416.933291 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_96">
+   <g id="patch_97">
     <path d="M 207.496063 416.933291 
 C 207.759178 416.933291 208.011552 417.037828 208.197602 417.223878 
 C 208.383652 417.409929 208.488189 417.662302 208.488189 417.925417 
@@ -1639,9 +1660,9 @@ C 206.608474 418.440906 206.503937 418.188532 206.503937 417.925417
 C 206.503937 417.662302 206.608474 417.409929 206.794524 417.223878 
 C 206.980574 417.037828 207.232948 416.933291 207.496063 416.933291 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_97">
+   <g id="patch_98">
     <path d="M 232.15748 416.933291 
 C 232.420595 416.933291 232.672969 417.037828 232.859019 417.223878 
 C 233.04507 417.409929 233.149606 417.662302 233.149606 417.925417 
@@ -1652,9 +1673,9 @@ C 231.269891 418.440906 231.165354 418.188532 231.165354 417.925417
 C 231.165354 417.662302 231.269891 417.409929 231.455941 417.223878 
 C 231.641992 417.037828 231.894365 416.933291 232.15748 416.933291 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #d9d9d9"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #d9d9d9"/>
    </g>
-   <g id="patch_98">
+   <g id="patch_99">
     <path d="M 256.818898 415.374236 
 C 257.495479 415.374236 258.14444 415.643045 258.622855 416.12146 
 C 259.10127 416.599875 259.370079 417.248836 259.370079 417.925417 
@@ -1665,374 +1686,374 @@ C 254.536525 419.25096 254.267717 418.601998 254.267717 417.925417
 C 254.267717 417.248836 254.536525 416.599875 255.01494 416.12146 
 C 255.493355 415.643045 256.142317 415.374236 256.818898 415.374236 
 z
-" clip-path="url(#p1a1fc99be9)" style="fill: #999999"/>
+" clip-path="url(#pea6e3ec213)" style="fill: #999999"/>
    </g>
    <g id="line2d_1">
     <path d="M 5.669291 318.047244 
 L 272.125984 318.047244 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_2">
     <path d="M 5.669291 336.28422 
 L 272.125984 336.28422 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_3">
     <path d="M 5.669291 345.969638 
 L 272.125984 345.969638 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_4">
     <path d="M 5.669291 355.655055 
 L 272.125984 355.655055 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_5">
     <path d="M 5.669291 371.34085 
 L 272.125984 371.34085 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_6">
     <path d="M 5.669291 381.026268 
 L 272.125984 381.026268 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_7">
     <path d="M 5.669291 390.711685 
 L 272.125984 390.711685 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_8">
     <path d="M 5.669291 400.397102 
 L 272.125984 400.397102 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_9">
     <path d="M 5.669291 410.08252 
 L 272.125984 410.08252 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="line2d_10">
     <path d="M 5.669291 425.768315 
 L 272.125984 425.768315 
-" clip-path="url(#p1a1fc99be9)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
-   </g>
-   <g id="text_125">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="182.834646" y="315.188879" transform="rotate(-0 182.834646 315.188879)">Agent</text>
-   </g>
-   <g id="text_126">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="207.496063" y="315.188986" transform="rotate(-0 207.496063 315.188986)">Validator</text>
-   </g>
-   <g id="text_127">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="232.15748" y="315.188986" transform="rotate(-0 232.15748 315.188986)">Human</text>
+" clip-path="url(#pea6e3ec213)" style="fill: none; stroke: #d9d9d9; stroke-width: 0.3; stroke-linecap: square"/>
    </g>
    <g id="text_128">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="256.818898" y="315.188986" transform="rotate(-0 256.818898 315.188986)">Kernel</text>
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="182.834646" y="315.188879" transform="rotate(-0 182.834646 315.188879)">Agent</text>
    </g>
    <g id="text_129">
-    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="315.188879" transform="rotate(-0 5.669291 315.188879)">Events a principal may emit (count)</text>
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="207.496063" y="315.188986" transform="rotate(-0 207.496063 315.188986)">Validator</text>
    </g>
    <g id="text_130">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="232.15748" y="315.188986" transform="rotate(-0 232.15748 315.188986)">Human</text>
+   </g>
+   <g id="text_131">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="256.818898" y="315.188986" transform="rotate(-0 256.818898 315.188986)">Kernel</text>
+   </g>
+   <g id="text_132">
+    <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="315.188879" transform="rotate(-0 5.669291 315.188879)">Events a principal may emit (count)</text>
+   </g>
+   <g id="text_133">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 326.40722)">Plan and run tasks; scope the corpus; propose evidence, claims,</text>
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 332.039252)">lineage, observations; generate, review and revise hypotheses (21)</text>
    </g>
-   <g id="text_131">
+   <g id="text_134">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="342.094188" transform="rotate(-0 5.669291 342.094188)">Call tools; record a decision; propose a change (7)</text>
    </g>
-   <g id="text_132">
+   <g id="text_135">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="351.779605" transform="rotate(-0 5.669291 351.779605)">Call a model (1)</text>
    </g>
-   <g id="text_133">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 361.465022)">Grade: gates, scores, ranks, confirmation; evaluate the contract;</text>
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 367.095882)">publish (6)</text>
-   </g>
-   <g id="text_134">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="377.150817" transform="rotate(-0 5.669291 377.150817)">Reject a hypothesis; retract evidence; write memory (3)</text>
-   </g>
-   <g id="text_135">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="386.836235" transform="rotate(-0 5.669291 386.836235)">Close an objection; approve or reject a change (3)</text>
-   </g>
    <g id="text_136">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="396.521652" transform="rotate(-0 5.669291 396.521652)">Approve or reject a hypothesis (G7); steer a research (3)</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 361.465022)">Grade: gates, scores, ranks, confirmation; evaluate the contract; publish</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 367.095882)">(6)</text>
    </g>
    <g id="text_137">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="406.207069" transform="rotate(-0 5.669291 406.207069)">Stop a research (1)</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="377.150817" transform="rotate(-0 5.669291 377.150817)">Reject a hypothesis; retract evidence; write memory (3)</text>
    </g>
    <g id="text_138">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="386.836235" transform="rotate(-0 5.669291 386.836235)">Close an objection; approve or reject a change (3)</text>
+   </g>
+   <g id="text_139">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="396.521652" transform="rotate(-0 5.669291 396.521652)">Approve or reject a hypothesis (G7); steer a research (3)</text>
+   </g>
+   <g id="text_140">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="5.669291" y="406.207069" transform="rotate(-0 5.669291 406.207069)">Stop a research (1)</text>
+   </g>
+   <g id="text_141">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 415.894049)">Open the contract, run rounds, spawn agents, route models, budget,</text>
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'" transform="translate(5.669291 421.523346)">checkpoint, complete (16)</text>
    </g>
-   <g id="text_139">
+   <g id="text_142">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(5.669291 432.713703)">Gate results: gates are graded by validators, never by the work they grade. Objections: an objection is closed by</text>
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(5.669291 438.344562)">re-running its check (validator) or by an expert, never by a model. Only a human expert sets G7.</text>
    </g>
   </g>
   <g id="axes_3">
-   <g id="patch_99">
+   <g id="patch_100">
     <path d="M 439.086614 322.866142 
 L 446.031496 322.866142 
 L 446.031496 350.929134 
 L 439.086614 350.929134 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #f7e2d1"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #f7e2d1"/>
    </g>
-   <g id="patch_100">
+   <g id="patch_101">
     <path d="M 446.031496 322.866142 
 L 452.976378 322.866142 
 L 452.976378 350.929134 
 L 446.031496 350.929134 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #f7e2d1"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #f7e2d1"/>
    </g>
-   <g id="patch_101">
+   <g id="patch_102">
     <path d="M 452.976378 322.866142 
 L 459.92126 322.866142 
 L 459.92126 350.929134 
 L 452.976378 350.929134 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #f7e2d1"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #f7e2d1"/>
    </g>
-   <g id="patch_102">
+   <g id="patch_103">
     <path d="M 459.92126 322.866142 
 L 466.866142 322.866142 
 L 466.866142 350.929134 
 L 459.92126 350.929134 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #f7e2d1"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #f7e2d1"/>
    </g>
-   <g id="patch_103">
+   <g id="patch_104">
     <path d="M 480.755906 322.866142 
 L 487.700787 322.866142 
 L 487.700787 350.929134 
 L 480.755906 350.929134 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #f7e2d1"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #f7e2d1"/>
    </g>
    <g id="line2d_11">
     <path d="M 440.787402 336.897638 
 L 444.330709 336.897638 
-" clip-path="url(#p7e9def68d2)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p71fb75a14c)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_12">
     <path d="M 447.732283 336.897638 
 L 451.275591 336.897638 
-" clip-path="url(#p7e9def68d2)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p71fb75a14c)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_13">
     <path d="M 454.677165 336.897638 
 L 458.220472 336.897638 
-" clip-path="url(#p7e9def68d2)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p71fb75a14c)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_14">
     <path d="M 461.622047 336.897638 
 L 465.165354 336.897638 
-" clip-path="url(#p7e9def68d2)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p71fb75a14c)" style="fill: none; stroke: #4d4d4d; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_15">
     <path d="M 293.669291 368.787402 
 L 293.669291 447.165354 
-" clip-path="url(#p7e9def68d2)" style="fill: none; stroke: #0072b2; stroke-width: 0.6; stroke-linecap: square"/>
-   </g>
-   <g id="text_140">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="352.913386" y="329.404133" transform="rotate(-0 352.913386 329.404133)">Deng Zhen print, 1340</text>
-   </g>
-   <g id="text_141">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="359.220472" y="329.839982" transform="rotate(-0 359.220472 329.839982)">男</text>
-   </g>
-   <g id="text_142">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="366.165354" y="329.809982" transform="rotate(-0 366.165354 329.809982)">子</text>
+" clip-path="url(#p71fb75a14c)" style="fill: none; stroke: #0072b2; stroke-width: 0.6; stroke-linecap: square"/>
    </g>
    <g id="text_143">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="373.110236" y="330.001701" transform="rotate(-0 373.110236 330.001701)">消</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="352.913386" y="329.404133" transform="rotate(-0 352.913386 329.404133)">Deng Zhen print, 1340</text>
    </g>
    <g id="text_144">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="380.055118" y="329.968889" transform="rotate(-0 380.055118 329.968889)">渴</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="359.220472" y="329.839982" transform="rotate(-0 359.220472 329.839982)">男</text>
    </g>
    <g id="text_145">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="387" y="329.956701" transform="rotate(-0 387 329.956701)">小</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="366.165354" y="329.809982" transform="rotate(-0 366.165354 329.809982)">子</text>
    </g>
    <g id="text_146">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="393.944882" y="329.986701" transform="rotate(-0 393.944882 329.986701)">便</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="373.110236" y="330.001701" transform="rotate(-0 373.110236 330.001701)">消</text>
    </g>
    <g id="text_147">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="400.889764" y="329.971701" transform="rotate(-0 400.889764 329.971701)">反</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="380.055118" y="329.968889" transform="rotate(-0 380.055118 329.968889)">渴</text>
    </g>
    <g id="text_148">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="407.834646" y="330.004982" transform="rotate(-0 407.834646 330.004982)">多</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="387" y="329.956701" transform="rotate(-0 387 329.956701)">小</text>
    </g>
    <g id="text_149">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="414.779528" y="329.881701" transform="rotate(-0 414.779528 329.881701)">以</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="393.944882" y="329.986701" transform="rotate(-0 393.944882 329.986701)">便</text>
    </g>
    <g id="text_150">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="421.724409" y="330.016701" transform="rotate(-0 421.724409 330.016701)">飲</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="400.889764" y="329.971701" transform="rotate(-0 400.889764 329.971701)">反</text>
    </g>
    <g id="text_151">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="428.669291" y="329.662971" transform="rotate(-0 428.669291 329.662971)">一</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="407.834646" y="330.004982" transform="rotate(-0 407.834646 330.004982)">多</text>
    </g>
    <g id="text_152">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="435.614173" y="329.996076" transform="rotate(-0 435.614173 329.996076)">斗</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="414.779528" y="329.881701" transform="rotate(-0 414.779528 329.881701)">以</text>
    </g>
    <g id="text_153">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="442.559055" y="329.956701" transform="rotate(-0 442.559055 329.956701)">小</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="421.724409" y="330.016701" transform="rotate(-0 421.724409 330.016701)">飲</text>
    </g>
    <g id="text_154">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="449.503937" y="329.986701" transform="rotate(-0 449.503937 329.986701)">便</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="428.669291" y="329.662971" transform="rotate(-0 428.669291 329.662971)">一</text>
    </g>
    <g id="text_155">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.448819" y="329.662971" transform="rotate(-0 456.448819 329.662971)">一</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="435.614173" y="329.996076" transform="rotate(-0 435.614173 329.996076)">斗</text>
    </g>
    <g id="text_156">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="463.393701" y="329.996076" transform="rotate(-0 463.393701 329.996076)">斗</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="442.559055" y="329.956701" transform="rotate(-0 442.559055 329.956701)">小</text>
    </g>
    <g id="text_157">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="470.338583" y="329.884982" transform="rotate(-0 470.338583 329.884982)">腎</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="449.503937" y="329.986701" transform="rotate(-0 449.503937 329.986701)">便</text>
    </g>
    <g id="text_158">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="477.283465" y="330.001701" transform="rotate(-0 477.283465 330.001701)">氣</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.448819" y="329.662971" transform="rotate(-0 456.448819 329.662971)">一</text>
    </g>
    <g id="text_159">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="329.989982" transform="rotate(-0 484.228346 329.989982)">丸</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="463.393701" y="329.996076" transform="rotate(-0 463.393701 329.996076)">斗</text>
    </g>
    <g id="text_160">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="491.173228" y="329.986701" transform="rotate(-0 491.173228 329.986701)">主</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="470.338583" y="329.884982" transform="rotate(-0 470.338583 329.884982)">腎</text>
    </g>
    <g id="text_161">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="498.11811" y="330.013889" transform="rotate(-0 498.11811 330.013889)">之</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="477.283465" y="330.001701" transform="rotate(-0 477.283465 330.001701)">氣</text>
    </g>
    <g id="text_162">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="352.913386" y="338.192999" transform="rotate(-0 352.913386 338.192999)">Wu Qian manuscript, 1395</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="329.989982" transform="rotate(-0 484.228346 329.989982)">丸</text>
    </g>
    <g id="text_163">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="359.220472" y="338.627384" transform="rotate(-0 359.220472 338.627384)">男</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="491.173228" y="329.986701" transform="rotate(-0 491.173228 329.986701)">主</text>
    </g>
    <g id="text_164">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="366.165354" y="338.597384" transform="rotate(-0 366.165354 338.597384)">子</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="498.11811" y="330.013889" transform="rotate(-0 498.11811 330.013889)">之</text>
    </g>
    <g id="text_165">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="373.110236" y="338.789103" transform="rotate(-0 373.110236 338.789103)">消</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="352.913386" y="338.192999" transform="rotate(-0 352.913386 338.192999)">Wu Qian manuscript, 1395</text>
    </g>
    <g id="text_166">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="380.055118" y="338.75629" transform="rotate(-0 380.055118 338.75629)">渴</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="359.220472" y="338.627384" transform="rotate(-0 359.220472 338.627384)">男</text>
    </g>
    <g id="text_167">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="387" y="338.744103" transform="rotate(-0 387 338.744103)">小</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="366.165354" y="338.597384" transform="rotate(-0 366.165354 338.597384)">子</text>
    </g>
    <g id="text_168">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="393.944882" y="338.774103" transform="rotate(-0 393.944882 338.774103)">便</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="373.110236" y="338.789103" transform="rotate(-0 373.110236 338.789103)">消</text>
    </g>
    <g id="text_169">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="400.889764" y="338.759103" transform="rotate(-0 400.889764 338.759103)">反</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="380.055118" y="338.75629" transform="rotate(-0 380.055118 338.75629)">渴</text>
    </g>
    <g id="text_170">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="407.834646" y="338.792384" transform="rotate(-0 407.834646 338.792384)">多</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="387" y="338.744103" transform="rotate(-0 387 338.744103)">小</text>
    </g>
    <g id="text_171">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="414.779528" y="338.669103" transform="rotate(-0 414.779528 338.669103)">以</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="393.944882" y="338.774103" transform="rotate(-0 393.944882 338.774103)">便</text>
    </g>
    <g id="text_172">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="421.724409" y="338.804103" transform="rotate(-0 421.724409 338.804103)">飲</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="400.889764" y="338.759103" transform="rotate(-0 400.889764 338.759103)">反</text>
    </g>
    <g id="text_173">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="428.669291" y="338.450372" transform="rotate(-0 428.669291 338.450372)">一</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="407.834646" y="338.792384" transform="rotate(-0 407.834646 338.792384)">多</text>
    </g>
    <g id="text_174">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="435.614173" y="338.783478" transform="rotate(-0 435.614173 338.783478)">斗</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="414.779528" y="338.669103" transform="rotate(-0 414.779528 338.669103)">以</text>
    </g>
    <g id="text_175">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="470.338583" y="338.672384" transform="rotate(-0 470.338583 338.672384)">腎</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="421.724409" y="338.804103" transform="rotate(-0 421.724409 338.804103)">飲</text>
    </g>
    <g id="text_176">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="477.283465" y="338.789103" transform="rotate(-0 477.283465 338.789103)">氣</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="428.669291" y="338.450372" transform="rotate(-0 428.669291 338.450372)">一</text>
    </g>
    <g id="text_177">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="338.777384" transform="rotate(-0 484.228346 338.777384)">丸</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="435.614173" y="338.783478" transform="rotate(-0 435.614173 338.783478)">斗</text>
    </g>
    <g id="text_178">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="491.173228" y="338.774103" transform="rotate(-0 491.173228 338.774103)">主</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="470.338583" y="338.672384" transform="rotate(-0 470.338583 338.672384)">腎</text>
    </g>
    <g id="text_179">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="498.11811" y="338.80129" transform="rotate(-0 498.11811 338.80129)">之</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="477.283465" y="338.789103" transform="rotate(-0 477.283465 338.789103)">氣</text>
    </g>
    <g id="text_180">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="352.913386" y="346.978936" transform="rotate(-0 352.913386 346.978936)">Maijing, Yuan print, 1330</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="338.777384" transform="rotate(-0 484.228346 338.777384)">丸</text>
    </g>
    <g id="text_181">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="359.220472" y="347.414785" transform="rotate(-0 359.220472 347.414785)">男</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="491.173228" y="338.774103" transform="rotate(-0 491.173228 338.774103)">主</text>
    </g>
    <g id="text_182">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="366.165354" y="347.384785" transform="rotate(-0 366.165354 347.384785)">子</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="498.11811" y="338.80129" transform="rotate(-0 498.11811 338.80129)">之</text>
    </g>
    <g id="text_183">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="373.110236" y="347.576504" transform="rotate(-0 373.110236 347.576504)">消</text>
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: end" x="352.913386" y="346.978936" transform="rotate(-0 352.913386 346.978936)">Maijing, Yuan print, 1330</text>
    </g>
    <g id="text_184">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="380.055118" y="347.543692" transform="rotate(-0 380.055118 347.543692)">渴</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="359.220472" y="347.414785" transform="rotate(-0 359.220472 347.414785)">男</text>
    </g>
    <g id="text_185">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="387" y="347.531504" transform="rotate(-0 387 347.531504)">小</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="366.165354" y="347.384785" transform="rotate(-0 366.165354 347.384785)">子</text>
    </g>
    <g id="text_186">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="393.944882" y="347.561504" transform="rotate(-0 393.944882 347.561504)">便</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="373.110236" y="347.576504" transform="rotate(-0 373.110236 347.576504)">消</text>
    </g>
    <g id="text_187">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="400.889764" y="347.546504" transform="rotate(-0 400.889764 347.546504)">反</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="380.055118" y="347.543692" transform="rotate(-0 380.055118 347.543692)">渴</text>
    </g>
    <g id="text_188">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="407.834646" y="347.579785" transform="rotate(-0 407.834646 347.579785)">多</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="387" y="347.531504" transform="rotate(-0 387 347.531504)">小</text>
    </g>
    <g id="text_189">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="414.779528" y="347.456504" transform="rotate(-0 414.779528 347.456504)">以</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="393.944882" y="347.561504" transform="rotate(-0 393.944882 347.561504)">便</text>
    </g>
    <g id="text_190">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="421.724409" y="347.591504" transform="rotate(-0 421.724409 347.591504)">飲</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="400.889764" y="347.546504" transform="rotate(-0 400.889764 347.546504)">反</text>
    </g>
    <g id="text_191">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="428.669291" y="347.237774" transform="rotate(-0 428.669291 347.237774)">一</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="407.834646" y="347.579785" transform="rotate(-0 407.834646 347.579785)">多</text>
    </g>
    <g id="text_192">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="435.614173" y="347.570879" transform="rotate(-0 435.614173 347.570879)">斗</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="414.779528" y="347.456504" transform="rotate(-0 414.779528 347.456504)">以</text>
    </g>
    <g id="text_193">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="442.559055" y="347.531504" transform="rotate(-0 442.559055 347.531504)">小</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="421.724409" y="347.591504" transform="rotate(-0 421.724409 347.591504)">飲</text>
    </g>
    <g id="text_194">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="449.503937" y="347.561504" transform="rotate(-0 449.503937 347.561504)">便</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="428.669291" y="347.237774" transform="rotate(-0 428.669291 347.237774)">一</text>
    </g>
    <g id="text_195">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.448819" y="347.237774" transform="rotate(-0 456.448819 347.237774)">一</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="435.614173" y="347.570879" transform="rotate(-0 435.614173 347.570879)">斗</text>
    </g>
    <g id="text_196">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="463.393701" y="347.570879" transform="rotate(-0 463.393701 347.570879)">斗</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="442.559055" y="347.531504" transform="rotate(-0 442.559055 347.531504)">小</text>
    </g>
    <g id="text_197">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="470.338583" y="347.459785" transform="rotate(-0 470.338583 347.459785)">腎</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="449.503937" y="347.561504" transform="rotate(-0 449.503937 347.561504)">便</text>
    </g>
    <g id="text_198">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="477.283465" y="347.576504" transform="rotate(-0 477.283465 347.576504)">氣</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="456.448819" y="347.237774" transform="rotate(-0 456.448819 347.237774)">一</text>
    </g>
    <g id="text_199">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="347.450879" transform="rotate(-0 484.228346 347.450879)">圎</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="463.393701" y="347.570879" transform="rotate(-0 463.393701 347.570879)">斗</text>
    </g>
    <g id="text_200">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="491.173228" y="347.561504" transform="rotate(-0 491.173228 347.561504)">主</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="470.338583" y="347.459785" transform="rotate(-0 470.338583 347.459785)">腎</text>
    </g>
    <g id="text_201">
-    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="498.11811" y="347.588692" transform="rotate(-0 498.11811 347.588692)">之</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="477.283465" y="347.576504" transform="rotate(-0 477.283465 347.576504)">氣</text>
    </g>
    <g id="text_202">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="452.976378" y="319.262617" transform="rotate(-0 452.976378 319.262617)">omission (脱)</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="347.450879" transform="rotate(-0 484.228346 347.450879)">圎</text>
    </g>
    <g id="text_203">
-    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="319.262715" transform="rotate(-0 484.228346 319.262715)">丸 → 圎</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="491.173228" y="347.561504" transform="rotate(-0 491.173228 347.561504)">主</text>
    </g>
    <g id="text_204">
-    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="289.133858" y="310.143238" transform="rotate(-0 289.133858 310.143238)">Jingui yaolüe ch. 13 on xiaoke 消渴 in three witnesses (punctuation removed)</text>
+    <text style="font-size: 6px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="498.11811" y="347.588692" transform="rotate(-0 498.11811 347.588692)">之</text>
    </g>
    <g id="text_205">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="452.976378" y="319.262617" transform="rotate(-0 452.976378 319.262617)">omission (脱)</text>
+   </g>
+   <g id="text_206">
+    <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: middle" x="484.228346" y="319.262715" transform="rotate(-0 484.228346 319.262715)">丸 → 圎</text>
+   </g>
+   <g id="text_207">
+    <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="289.133858" y="310.143238" transform="rotate(-0 289.133858 310.143238)">Jingui yaolüe ch. 13 on xiaoke 消渴 in three witnesses (punctuation removed)</text>
+   </g>
+   <g id="text_208">
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(334.95852 356.618405)">圎 for 丸 avoids the name of Emperor Qinzong (桓, from 1126): that witness</text>
     <text style="font-size: 5px; font-family: 'Arial', 'Noto Sans CJK SC'; fill: #4d4d4d" transform="translate(408.299926 362.23027)">descends from an edition made after 1126</text>
    </g>
-   <g id="patch_104">
+   <g id="patch_105">
     <path d="M 293.669291 367.086614 
 C 294.120345 367.086614 294.552986 367.26582 294.87193 367.584763 
 C 295.190873 367.903707 295.370079 368.336347 295.370079 368.787402 
@@ -2043,15 +2064,15 @@ C 292.14771 369.671096 291.968504 369.238456 291.968504 368.787402
 C 291.968504 368.336347 292.14771 367.903707 292.466653 367.584763 
 C 292.785596 367.26582 293.218237 367.086614 293.669291 367.086614 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_206">
+   <g id="text_209">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="370.210741" transform="rotate(-0 298.771654 370.210741)">Claim</text>
    </g>
-   <g id="text_207">
+   <g id="text_210">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="370.524198" transform="rotate(-0 348.661417 370.524198)">Shenqi wan 肾气丸 indicated for 消渴 with polyuria</text>
    </g>
-   <g id="patch_105">
+   <g id="patch_106">
     <path d="M 293.669291 378.283465 
 C 294.120345 378.283465 294.552986 378.46267 294.87193 378.781614 
 C 295.190873 379.100557 295.370079 379.533198 295.370079 379.984252 
@@ -2062,15 +2083,15 @@ C 292.14771 380.867947 291.968504 380.435306 291.968504 379.984252
 C 291.968504 379.533198 292.14771 379.100557 292.466653 378.781614 
 C 292.785596 378.46267 293.218237 378.283465 293.669291 378.283465 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_208">
+   <g id="text_211">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="381.407592" transform="rotate(-0 298.771654 381.407592)">Quote</text>
    </g>
-   <g id="text_209">
+   <g id="text_212">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="381.731845" transform="rotate(-0 348.661417 381.731845)">男子消渴，小便反多，以飲一斗，小便一斗，腎氣丸主之</text>
    </g>
-   <g id="patch_106">
+   <g id="patch_107">
     <path d="M 293.669291 389.480315 
 C 294.120345 389.480315 294.552986 389.659521 294.87193 389.978464 
 C 295.190873 390.297407 295.370079 390.730048 295.370079 391.181102 
@@ -2081,15 +2102,15 @@ C 292.14771 392.064797 291.968504 391.632156 291.968504 391.181102
 C 291.968504 390.730048 292.14771 390.297407 292.466653 389.978464 
 C 292.785596 389.659521 293.218237 389.480315 293.669291 389.480315 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_210">
+   <g id="text_213">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="392.604388" transform="rotate(-0 298.771654 392.604388)">Passage</text>
    </g>
-   <g id="text_211">
+   <g id="text_214">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="392.604388" transform="rotate(-0 348.661417 392.604388)">cm_jingui_dengzhen.00712</text>
    </g>
-   <g id="patch_107">
+   <g id="patch_108">
     <path d="M 293.669291 400.677165 
 C 294.120345 400.677165 294.552986 400.856371 294.87193 401.175314 
 C 295.190873 401.494258 295.370079 401.926899 295.370079 402.377953 
@@ -2100,15 +2121,15 @@ C 292.14771 403.261648 291.968504 402.829007 291.968504 402.377953
 C 291.968504 401.926899 292.14771 401.494258 292.466653 401.175314 
 C 292.785596 400.856371 293.218237 400.677165 293.669291 400.677165 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_212">
+   <g id="text_215">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="403.801293" transform="rotate(-0 298.771654 403.801293)">Locator</text>
    </g>
-   <g id="text_213">
+   <g id="text_216">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="404.128553" transform="rotate(-0 348.661417 404.128553)">卷中 · 消渴小便利淋病脉證并治第十三 · p. 100</text>
    </g>
-   <g id="patch_108">
+   <g id="patch_109">
     <path d="M 293.669291 411.874016 
 C 294.120345 411.874016 294.552986 412.053221 294.87193 412.372165 
 C 295.190873 412.691108 295.370079 413.123749 295.370079 413.574803 
@@ -2119,15 +2140,15 @@ C 292.14771 414.458498 291.968504 414.025857 291.968504 413.574803
 C 291.968504 413.123749 292.14771 412.691108 292.466653 412.372165 
 C 292.785596 412.053221 293.218237 411.874016 293.669291 411.874016 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_214">
+   <g id="text_217">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="414.998143" transform="rotate(-0 298.771654 414.998143)">Witness</text>
    </g>
-   <g id="text_215">
+   <g id="text_218">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="414.998089" transform="rotate(-0 348.661417 414.998089)">Deng Zhen print, 1340; Peking University Library</text>
    </g>
-   <g id="patch_109">
+   <g id="patch_110">
     <path d="M 293.669291 423.070866 
 C 294.120345 423.070866 294.552986 423.250072 294.87193 423.569015 
 C 295.190873 423.887959 295.370079 424.320599 295.370079 424.771654 
@@ -2138,15 +2159,15 @@ C 292.14771 425.655348 291.968504 425.222708 291.968504 424.771654
 C 291.968504 424.320599 292.14771 423.887959 292.466653 423.569015 
 C 292.785596 423.250072 293.218237 423.070866 293.669291 423.070866 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_216">
+   <g id="text_219">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="426.19494" transform="rotate(-0 298.771654 426.19494)">Work · layer</text>
    </g>
-   <g id="text_217">
+   <g id="text_220">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="426.19494" transform="rotate(-0 348.661417 426.19494)">Jingui yaolüe, 200–219 · main text</text>
    </g>
-   <g id="patch_110">
+   <g id="patch_111">
     <path d="M 293.669291 434.267717 
 C 294.120345 434.267717 294.552986 434.446922 294.87193 434.765866 
 C 295.190873 435.084809 295.370079 435.51745 295.370079 435.968504 
@@ -2157,15 +2178,15 @@ C 292.14771 436.852199 291.968504 436.419558 291.968504 435.968504
 C 291.968504 435.51745 292.14771 435.084809 292.466653 434.765866 
 C 292.785596 434.446922 293.218237 434.267717 293.669291 434.267717 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_218">
+   <g id="text_221">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="437.391844" transform="rotate(-0 298.771654 437.391844)">Source · licence</text>
    </g>
-   <g id="text_219">
+   <g id="text_222">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="437.39179" transform="rotate(-0 348.661417 437.39179)">CMETA, collated page by page · CC BY 4.0</text>
    </g>
-   <g id="patch_111">
+   <g id="patch_112">
     <path d="M 293.669291 445.464567 
 C 294.120345 445.464567 294.552986 445.643773 294.87193 445.962716 
 C 295.190873 446.281659 295.370079 446.7143 295.370079 447.165354 
@@ -2176,12 +2197,12 @@ C 292.14771 448.049049 291.968504 447.616408 291.968504 447.165354
 C 291.968504 446.7143 292.14771 446.281659 292.466653 445.962716 
 C 292.785596 445.643773 293.218237 445.464567 293.669291 445.464567 
 z
-" clip-path="url(#p7e9def68d2)" style="fill: #0072b2"/>
+" clip-path="url(#p71fb75a14c)" style="fill: #0072b2"/>
    </g>
-   <g id="text_220">
+   <g id="text_223">
     <text style="font-weight: 700; font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="298.771654" y="448.588694" transform="rotate(-0 298.771654 448.588694)">Check in chat</text>
    </g>
-   <g id="text_221">
+   <g id="text_224">
     <text style="font-size: 5.5px; font-family: 'Arial', 'Noto Sans CJK SC'; text-anchor: start" x="348.661417" y="448.687737" transform="rotate(-0 348.661417 448.687737)">✓ verbatim    ≠ quote differs    × no such passage</text>
    </g>
   </g>
@@ -2196,13 +2217,13 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p50d7936bca">
+  <clipPath id="p566f74598a">
    <rect x="5.669291" y="17.007874" width="507.401575" height="272.125984"/>
   </clipPath>
-  <clipPath id="p1a1fc99be9">
+  <clipPath id="pea6e3ec213">
    <rect x="5.669291" y="306.141732" width="272.125984" height="164.409449"/>
   </clipPath>
-  <clipPath id="p7e9def68d2">
+  <clipPath id="p71fb75a14c">
    <rect x="289.133858" y="306.141732" width="223.937008" height="164.409449"/>
   </clipPath>
  </defs>

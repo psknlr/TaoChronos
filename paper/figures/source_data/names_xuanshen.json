@@ -6,8 +6,8 @@
    "name": "玄参",
    "kind": "本名",
    "note": "",
-   "passages": 387,
-   "works": 112,
+   "passages": 498,
+   "works": 151,
    "first": [
     {
      "passage_id": "jc_c000a.00134",
@@ -96,8 +96,8 @@
    "name": "元参",
    "kind": "避讳改名",
    "note": "清人避康熙帝玄烨讳改“玄”为“元”",
-   "passages": 159,
-   "works": 51,
+   "passages": 335,
+   "works": 97,
    "first": [
     {
      "passage_id": "jc_c000.00558",
@@ -225,42 +225,55 @@
   },
   {
    "period": "宋金元",
-   "works": 34,
+   "works": 37,
    "names": {
-    "玄参": 31,
-    "元参": 5
+    "玄参": 33,
+    "元参": 6
    },
    "shares": {
-    "玄参": 0.912,
-    "元参": 0.147
+    "玄参": 0.892,
+    "元参": 0.162
    },
    "preferred": "玄参"
   },
   {
    "period": "明",
-   "works": 47,
+   "works": 63,
    "names": {
-    "玄参": 45,
-    "元参": 4
+    "玄参": 58,
+    "元参": 7
    },
    "shares": {
-    "玄参": 0.957,
-    "元参": 0.085
+    "玄参": 0.921,
+    "元参": 0.111
    },
    "preferred": "玄参"
   },
   {
    "period": "清",
-   "works": 67,
+   "works": 126,
    "names": {
-    "玄参": 30,
-    "元参": 40
+    "玄参": 53,
+    "元参": 82
    },
    "shares": {
-    "玄参": 0.448,
-    "元参": 0.597
+    "玄参": 0.421,
+    "元参": 0.651
    },
    "preferred": "元参"
+  },
+  {
+   "period": "民国",
+   "works": 2,
+   "names": {
+    "玄参": 1,
+    "元参": 1
+   },
+   "shares": {
+    "玄参": 0.5,
+    "元参": 0.5
+   },
+   "preferred": "玄参"
   }
  ],
  "bins": [
@@ -333,10 +346,10 @@
   {
    "from": 1100,
    "to": 1200,
-   "works": 10,
+   "works": 12,
    "shares": {
-    "玄参": 0.9,
-    "元参": 0.2
+    "玄参": 0.833,
+    "元参": 0.25
    },
    "preferred": "玄参"
   },
@@ -352,10 +365,10 @@
   {
    "from": 1300,
    "to": 1400,
-   "works": 13,
+   "works": 14,
    "shares": {
-    "玄参": 0.923,
-    "元参": 0.154
+    "玄参": 0.929,
+    "元参": 0.143
    },
    "preferred": "玄参"
   },
@@ -371,49 +384,50 @@
   {
    "from": 1500,
    "to": 1600,
-   "works": 25,
+   "works": 37,
    "shares": {
-    "玄参": 0.96,
-    "元参": 0.08
+    "玄参": 0.892,
+    "元参": 0.135
    },
    "preferred": "玄参"
   },
   {
    "from": 1600,
    "to": 1700,
-   "works": 26,
+   "works": 34,
    "shares": {
-    "玄参": 0.846,
-    "元参": 0.231
+    "玄参": 0.853,
+    "元参": 0.235
    },
    "preferred": "玄参"
   },
   {
    "from": 1700,
    "to": 1800,
-   "works": 38,
+   "works": 68,
    "shares": {
-    "玄参": 0.342,
-    "元参": 0.684
+    "玄参": 0.382,
+    "元参": 0.676
    },
    "preferred": "元参"
   },
   {
    "from": 1800,
    "to": 1900,
-   "works": 14,
+   "works": 36,
    "shares": {
-    "玄参": 0.357,
-    "元参": 0.714
+    "玄参": 0.278,
+    "元参": 0.806
    },
    "preferred": "元参"
   },
   {
    "from": 1900,
    "to": 2000,
-   "works": 2,
+   "works": 7,
    "shares": {
-    "玄参": 1.0
+    "玄参": 0.714,
+    "元参": 0.286
    },
    "preferred": "玄参"
   }
@@ -428,9 +442,190 @@
     1800
    ],
    "last_bin": false
+  },
+  {
+   "from": "元参",
+   "to": "玄参",
+   "between": [
+    1800,
+    2000
+   ],
+   "last_bin": true
   }
  ],
  "equations": [],
  "candidates": [],
- "note": "works writing each name (a work counts once, dated by the passage's layer); shares of the works writing any of the names; candidates are names the punctuated texts give it after 一名/又名/俗呼… that the lexicon lacks — readings to check, not findings"
+ "note": "works writing each name (a work counts once, dated by the passage's layer); shares of the works writing any of the names; candidates are names the punctuated texts give it after 一名/又名/俗呼… that the lexicon lacks — readings to check, not findings",
+ "charts": [
+  {
+   "version": 1,
+   "type": "stack",
+   "title": "玄参 · 各名称的历代份额",
+   "rows": [
+    {
+     "period": "先秦两汉",
+     "玄参": 1.0,
+     "元参": 1.0
+    },
+    {
+     "period": "魏晋南北朝",
+     "玄参": 1.0,
+     "元参": 0
+    },
+    {
+     "period": "隋唐五代",
+     "玄参": 1.0,
+     "元参": 0.25
+    },
+    {
+     "period": "宋金元",
+     "玄参": 0.892,
+     "元参": 0.162
+    },
+    {
+     "period": "明",
+     "玄参": 0.921,
+     "元参": 0.111
+    },
+    {
+     "period": "清",
+     "玄参": 0.421,
+     "元参": 0.651
+    },
+    {
+     "period": "民国",
+     "玄参": 0.5,
+     "元参": 0.5
+    }
+   ],
+   "columns": [
+    {
+     "key": "period",
+     "label": "时期"
+    },
+    {
+     "key": "玄参",
+     "label": "玄参"
+    },
+    {
+     "key": "元参",
+     "label": "元参"
+    }
+   ],
+   "id": "names-shares",
+   "percent": true,
+   "subtitle": "各时期各名称所占份额",
+   "x": {
+    "key": "period",
+    "label": "时期"
+   },
+   "y": {
+    "label": "份额",
+    "percent": true
+   },
+   "series": [
+    {
+     "key": "玄参",
+     "label": "玄参"
+    },
+    {
+     "key": "元参",
+     "label": "元参"
+    }
+   ],
+   "source": "道乃久（TaoChronos）· 名称 · 语料版本 b6ae29b53b4c"
+  }
+ ],
+ "tables": [
+  {
+   "version": 1,
+   "id": "names-shares",
+   "title": "玄参各名称的历代使用",
+   "columns": [
+    {
+     "key": "period",
+     "label": "时期",
+     "align": "left"
+    },
+    {
+     "key": "works",
+     "label": "著作（部）",
+     "align": "center"
+    },
+    {
+     "key": "n0",
+     "label": "玄参",
+     "align": "center",
+     "group": "写此名的著作，n (%)"
+    },
+    {
+     "key": "n1",
+     "label": "元参",
+     "align": "center",
+     "group": "写此名的著作，n (%)"
+    },
+    {
+     "key": "preferred",
+     "label": "首选之名",
+     "align": "center"
+    }
+   ],
+   "rows": [
+    {
+     "period": "先秦两汉",
+     "works": "1",
+     "n0": "1 (100.0)",
+     "n1": "1 (100.0)",
+     "preferred": "玄参"
+    },
+    {
+     "period": "魏晋南北朝",
+     "works": "2",
+     "n0": "2 (100.0)",
+     "n1": "0 (0.0)",
+     "preferred": "玄参"
+    },
+    {
+     "period": "隋唐五代",
+     "works": "4",
+     "n0": "4 (100.0)",
+     "n1": "1 (25.0)",
+     "preferred": "玄参"
+    },
+    {
+     "period": "宋金元",
+     "works": "37",
+     "n0": "33 (89.2)",
+     "n1": "6 (16.2)",
+     "preferred": "玄参"
+    },
+    {
+     "period": "明",
+     "works": "63",
+     "n0": "58 (92.1)",
+     "n1": "7 (11.1)",
+     "preferred": "玄参"
+    },
+    {
+     "period": "清",
+     "works": "126",
+     "n0": "53 (42.1)",
+     "n1": "82 (65.1)",
+     "preferred": "元参"
+    },
+    {
+     "period": "民国",
+     "works": "2",
+     "n0": "1 (50.0)",
+     "n1": "1 (50.0)",
+     "preferred": "玄参"
+    }
+   ],
+   "notes": [
+    "著作：写其任一名称的著作（每部著作计一次，按段落的层次定年）；一书可写数名，故各名之和可逾 100%。",
+    "首选之名的更替（按百年分段）：玄参 → 元参（1600–1800 年间）；元参 → 玄参（1800–2000 年间）。"
+   ],
+   "source": "道乃久（TaoChronos）· 名称 · 语料版本 b6ae29b53b4c"
+  }
+ ]
 }

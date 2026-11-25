@@ -1,8 +1,9 @@
 """Extended Data Fig. 3 | The witnesses behind the texts: image catalogues of eleven collections linked to the corpus,
-and the sources and licences of the open web corpus (all but four of its 368 witnesses openly licensed)."""
+and the sources and licences of the open web corpus (all but four of its 553 witnesses openly licensed)."""
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import numpy as np
@@ -78,8 +79,9 @@ def main() -> dict:
     ax.set_yticklabels([SOURCE_EN[s][0] for s in g.index], fontsize=5)
     ax.tick_params(axis="y", length=0)
     ax.spines["left"].set_visible(False)
-    ax.set_xlim(0, 6)
-    ax.set_xticks([0, 2, 4, 6])
+    lim = 2 * math.ceil(g.chars.max() / 1e6 / 0.68 / 2)  # room after the longest bar for its label
+    ax.set_xlim(0, lim)
+    ax.set_xticks(list(range(0, lim + 1, 2)))
     ax.set_xlabel("Characters in the web corpus (millions)")
     ax.legend(handles=[Patch(facecolor=C["blue"], edgecolor="none",
                              label="Open licence (CC0, CC BY, CC BY-SA, public domain)"),

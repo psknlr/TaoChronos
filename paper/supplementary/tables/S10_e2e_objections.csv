@@ -1,11 +1,11 @@
 Check,Raised,Closed after narrowing,Open: major,Open: minor,Open: critical
-single_source,35,16,9,10,0
-transcription_dependence,29,18,11,0,0
-statistical,15,10,5,0,0
-homonym,9,6,3,0,0
-sample_size,9,6,3,0,0
-school,6,0,0,6,0
-counterexample,6,4,2,0,0
+transcription_dependence,28,14,8,6,0
+single_source,27,8,5,14,0
+homonym,11,7,4,0,0
+school,9,0,0,9,0
+statistical,9,5,4,0,0
+sample_size,6,3,3,0,0
+partial_persistence,4,2,2,0,0
 earliest_source,4,2,2,0,0
-partial_persistence,3,2,1,0,0
+counterexample,3,2,1,0,0
 restated_after,1,0,0,0,1

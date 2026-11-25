@@ -31,7 +31,7 @@ The other suites measure each capability in the way its task allows: constructed
 | Verification | ablations | Which components carry the results? | demonstration corpus: 6 terms, 12 passage pairs, the agents' context, runs without the Skeptic | earliest accuracy without routes · contradiction accuracy without sense/philology · G5 inflation without clusters · Context-OS token reduction · false survivals without the Skeptic | earliest accuracy: all 1.0 · no sense route 0.67 · BM25 only 0.67; contradiction: no sense resolution 0.83 · no philology 0.92; 1 hypothesis would pass G5 only by counting dependent books; Context OS −94% tokens; without the Skeptic 1 rejected hypothesis survives and no revisions happen | ED Fig. 1c |
 | Deep discovery | collation | Are the variants of a known tradition found, and its stemma, groups and contamination recovered? | 5 artificial traditions copied from the demo corpus down a known stemma (two branches; one witness copied from both) | unit recall / precision · split recall · Robinson–Foulds · group precision · contamination P/R | variant units: recall 0.998 · precision 0.999; the true split recovered in every trial (RF 0.33: neighbour-joining resolves the true polytomy — three copies made independently from one exemplar — into an extra split); top-3 groups all genuine (all groups 0.73); contamination P 1.0 · R 1.0 | ED Table 2 |
 | Deep discovery | reuse | Is each reuse typed right (直接引用 … 套语相似), and are real reuses found? | 33 author-constructed pairs (gold/reuse.yaml), all eight types and unrelated pairs | accuracy · macro-F1 · mode accuracy · detection P/R/F1 · pipeline recall | accuracy 0.97 · macro-F1 0.965 · mode 0.97; detection P 1.0 · R 0.96 · F1 0.98; the demo corpus's gold transcriptions and rephrasings found by study.reuse: 1.0 | ED Table 2 |
-| Deep discovery | stratigraphy | Are the layers of composite texts found, with their boundaries, and are texts attributed to their authors? | 5 composites of 16 000 characters with blocks rewritten in a second author's function characters; the real 素问 and 伤寒论 | layer accuracy · change-point and boundary P/R · attribution accuracy · real checks (素问 运气七篇, 叔和 chapters) | layer accuracy 0.955; boundaries R 0.90 · P 0.93; change points R 0.45 · P 1.0; attribution 0.89 · real: the 运气七篇 7/7 in the minor layer, both of their boundaries found, 3 of the 4 chapters flagged by late vocabulary are 运气 chapters, 辨脉法 and 平脉法 nearest the 脉经 | ED Table 2 |
+| Deep discovery | stratigraphy | Are the layers of composite texts found, with their boundaries, and are texts attributed to their authors? | 5 composites of 16 000 characters with blocks rewritten in a second author's function characters; the real 素问 and 伤寒论 | layer accuracy · change-point and boundary P/R · attribution accuracy · real checks (素问 运气七篇, 叔和 chapters) | layer accuracy 0.955; boundaries R 0.90 · P 0.93; change points R 0.37 · P 1.0; attribution 0.89 · real: the 运气七篇 7/7 in the minor layer, both of their boundaries found, 3 of the 4 chapters flagged by late vocabulary are 运气 chapters, 辨脉法 and 平脉法 nearest the 脉经 | ED Table 2 |
 | Deep discovery | cases | Are case records cut into cases and visits, and are their fields read right? | 6 constructed cases in the two manners of the literature — visits under a heading, narratives (gold/cases.yaml); the two transcriptions of 吴鞠通医案 | segmentation · per-field accuracy · response and outcome accuracy · agreement of two transcriptions | segmentation, fields, responses, outcomes 1.0 on the development set · real: case counts agree 0.98, outcomes 0.92 | — |
 | Deep discovery | argument | Are the steps of reasoning found and typed? | 18 author-constructed passages (gold/argument.yaml); the 脉经's two transcriptions against 温病条辨 | labelled and unlabelled edge P/R/F1 · clause segmentation · same-work vs other-work divergence | edges F1 1.0 on the development set · real: JSD 0.020 between the transcriptions of one work, 0.091 against another | — |
 | Deep discovery | senses | Is a planted shift of senses dated, and a sense no cue names found? | synthetic occurrences: one sense rises from 15 % to 75 % in the year 1000, an uncued sense appears from 1300 | change-year error · detection · labelling accuracy · hidden sense found · curated exemplars | change year within 2.3 years; detected 1.0; labelling 0.93; the uncued sense found 1.0 (precision 1.0); curated exemplars of 消渴 6/8 | — |
@@ -54,6 +54,7 @@ The other suites measure each capability in the way its task allows: constructed
 | V2 | audit | Does each statement of an answer get the verdict its evidence supports? | 19 claims of every kind and 3 safety texts (gold/audit.yaml) | verdict accuracy · false SUPPORTED | verdicts 1.0 · kinds 1.0 · false SUPPORTED 0 · safety 3/3 | ED Table 2 |
 | V2 | modern | Are modern records typed by design and population, and cross-level claims refused? | 10 records to type, 7 claim/evidence pairs for the cross-level guard, the synthetic OMOP database (gold/modern.yaml) | typing accuracy · guard accuracy | typing 10/10 · guard 7/7 · RWD: SQL checks pass, planted association recovered, bad SQL refused | — |
 | V2 | workflow | Does the orchestrator plan the skills a question needs and no others? | the registry; 8 questions with the skills they need and must not call (gold/workflow.yaml); one end-to-end run | valid plans · rerun from the workspace | registry valid · plans 8/8 · a rerun reads every step from its workspace | — |
+| Verification | aliases | Is a drug found under its other names (国老 for 甘草, 通草 for 木通 before 960) without losing the name asked, merging two drugs that share a name or reaching outside the years a name meant the drug? ([below](#alias-layer-aliases)) |  | synthetic checks; per profile, split and item type, for off, naive, on, analysis and the ablations: P@10 (and its gain where off answers) · nDCG@10 · AskedRet@10 (mean, min) · ON@10 · ON@50 · XR@50 · Wrong@10 · CandRecall · CandPrecision · SilentMerge · FlagP/FlagR · Leakage · latency p50/p95; resolution accuracy | 9 planted items on a corpus written for the eval: every check held (side places and retention at k = 5, 10, 20; no merge; gates; readings; periods; flags; no leakage; off = today's search); P@10 off 0.800 · naive 0.806 · on 0.933; Wrong@10 6 · 7 · 3; on: CandRecall 1.0, SilentMerge 0, FlagR 1.0, leakage 0 | — |
 
 ## Supplementary Note 2 | Gates, permissions and authority
 
@@ -78,7 +79,7 @@ Five mechanisms bound what any part of the harness can do, and they are layered 
 | Criterion | Requirement | Judge | State when unmet | H1 in Fig. 3 (observed) |
 |---|---|---|---|---|
 | min_supporting_evidence | ≥ 2 | validator:contract | inconclusive | pass: 2 verified supporting record(s) |
-| semantic_support | every supporting claim borne by its quote | validator:contract | inconclusive | pass: every supporting claim is stated by its quote |
+| semantic_support | every supporting claim borne by its quote | validator:contract | inconclusive (a quote contradicts its claim, or its author rejects it); needs_expert (a quote does not clearly state its claim) | pass: every supporting claim is stated by its quote |
 | source_dependence | ≥ 2 independent source families, on the current version | validator:contract | inconclusive | pass: G5 pass: 2 independent source cluster(s) (need 2): baoming_ji, jc_o128 |
 | falsification_review | a skeptic review | validator:contract | inconclusive | pass: reviewed |
 | unresolved_hard_objections | ≤ 0 | validator:contract | inconclusive | pass: 0 open hard objection(s) |
@@ -118,10 +119,11 @@ Five mechanisms bound what any part of the harness can do, and they are layered 
 | knowledge | kg:propose | propose a change to canonical knowledge | 1 | kg.propose_change (writes) |
 | knowledge | kg:read | read the knowledge graph | 4 | kg.claims, kg.extract_claims, kg.neighbors, kg.term |
 | literature | literature:read | read modern literature and real-world data | 4 | literature.modern_evidence, modern.safety, modern.search, rwd.ask |
+| mydata | mydata:read | read the user's own data (made anonymous as it is read, never recorded) | 6 | mydata.compare, mydata.describe, mydata.list, mydata.prescriptions, mydata.read, mydata.search |
 | philology | classics:read | read the corpus through the research's scoped view | 6 | philology.assess_passage, philology.collate, philology.inspect_page, philology.normalize, vision.compare, vision.layout |
 | research | codemode:exec | run code in the sandbox | 1 | research.run_code |
 | retrieval | classics:read | read the corpus through the research's scoped view | 5 | classics.canon, classics.get_passage, classics.lineage, classics.list_books, classics.search |
-| study | classics:read | read the corpus through the research's scoped view | 35 | study.argument, study.authorship, study.cards, study.cases, study.chain, study.citations, study.clause, study.commentaries, study.concordance, study.dating, study.disputes, study.entities, study.formula, study.fragments, study.glosses, study.herb, study.layers, study.metrology, study.names, study.network, study.pairs, study.places, study.punctuate, study.reading, study.reuse, study.schools, study.senses, study.stemma, study.taboo, study.term, study.trajectories, study.translate, study.transmission, study.variants, study.witnesses |
+| study | classics:read | read the corpus through the research's scoped view | 41 | study.argument, study.authorship, study.cards, study.cases, study.chain, study.citations, study.clause, study.commentaries, study.compare, study.concordance, study.dating, study.disputes, study.entities, study.family, study.formula, study.fragments, study.glosses, study.herb, study.incompat, study.layers, study.metrology, study.names, study.network, study.pairs, study.places, study.properties, study.protocol, study.punctuate, study.reading, study.reuse, study.schools, study.senses, study.stemma, study.taboo, study.term, study.trajectories, study.translate, study.transmission, study.usage, study.variants, study.witnesses |
 | validation | classics:read | read the corpus through the research's scoped view | 4 | audit.claim, graph.evidence, validation.provenance_chain, validation.verify_quote |
 | validation | validation:run | run the gates (validators) | 1 | validation.gates |
 
@@ -215,88 +217,89 @@ Five mechanisms bound what any part of the harness can do, and they are layered 
 
 ## Supplementary Note 3 | The end-to-end research case
 
-The question 肾气丸的组成与主治如何随时代演变？ was put to the harness on the open canon corpus with `taochronos research "肾气丸的组成与主治如何随时代演变？" --profile web-canon --focus 肾气丸,六味地黄丸 --forbid 消渴=糖尿病`, offline: the rules ran alone and no model was called. The run scoped 206 books and 1,399 passages, planned 30 tasks in three rounds, called 156 tools (none refused), extracted 777 claims, recorded 87 evidence and 22 counter-evidence records and 24 hypotheses, and stopped after round 2, the last the contract allowed, when new evidence had fallen to 4.6%, below the 5% of its stop rule. It is deterministic: a second run writes the same report. The contract's verdict: one hypothesis (H1) meets every criterion a machine can check and waits for an expert, twelve are inconclusive and one (R1) is rejected. Supplementary Data 1 is the whole Discovery Report the run wrote, in Chinese, as a user of the harness receives it; Supplementary Data 2 is its event log, from which the state replays; Supplementary Tables 9 and 10 list every hypothesis and objection. Reading each surviving hypothesis against its evidence found five failure modes (Supplementary Fig. 1), the largest being that the independence check merged 35 of the 38 books that supplied evidence into one source family.
+The question 肾气丸的组成与主治如何随时代演变？ was put to the harness on the open canon corpus with `taochronos research "肾气丸的组成与主治如何随时代演变？" --profile web-canon --focus 肾气丸,六味地黄丸 --forbid 消渴=糖尿病`, offline: the rules ran alone and no model was called. The run scoped 273 books and 1,620 passages, planned 30 tasks in three rounds, called 143 tools (none refused), extracted 935 claims, recorded 80 evidence and 13 counter-evidence records and 25 hypotheses, and stopped after round 2, the last the contract allowed, which added no new evidence. It is deterministic: a second run writes the same report. The contract's verdict: four hypotheses wait for an expert — two (H1, H2) meet every criterion a machine can check, and two (H3, H4) rest in part on a quotation that does not clearly state its claim, which the contract leaves to an expert — nine are inconclusive and one (R1) is rejected. Supplementary Data 1 is the whole Discovery Report the run wrote, in Chinese, as a user of the harness receives it; Supplementary Data 2 is its event log, from which the state replays; Supplementary Tables 9 and 10 list every hypothesis and objection. Reading each surviving hypothesis against its evidence found six failure modes (Supplementary Fig. 1), the largest being that the independence check merged 36 of the 46 books that supplied evidence into one source family.
 
 **Supplementary Table 9 | Every hypothesis of the end-to-end run (Fig. 3), with its gates, unmet criteria, objections and testable prediction** (`tables/S9_e2e_hypotheses.csv`)
 
 | Label | Id | Kind | Generation | Parent | Status | Verdict | Gates G0–G8 | Criteria unmet | Objections (closed) | Statement | Testable prediction |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| H1 | hyp_d1436acd2959 | association_rule | 0 |  | survived | needs_expert | G0:pass G1:warn G2:warn G3:pass G4:pass G5:pass G6:pass G7:pending G8:not_applicable | expert_review | 0 (0) | 在主治类记载中，烦躁 并见时多用 六味地黄丸（置信度 1.0，lift 5.1053）：该组合可视为 六味地黄丸 的特征性指征。 | 在独立的后世方书中统计该症状组合的用方分布。 |
-| H2 | hyp_12a32285d3a3 | lost_knowledge | 1 | hyp_71c99bcff38f | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 6 (6) | 在本次调查的语料范围内，「肾气丸」与「心烦」的关联见于 960 年以前的《新编金匮方论（邓珍本）》、《金匮要略方（吴迁本）》、《脉经》、《脉经》、《新编金匮要略方论》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正）。 | 扩大 960 年以后的文献样本（含其他版本与类书）：若该关联普遍存在则假说不成立；若只见于转引前代的文本则支持失传。 |
-| H3 | hyp_e2ebd991ae10 | lost_source | 0 |  | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 2 (0) | 语料未收之书《下經》曾经流传，并被 2 处文本直接引用，其成书早于约 1777 年；若确已亡佚，现存引文可作为辑佚线索（须先核查书目是否存世）。 | 在语料之外的唐宋类书与方书中检索《下經》的引文，比对文字异同。 |
-| H4 | hyp_24368056df5c | concept_drift | 1 | hyp_53c77f1a68e3 | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 8 (8) | 在本次调查的语料范围内，「中风」的主导含义在宋金元至明间发生转变：由「证名：外感风邪之表证（太阳中风）」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=0.855）；不同时代文本中的「中风」不能按同一概念直接比较（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正）。 | 在更多同期文献中复核义项分布；按文献类型分层后差异仍存在，则支持概念演变。 |
-| H5 | hyp_3849a6721ca0 | concept_drift | 1 | hyp_1ebef0b387ae | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 8 (8) | 在本次调查的语料范围内，「中风」的主导含义在明至清间发生转变：由「病因：外感风邪」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=1.0）；不同时代文本中的「中风」不能按同一概念直接比较（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正）。 | 在更多同期文献中复核义项分布；按文献类型分层后差异仍存在，则支持概念演变。 |
-| H6 | hyp_de35c2a355f0 | lost_knowledge | 1 | hyp_44172aa26142 | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 10 (10) | 在本次调查的语料范围内，「肾气丸」与「腹痛」的关联见于 960 年以前的《金匮要略方（吴迁本）》、《脉经》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正；后世仍以相近表述出现，失传结论仅限于原表述；后世文本中仍有二者共现，但不再形成明确的主治记载）。 | 扩大 960 年以后的文献样本（含其他版本与类书）：若该关联普遍存在则假说不成立；若只见于转引前代的文本则支持失传。 |
-| H7 | hyp_0af4af4a83db | association_rule | 1 | hyp_dc14fa336232 | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 2 (2) | 在本次调查的语料范围内，在主治类记载中，壮热 并见时多用 六味地黄丸（置信度 1.0，lift 5.1053）：该组合可视为 六味地黄丸 的特征性指征（目前仅有单一独立来源，需更多文献复核）。 | 在独立的后世方书中统计该症状组合的用方分布。 |
-| H8 | hyp_5730b22d8213 | lost_source | 0 |  | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | min_supporting_evidence, source_dependence, current_version_gates, expert_review | 2 (0) | 佚书《集验方》曾经流传，并被 1 处文本直接引用，其成书早于约 752 年；现存引文可作为辑佚线索。 | 在语料之外的唐宋类书与方书中检索《集验方》的引文，比对文字异同。 |
-| H9 | hyp_ed4b5625f057 | concept_drift | 1 | hyp_32bbf0aeb230 | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 10 (10) | 在本次调查的语料范围内，「伤寒」的主导含义在先秦两汉至宋金元间发生转变：由「证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）」转为「病类：一切外感热病的总称（广义伤寒）」（语境差异 JSD=1.0）；不同时代文本中的「伤寒」不能按同一概念直接比较（此处「伤寒」取「证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）」义；现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正）。 | 在更多同期文献中复核义项分布；按文献类型分层后差异仍存在，则支持概念演变。 |
-| H10 | hyp_502e05814d54 | contradiction | 1 | hyp_539ab225761b | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 8 (4) | 《内科摘要》与《校注妇人良方》关于「痰」的论述存在实质性理论分歧（时代不同：相隔约 301 年），反映了学术范式的变化（此处「痰」取「病理：痰饮（水饮停聚）」义；现有证据可能出自同一传本系统）。 | 查找后出文本是否明确反驳前说（如“非……也”），并考察两说在各自学派中的承续。 |
-| H11 | hyp_18f4717f2182 | contradiction | 1 | hyp_01f85940a40d | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 8 (4) | 《内科摘要》与《校注妇人良方》关于「痰」的论述存在实质性理论分歧（时代不同：相隔约 301 年），反映了学术范式的变化（此处「痰」取「病理：痰饮（水饮停聚）」义；现有证据可能出自同一传本系统）。 | 查找后出文本是否明确反驳前说（如“非……也”），并考察两说在各自学派中的承续。 |
-| H12 | hyp_80883924c519 | hidden_association | 1 | hyp_412994ed6551 | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 6 (6) | 在本次调查的语料范围内，「呕吐」与「六味地黄丸」没有直接记载的联系，但经由 腰痛、妇人、下法 在知识超图中紧密相连：六味地黄丸 或可用于 呕吐（纯计算推断，需文献验证）（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；二者在文本中已有共现，属未被结构化的关联，而非完全隐性）。 | 检索语料之外的方书与医案；若出现二者的直接关联，则为时间外推验证（Historical Time Machine）的正例。 |
-| H13 | hyp_7c62e0a0d161 | hidden_association | 1 | hyp_8bec39add14d | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 6 (6) | 在本次调查的语料范围内，「痰饮」与「六味地黄丸」没有直接记载的联系，但经由 短气、中焦、寒 在知识超图中紧密相连：六味地黄丸 或可用于 痰饮（纯计算推断，需文献验证）（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；二者在文本中已有共现，属未被结构化的关联，而非完全隐性）。 | 检索语料之外的方书与医案；若出现二者的直接关联，则为时间外推验证（Historical Time Machine）的正例。 |
-| R1 | hyp_ccbe3e9607db | lost_knowledge | 0 |  | rejected | rejected | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:fail G7:pending G8:not_applicable |  | 5 (0) | 「理中丸」与「发热」的关联见于 960 年以前的《伤寒论（宋本·台北故宫）》、《伤寒论（宋本·安政本）》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。 | 扩大 960 年以后的文献样本（含其他版本与类书）：若该关联普遍存在则假说不成立；若只见于转引前代的文本则支持失传。 |
+| H1 | hyp_c19dcbbde26a | association_rule | 0 |  | survived | needs_expert | G0:pass G1:warn G2:warn G3:pass G4:pass G5:pass G6:pass G7:pending G8:not_applicable | expert_review | 0 (0) | 在主治类记载中，淋、烦躁 并见时多用 六味地黄丸（置信度 1.0，lift 9.7）：该组合可视为 六味地黄丸 的特征性指征。 | 在独立的后世方书中统计该症状组合的用方分布。 |
+| H2 | hyp_81b0e8188593 | concept_drift | 1 | hyp_1ebef0b387ae | survived | needs_expert | G0:pass G1:warn G2:warn G3:warn G4:pass G5:pass G6:pass G7:pending G8:not_applicable | expert_review | 3 (2) | 在本次调查的语料范围内，「中风」的主导含义在明至清间发生转变：由「病因：外感风邪」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=1.0）；不同时代文本中的「中风」不能按同一概念直接比较（探索性发现，未通过多重检验校正）。 | 在更多同期文献中复核义项分布；按文献类型分层后差异仍存在，则支持概念演变。 |
+| H3 | hyp_44606b0576bb | concept_drift | 1 | hyp_8d1ea31b9d9a | survived | needs_expert | G0:pass G1:warn G2:warn G3:warn G4:pass G5:pass G6:pass G7:pending G8:not_applicable | semantic_support, expert_review | 3 (2) | 在本次调查的语料范围内，「中风」的主导含义在宋金元至明间发生转变：由「证名：外感风邪之表证（太阳中风）」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=0.7088）；不同时代文本中的「中风」不能按同一概念直接比较（探索性发现，未通过多重检验校正）。 | 在更多同期文献中复核义项分布；按文献类型分层后差异仍存在，则支持概念演变。 |
+| H4 | hyp_505a55a4cb6b | concept_drift | 1 | hyp_6050f468fdcf | survived | needs_expert | G0:pass G1:warn G2:warn G3:warn G4:pass G5:pass G6:pass G7:pending G8:not_applicable | semantic_support, expert_review | 4 (3) | 在本次调查的语料范围内，「伤寒」的主导含义在先秦两汉至隋唐五代间发生转变：由「证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）」转为「病类：一切外感热病的总称（广义伤寒）」（语境差异 JSD=1.0）；不同时代文本中的「伤寒」不能按同一概念直接比较（此处「伤寒」取「证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）」义；探索性发现，未通过多重检验校正）。 | 在更多同期文献中复核义项分布；按文献类型分层后差异仍存在，则支持概念演变。 |
+| H5 | hyp_748f1bdebc6e | association_rule | 1 | hyp_9dcce49d684f | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 4 (4) | 在本次调查的语料范围内，在主治类记载中，多饮、小便多 并见时多用 肾气丸（置信度 1.0，lift 4.85）：该组合可视为 肾气丸 的特征性指征（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核）。 | 在独立的后世方书中统计该症状组合的用方分布。 |
+| H6 | hyp_e2ebd991ae10 | lost_source | 0 |  | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 2 (0) | 语料未收之书《下經》曾经流传，并被 2 处文本直接引用，其成书早于约 1777 年；若确已亡佚，现存引文可作为辑佚线索（须先核查书目是否存世）。 | 在语料之外的唐宋类书与方书中检索《下經》的引文，比对文字异同。 |
+| H7 | hyp_266b1439da88 | lost_source | 1 | hyp_00ee5a11ff84 | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 4 (2) | 佚书《集验方》曾经流传，并被 2 处文本直接引用，其成书早于约 752 年；现存引文可作为辑佚线索（现有证据可能出自同一传本系统）。 | 在语料之外的唐宋类书与方书中检索《集验方》的引文，比对文字异同。 |
+| H8 | hyp_f81fd13de194 | lost_knowledge | 1 | hyp_6ffa899e3703 | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | min_supporting_evidence, source_dependence, current_version_gates, expert_review | 8 (8) | 在本次调查的语料范围内，「肾气丸」与「腹痛」的关联见于 960 年以前的《脉经》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识（目前仅有单一独立来源，需更多文献复核；探索性发现，未通过多重检验校正；后世仍以相近表述出现，失传结论仅限于原表述；后世文本中仍有二者共现，但不再形成明确的主治记载）。 | 扩大 960 年以后的文献样本（含其他版本与类书）：若该关联普遍存在则假说不成立；若只见于转引前代的文本则支持失传。 |
+| H9 | hyp_97cca9a0a038 | contradiction | 1 | hyp_b8a726ad7aef | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 8 (4) | 《内科摘要》与《外科精要》关于「痰」的论述存在实质性理论分歧（同一主题下的直接对立主张），反映了学术范式的变化（此处「痰」取「病理：痰饮（水饮停聚）」义；现有证据可能出自同一传本系统）。 | 查找后出文本是否明确反驳前说（如“非……也”），并考察两说在各自学派中的承续。 |
+| H10 | hyp_18f4717f2182 | contradiction | 1 | hyp_01f85940a40d | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 8 (4) | 《内科摘要》与《校注妇人良方》关于「痰」的论述存在实质性理论分歧（时代不同：相隔约 301 年），反映了学术范式的变化（此处「痰」取「病理：痰饮（水饮停聚）」义；现有证据可能出自同一传本系统）。 | 查找后出文本是否明确反驳前说（如“非……也”），并考察两说在各自学派中的承续。 |
+| H11 | hyp_eb8e94beb10d | contradiction | 1 | hyp_b7aadb438d6b | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | semantic_support, source_dependence, current_version_gates, expert_review | 8 (4) | 《内科摘要》与《重订济阴纲目》关于「痰」的论述存在实质性理论分歧（同一主题下的直接对立主张），反映了学术范式的变化（此处「痰」取「病理：痰饮（水饮停聚）」义；现有证据可能出自同一传本系统）。 | 查找后出文本是否明确反驳前说（如“非……也”），并考察两说在各自学派中的承续。 |
+| H12 | hyp_dfcf54b7ed92 | hidden_association | 1 | hyp_93968335aee1 | survived | inconclusive | G0:pass G1:warn G2:warn G3:warn G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 4 (4) | 在本次调查的语料范围内，「淋」与「肾气丸」没有直接记载的联系，但经由 浊、柴胡、微 在知识超图中紧密相连：肾气丸 或可用于 淋（纯计算推断，需文献验证）（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核）。 | 检索语料之外的方书与医案；若出现二者的直接关联，则为时间外推验证（Historical Time Machine）的正例。 |
+| H13 | hyp_675ae4dcc3a3 | hidden_association | 1 | hyp_95577d14638d | survived | inconclusive | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:pass G7:pending G8:not_applicable | source_dependence, current_version_gates, expert_review | 6 (6) | 在本次调查的语料范围内，「疮」与「肾气丸」没有直接记载的联系，但经由 湿热、微、虚劳 在知识超图中紧密相连：肾气丸 或可用于 疮（纯计算推断，需文献验证）（现有证据可能出自同一传本系统；目前仅有单一独立来源，需更多文献复核；二者在文本中已有共现，属未被结构化的关联，而非完全隐性）。 | 检索语料之外的方书与医案；若出现二者的直接关联，则为时间外推验证（Historical Time Machine）的正例。 |
+| R1 | hyp_cd02eca5e08b | lost_knowledge | 0 |  | rejected | rejected | G0:pass G1:warn G2:warn G3:pass G4:pass G5:warn G6:fail G7:pending G8:not_applicable |  | 5 (0) | 「热」与「上气」的关联见于 960 年以前的《脉经》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。 | 扩大 960 年以后的文献样本（含其他版本与类书）：若该关联普遍存在则假说不成立；若只见于转引前代的文本则支持失传。 |
+| (superseded) | hyp_00ee5a11ff84 | lost_source | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 2 (0) | 佚书《集验方》曾经流传，并被 2 处文本直接引用，其成书早于约 752 年；现存引文可作为辑佚线索。 |  |
 | (superseded) | hyp_01f85940a40d | contradiction | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 《内科摘要》与《校注妇人良方》关于「痰」的论述存在实质性理论分歧（时代不同：相隔约 301 年），反映了学术范式的变化。 |  |
-| (superseded) | hyp_1ebef0b387ae | concept_drift | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 「中风」的主导含义在明至清间发生转变：由「病因：外感风邪」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=1.0）；不同时代文本中的「中风」不能按同一概念直接比较。 |  |
-| (superseded) | hyp_32bbf0aeb230 | concept_drift | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 5 (0) | 「伤寒」的主导含义在先秦两汉至宋金元间发生转变：由「证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）」转为「病类：一切外感热病的总称（广义伤寒）」（语境差异 JSD=1.0）；不同时代文本中的「伤寒」不能按同一概念直接比较。 |  |
-| (superseded) | hyp_412994ed6551 | hidden_association | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 3 (0) | 「呕吐」与「六味地黄丸」没有直接记载的联系，但经由 腰痛、妇人、下法 在知识超图中紧密相连：六味地黄丸 或可用于 呕吐（纯计算推断，需文献验证）。 |  |
-| (superseded) | hyp_44172aa26142 | lost_knowledge | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 5 (0) | 「肾气丸」与「腹痛」的关联见于 960 年以前的《金匮要略方（吴迁本）》、《脉经》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。 |  |
-| (superseded) | hyp_539ab225761b | contradiction | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 《内科摘要》与《校注妇人良方》关于「痰」的论述存在实质性理论分歧（时代不同：相隔约 301 年），反映了学术范式的变化。 |  |
-| (superseded) | hyp_53c77f1a68e3 | concept_drift | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 「中风」的主导含义在宋金元至明间发生转变：由「证名：外感风邪之表证（太阳中风）」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=0.855）；不同时代文本中的「中风」不能按同一概念直接比较。 |  |
-| (superseded) | hyp_71c99bcff38f | lost_knowledge | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 3 (0) | 「肾气丸」与「心烦」的关联见于 960 年以前的《新编金匮方论（邓珍本）》、《金匮要略方（吴迁本）》、《脉经》、《脉经》、《新编金匮要略方论》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。 |  |
-| (superseded) | hyp_8bec39add14d | hidden_association | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 3 (0) | 「痰饮」与「六味地黄丸」没有直接记载的联系，但经由 短气、中焦、寒 在知识超图中紧密相连：六味地黄丸 或可用于 痰饮（纯计算推断，需文献验证）。 |  |
-| (superseded) | hyp_dc14fa336232 | association_rule | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 1 (0) | 在主治类记载中，壮热 并见时多用 六味地黄丸（置信度 1.0，lift 5.1053）：该组合可视为 六味地黄丸 的特征性指征。 |  |
+| (superseded) | hyp_1ebef0b387ae | concept_drift | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 3 (0) | 「中风」的主导含义在明至清间发生转变：由「病因：外感风邪」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=1.0）；不同时代文本中的「中风」不能按同一概念直接比较。 |  |
+| (superseded) | hyp_6050f468fdcf | concept_drift | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 「伤寒」的主导含义在先秦两汉至隋唐五代间发生转变：由「证名：太阳伤寒（恶寒、体痛、脉阴阳俱紧）」转为「病类：一切外感热病的总称（广义伤寒）」（语境差异 JSD=1.0）；不同时代文本中的「伤寒」不能按同一概念直接比较。 |  |
+| (superseded) | hyp_6ffa899e3703 | lost_knowledge | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 「肾气丸」与「腹痛」的关联见于 960 年以前的《脉经》，但此后的文献不再出现该关联，而两个概念本身仍在使用：这可能是一条在后世失传或被取代的知识。 |  |
+| (superseded) | hyp_8d1ea31b9d9a | concept_drift | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 3 (0) | 「中风」的主导含义在宋金元至明间发生转变：由「证名：外感风邪之表证（太阳中风）」转为「病名：卒中（半身不遂、口眼歪斜）」（语境差异 JSD=0.7088）；不同时代文本中的「中风」不能按同一概念直接比较。 |  |
+| (superseded) | hyp_93968335aee1 | hidden_association | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 2 (0) | 「淋」与「肾气丸」没有直接记载的联系，但经由 浊、柴胡、微 在知识超图中紧密相连：肾气丸 或可用于 淋（纯计算推断，需文献验证）。 |  |
+| (superseded) | hyp_95577d14638d | hidden_association | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 3 (0) | 「疮」与「肾气丸」没有直接记载的联系，但经由 湿热、微、虚劳 在知识超图中紧密相连：肾气丸 或可用于 疮（纯计算推断，需文献验证）。 |  |
+| (superseded) | hyp_9dcce49d684f | association_rule | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 2 (0) | 在主治类记载中，多饮、小便多 并见时多用 肾气丸（置信度 1.0，lift 4.85）：该组合可视为 肾气丸 的特征性指征。 |  |
+| (superseded) | hyp_b7aadb438d6b | contradiction | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 《内科摘要》与《重订济阴纲目》关于「痰」的论述存在实质性理论分歧（同一主题下的直接对立主张），反映了学术范式的变化。 |  |
+| (superseded) | hyp_b8a726ad7aef | contradiction | 0 |  | superseded |  | G0:· G1:· G2:· G3:· G4:· G5:· G6:· G7:pending G8:· |  | 4 (0) | 《内科摘要》与《外科精要》关于「痰」的论述存在实质性理论分歧（同一主题下的直接对立主张），反映了学术范式的变化。 |  |
 
-**Supplementary Table 10 | The Skeptic's 117 objections in the end-to-end run, by check (each objection is in the CSV file)** (`tables/S10_e2e_objections.csv`)
+**Supplementary Table 10 | The Skeptic's 102 objections in the end-to-end run, by check (each objection is in the CSV file)** (`tables/S10_e2e_objections.csv`)
 
 | Check | Raised | Closed after narrowing | Open: major | Open: minor | Open: critical |
 |---|---|---|---|---|---|
-| single_source | 35 | 16 | 9 | 10 | 0 |
-| transcription_dependence | 29 | 18 | 11 | 0 | 0 |
-| statistical | 15 | 10 | 5 | 0 | 0 |
-| homonym | 9 | 6 | 3 | 0 | 0 |
-| sample_size | 9 | 6 | 3 | 0 | 0 |
-| school | 6 | 0 | 0 | 6 | 0 |
-| counterexample | 6 | 4 | 2 | 0 | 0 |
+| transcription_dependence | 28 | 14 | 8 | 6 | 0 |
+| single_source | 27 | 8 | 5 | 14 | 0 |
+| homonym | 11 | 7 | 4 | 0 | 0 |
+| school | 9 | 0 | 0 | 9 | 0 |
+| statistical | 9 | 5 | 4 | 0 | 0 |
+| sample_size | 6 | 3 | 3 | 0 | 0 |
+| partial_persistence | 4 | 2 | 2 | 0 | 0 |
 | earliest_source | 4 | 2 | 2 | 0 | 0 |
-| partial_persistence | 3 | 2 | 1 | 0 | 0 |
+| counterexample | 3 | 2 | 1 | 0 | 0 |
 | restated_after | 1 | 0 | 0 | 0 | 1 |
 
 ## Supplementary Note 4 | Prediction lists
 
-Two lists record what the harness predicted before it could see the outcome, on the open canon corpus. Supplementary Table 11 lists the 82 predictions of the whole pipeline run on the past view at 1368 for two development topics (消渴, 中风) and four held-out topics (胸痹, 霍乱, 虚劳, 痰饮), each with its outcome in the later books (33 could be judged by the benchmark; formula evolutions, contradictions and lost books are not). No passage outside the past view was read (leakage 0). Supplementary Table 12 lists, for each of the 30 topic–cutoff pairs in which a link came true (56 links among 6,178 candidates), the average precision of three rankers and the true links Adamic–Adar placed in its top 20. The full-corpus runs of Fig. 5 (189 pairs, 1,314 links) need the store that is not distributed; their aggregates are in docs/evals.md.
+Two lists record what the harness predicted before it could see the outcome, on the open canon corpus. Supplementary Table 11 lists the 82 predictions of the whole pipeline run on the past view at 1368 for two development topics (消渴, 中风) and four held-out topics (胸痹, 霍乱, 虚劳, 痰饮), each with its outcome in the later books (32 could be judged by the benchmark; formula evolutions, contradictions and lost books are not). No passage outside the past view was read (leakage 0). Supplementary Table 12 lists, for each of the 51 topic–cutoff pairs in which a link came true (109 links among 10,115 candidates), the average precision of three rankers and the true links Adamic–Adar placed in its top 20. The full-corpus runs of Fig. 5 (189 pairs, 1,314 links) need the store that is not distributed; their aggregates are in docs/evals.md.
 
 **Supplementary Table 11 | The predictions of the pipeline run on the past view at 1368 on the open corpus, and their outcomes** (`tables/S11_predictions_open_corpus.csv`)
 
 | Topic | Split | Hypothesis | Kind | Review status | Prediction | Subject | Object | Held (strict) | Held (loose) | Later books | Note |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| disease:消渴 | dev | hyp_ec73bbdaf1a2 | hidden_association | rejected | link_appears | symptom:咳 | formula:五苓散 | no | no | 1 | already written before the cutoff |
+| disease:消渴 | dev | hyp_5608172ffb13 | hidden_association | rejected | link_appears | symptom:咳 | formula:五苓散 | no | no | 1 | already written before the cutoff |
 | disease:消渴 | dev | hyp_af6d5b43f7af | lost_source | survived | link_appears | work:wupu_bencao |  | not judged | not judged |  | not judged by this benchmark |
-| disease:消渴 | dev | hyp_651fa1673f25 | concept_drift | survived | sense_shift | disease:消渴 | 消渴#病·多饮多尿 | yes | yes |  |  |
-| disease:消渴 | dev | hyp_7a1ec44e1bfd | association_rule | survived | cooccurrence_after | symptom:头痛,symptom:无大热 | formula:越婢汤 | not judged | not judged |  |  |
-| disease:消渴 | dev | hyp_4ad17f25a523 | lost_knowledge | survived | absent_after | formula:五苓散 | disease:消渴 | no | no | 4 |  |
-| disease:消渴 | dev | hyp_2f86959af8d4 | lost_knowledge | survived | absent_after | etiology:寒 | disease:消渴 | yes | no | 0 |  |
+| disease:消渴 | dev | hyp_a80a336128c2 | concept_drift | survived | sense_shift | disease:消渴 | 消渴#病·多饮多尿 | yes | yes |  |  |
+| disease:消渴 | dev | hyp_4ad17f25a523 | lost_knowledge | survived | absent_after | formula:五苓散 | disease:消渴 | no | no | 5 |  |
+| disease:消渴 | dev | hyp_576a55a1ac17 | formula_evolution | survived | herb_retained | herb:半夏 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:消渴 | dev | hyp_dc5e204b197e | lost_source | survived | link_appears | work:jingxin_lu |  | not judged | not judged |  | not judged by this benchmark |
-| disease:消渴 | dev | hyp_ae44900af968 | contradiction | survived | resolution | disease:伤寒 | contradiction | not judged | not judged |  | not judged by this benchmark |
 | disease:消渴 | dev | hyp_9f1c3f0ed371 | formula_evolution | survived | herb_retained | herb:猪苓,herb:白术,herb:茯苓 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:消渴 | dev | hyp_823d383ae14e | contradiction | survived | resolution | disease:伤寒 | contradiction | not judged | not judged |  | not judged by this benchmark |
+| disease:消渴 | dev | hyp_7027c95205fd | association_rule | survived | cooccurrence_after | symptom:不渴,symptom:头痛 | formula:越婢汤 | no | no |  |  |
+| disease:消渴 | dev | hyp_4f0e6de21e7e | association_rule | survived | cooccurrence_after | symptom:头痛,symptom:无大热 | formula:越婢汤 | not judged | not judged |  |  |
 | disease:消渴 | dev | hyp_b4c92c32c385 | contradiction | survived | resolution | disease:伤寒 | contradiction | not judged | not judged |  | not judged by this benchmark |
-| disease:消渴 | dev | hyp_72149189a2f4 | association_rule | survived | cooccurrence_after | symptom:不渴,symptom:头痛 | formula:越婢汤 | no | no |  |  |
+| disease:消渴 | dev | hyp_27c77e0fa40a | formula_evolution | survived | herb_retained | formula:苓桂术甘汤,formula:细辛散 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:消渴 | dev | hyp_514347a5ab71 | hidden_association | survived | link_appears | symptom:小便不利 | formula:麻黄汤 | no | no | 0 |  |
 | disease:消渴 | dev | hyp_08b2269de51a | lost_knowledge | survived | absent_after | etiology:服石 | disease:消渴 | yes | no | 0 |  |
-| disease:中风 | dev | hyp_b556c451a515 | lost_knowledge | rejected | absent_after | etiology:风 | disease:中风 | no | no | 8 |  |
-| disease:中风 | dev | hyp_6391fe879596 | lost_source | survived | link_appears | work:yingru_fang |  | not judged | not judged |  | not judged by this benchmark |
+| disease:中风 | dev | hyp_b556c451a515 | lost_knowledge | rejected | absent_after | etiology:风 | disease:中风 | no | no | 12 |  |
+| disease:中风 | dev | hyp_cd4f103599a3 | hidden_association | rejected | link_appears | symptom:不恶寒 | formula:桂枝汤 | no | no | 0 |  |
+| disease:中风 | dev | hyp_057d771c5611 | lost_source | survived | link_appears | work:主治秘要 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:中风 | dev | hyp_3495600970d8 | contradiction | survived | resolution | pathogenesis:里寒 | contradiction | not judged | not judged |  | not judged by this benchmark |
 | disease:中风 | dev | hyp_194ef9aa2f95 | contradiction | survived | resolution | disease:中风 | conditional | not judged | not judged |  | not judged by this benchmark |
-| disease:中风 | dev | hyp_373d31ba6e0d | concept_drift | survived | sense_shift | disease:中风 |  | not judged | not judged |  |  |
-| disease:中风 | dev | hyp_aa95d8eaed27 | association_rule | survived | cooccurrence_after | pulse:微,symptom:头痛 | formula:鸡屎白散 | no | no |  |  |
+| disease:中风 | dev | hyp_d1a0a9a4aa27 | hidden_association | survived | link_appears | symptom:喘 | formula:小柴胡汤 | no | no | 0 |  |
+| disease:中风 | dev | hyp_6a5c759c767b | association_rule | survived | cooccurrence_after | symptom:下利,symptom:半身不遂 | formula:姜附汤 | not judged | not judged |  |  |
 | disease:中风 | dev | hyp_89303484a9d1 | formula_evolution | survived | herb_retained | herb:大枣,herb:甘草,herb:生姜,herb:芍药 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:中风 | dev | hyp_51f54da65656 | lost_source | survived | link_appears | work:玉函 |  | not judged | not judged |  | not judged by this benchmark |
+| disease:中风 | dev | hyp_dca3de12f279 | association_rule | survived | cooccurrence_after | pulse:微,symptom:头痛 | formula:鸡屎白散 | no | no |  |  |
 | disease:中风 | dev | hyp_d83e15e95ac8 | lost_knowledge | survived | absent_after | formula:五苓散 | disease:中风 | no | no | 6 |  |
 | disease:中风 | dev | hyp_e0c76e58ffd1 | formula_evolution | survived | herb_retained | herb:杏仁,herb:甘草,herb:石膏,herb:麻黄 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:中风 | dev | hyp_5ed6252ce76e | formula_evolution | survived | herb_retained | herb:甘草,herb:葛根,herb:黄芩 |  | not judged | not judged |  | not judged by this benchmark |
-| disease:中风 | dev | hyp_1c0f22705407 | association_rule | survived | cooccurrence_after | symptom:下利,symptom:半身不遂 | formula:姜附汤 | not judged | not judged |  |  |
-| disease:中风 | dev | hyp_3bffbbea414e | hidden_association | survived | link_appears | symptom:喘 | formula:小柴胡汤 | no | no | 0 |  |
-| disease:中风 | dev | hyp_4dbf0e894295 | hidden_association | survived | link_appears | symptom:短气 | formula:小柴胡汤 | yes | yes | 2 |  |
+| disease:中风 | dev | hyp_14b5ea5d7a81 | concept_drift | survived | sense_shift | disease:中风 |  | not judged | not judged |  |  |
 | disease:胸痹 | heldout | hyp_4af9e0e3e79c | lost_source | survived | link_appears | work:gujin_luyan |  | not judged | not judged |  | not judged by this benchmark |
 | disease:胸痹 | heldout | hyp_5ebe75623097 | formula_evolution | survived | herb_retained | herb:栝楼实,herb:薤白 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:胸痹 | heldout | hyp_a43b2b13831c | formula_evolution | survived | herb_retained | herb:甘草,herb:白术,herb:茯苓 |  | not judged | not judged |  | not judged by this benchmark |
@@ -307,48 +310,48 @@ Two lists record what the harness predicted before it could see the outcome, on 
 | disease:胸痹 | heldout | hyp_664857ebf4f8 | contradiction | survived | resolution | disease:胸痹 | contradiction | not judged | not judged |  | not judged by this benchmark |
 | disease:胸痹 | heldout | hyp_ae095c1a8d06 | association_rule | survived | cooccurrence_after | pulse:微,symptom:拘急 | formula:附子汤 | no | no |  |  |
 | disease:胸痹 | heldout | hyp_a5b35de6aeeb | hidden_association | survived | link_appears | symptom:咳 | formula:薤白汤 | no | no | 0 |  |
-| disease:胸痹 | heldout | hyp_6d7c0046ef32 | hidden_association | survived | link_appears | disease:胸痹 | herb:栝楼实 | no | no | 0 |  |
-| disease:胸痹 | heldout | hyp_90aded69eb74 | concept_drift | survived | sense_shift | disease:胸痹 |  | not judged | not judged |  |  |
+| disease:胸痹 | heldout | hyp_6d7c0046ef32 | hidden_association | survived | link_appears | disease:胸痹 | herb:栝楼实 | no | no | 1 |  |
+| disease:胸痹 | heldout | hyp_27916a874d7c | concept_drift | survived | sense_shift | disease:胸痹 |  | not judged | not judged |  |  |
 | disease:霍乱 | heldout | hyp_1101b63a75f5 | hidden_association | rejected | link_appears | disease:少阴病 | formula:五苓散 | no | no | 0 |  |
-| disease:霍乱 | heldout | hyp_a640f4ce86db | concept_drift | survived | sense_shift | disease:霍乱 |  | not judged | not judged |  |  |
+| disease:霍乱 | heldout | hyp_4e38ff74790d | concept_drift | survived | sense_shift | disease:霍乱 |  | not judged | not judged |  |  |
 | disease:霍乱 | heldout | hyp_64658eb3b657 | hidden_association | rejected | link_appears | symptom:心烦 | formula:四逆汤 | no | no | 0 |  |
 | disease:霍乱 | heldout | hyp_fab01fabcef8 | lost_source | survived | link_appears | work:廣志 |  | not judged | not judged |  | not judged by this benchmark |
-| disease:霍乱 | heldout | hyp_631d624ae984 | association_rule | survived | cooccurrence_after | pulse:细,symptom:心烦 | formula:橘皮汤 | not judged | not judged |  |  |
 | disease:霍乱 | heldout | hyp_01ac93cc8c2c | lost_source | survived | link_appears | work:jinxiao_fang |  | not judged | not judged |  | not judged by this benchmark |
 | disease:霍乱 | heldout | hyp_24329942a5fb | contradiction | survived | resolution | disease:伤寒 | contradiction | not judged | not judged |  | not judged by this benchmark |
+| disease:霍乱 | heldout | hyp_756adeeaf009 | association_rule | survived | cooccurrence_after | pulse:细,symptom:心烦 | formula:橘皮汤 | not judged | not judged |  |  |
+| disease:霍乱 | heldout | hyp_2d929f9cfa0d | association_rule | survived | cooccurrence_after | pulse:弦,symptom:心烦 | formula:橘皮汤 | not judged | not judged |  |  |
 | disease:霍乱 | heldout | hyp_e2d7d528bdc3 | lost_knowledge | survived | absent_after | etiology:生冷 | disease:霍乱 | yes | no | 0 |  |
 | disease:霍乱 | heldout | hyp_6a1c6ff4847d | lost_knowledge | survived | absent_after | etiology:湿 | disease:霍乱 | no | no | 3 |  |
 | disease:霍乱 | heldout | hyp_fb3ec7b257f7 | formula_evolution | survived | herb_retained | herb:桂心,herb:泽泻,herb:猪苓,herb:白术,herb:茯苓 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:霍乱 | heldout | hyp_5ddb1771ada9 | contradiction | survived | resolution | disease:伤寒 | contradiction | not judged | not judged |  | not judged by this benchmark |
-| disease:霍乱 | heldout | hyp_63d3fa4367b7 | association_rule | survived | cooccurrence_after | pulse:弦,symptom:心烦 | formula:橘皮汤 | not judged | not judged |  |  |
+| disease:霍乱 | heldout | hyp_0bd7235e7c93 | formula_evolution | survived | herb_retained | formula:桂枝汤,formula:桂枝加厚朴杏仁汤,formula:桂枝加芍药汤,formula:桂枝加葛根汤,formula:桂枝加黄芪汤 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:霍乱 | heldout | hyp_6bbe7b001ba1 | formula_evolution | survived | herb_retained | herb:桔梗,herb:白术,herb:葛根 |  | not judged | not judged |  | not judged by this benchmark |
-| disease:霍乱 | heldout | hyp_cbd5c278d27e | formula_evolution | survived | herb_retained | herb:地黄,herb:桂心,herb:白芍药 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:虚劳 | heldout | hyp_6e2c442d68f4 | lost_source | survived | link_appears | work:gujin_luyan |  | not judged | not judged |  | not judged by this benchmark |
 | disease:虚劳 | heldout | hyp_eb599602bc5b | hidden_association | rejected | link_appears | disease:虚劳 | formula:阳旦汤 | no | no | 0 |  |
-| disease:虚劳 | heldout | hyp_9bf01dd41feb | concept_drift | survived | sense_shift | disease:虚劳 |  | not judged | not judged |  |  |
+| disease:虚劳 | heldout | hyp_981dfc9b5035 | concept_drift | survived | sense_shift | disease:虚劳 |  | not judged | not judged |  |  |
 | disease:虚劳 | heldout | hyp_71c8050c5b39 | contradiction | survived | resolution | symptom:喘 | contradiction | not judged | not judged |  | not judged by this benchmark |
 | disease:虚劳 | heldout | hyp_7f5d2b067426 | lost_source | survived | link_appears | work:虗勞脉證第六 |  | not judged | not judged |  | not judged by this benchmark |
-| disease:虚劳 | heldout | hyp_ef9914bc5ca5 | hidden_association | rejected | link_appears | disease:中风 | formula:桂枝汤 | yes | yes | 2 | already written before the cutoff |
-| disease:虚劳 | heldout | hyp_e83081eba4fd | formula_evolution | survived | herb_retained | herb:人参,herb:地黄,herb:茯苓 |  | not judged | not judged |  | not judged by this benchmark |
-| disease:虚劳 | heldout | hyp_fe67ebeb0ff0 | formula_evolution | survived | herb_retained | herb:姜 |  | not judged | not judged |  | not judged by this benchmark |
+| disease:虚劳 | heldout | hyp_ef9914bc5ca5 | hidden_association | rejected | link_appears | disease:中风 | formula:桂枝汤 | yes | yes | 3 | already written before the cutoff |
+| disease:虚劳 | heldout | hyp_69154ca7fc1d | association_rule | survived | cooccurrence_after | pulse:微,symptom:拘急 | formula:附子汤 | no | no |  |  |
+| disease:虚劳 | heldout | hyp_3d09581465f5 | formula_evolution | survived | herb_retained | herb:地黄 |  | not judged | not judged |  | not judged by this benchmark |
+| disease:虚劳 | heldout | hyp_bcd3d8772231 | association_rule | survived | cooccurrence_after | symptom:心烦,symptom:鼻衄 | formula:小建中汤 | not judged | not judged |  |  |
 | disease:虚劳 | heldout | hyp_757226e1d312 | contradiction | survived | resolution | disease:虚劳 | contradiction | not judged | not judged |  | not judged by this benchmark |
-| disease:虚劳 | heldout | hyp_23d926167618 | association_rule | survived | cooccurrence_after | symptom:心烦,symptom:鼻衄 | formula:小建中汤 | not judged | not judged |  |  |
-| disease:虚劳 | heldout | hyp_8146f24b4b41 | lost_knowledge | survived | absent_after | pathogenesis:痰 | disease:虚劳 | no | no | 2 |  |
-| disease:虚劳 | heldout | hyp_ce997dbb3574 | formula_evolution | survived | herb_retained | herb:人参,herb:白术,herb:陈皮 |  | not judged | not judged |  | not judged by this benchmark |
+| disease:虚劳 | heldout | hyp_8146f24b4b41 | lost_knowledge | survived | absent_after | pathogenesis:痰 | disease:虚劳 | no | no | 3 |  |
+| disease:虚劳 | heldout | hyp_5507d6f5ac8e | formula_evolution | survived | herb_retained | herb:人参,herb:甘草,herb:麦冬 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:虚劳 | heldout | hyp_35e9d86013f7 | lost_knowledge | survived | absent_after | formula:桂枝汤 | disease:虚劳 | yes | yes | 0 |  |
-| disease:虚劳 | heldout | hyp_daaa09c2954a | association_rule | survived | cooccurrence_after | pulse:微,symptom:拘急 | formula:附子汤 | no | no |  |  |
+| disease:虚劳 | heldout | hyp_24bee37e9aba | formula_evolution | survived | herb_retained | herb:姜,herb:黄芪 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:痰饮 | heldout | hyp_6e2c442d68f4 | lost_source | survived | link_appears | work:gujin_luyan |  | not judged | not judged |  | not judged by this benchmark |
 | disease:痰饮 | heldout | hyp_5299b6d78bc6 | hidden_association | rejected | link_appears | symptom:下利 | formula:甘草汤 | no | no | 0 |  |
 | disease:痰饮 | heldout | hyp_5730b22d8213 | lost_source | survived | link_appears | work:jiyan_fang |  | not judged | not judged |  | not judged by this benchmark |
 | disease:痰饮 | heldout | hyp_a5e57687fd43 | hidden_association | rejected | link_appears | symptom:呕吐 | formula:泽泻汤 | no | no | 0 |  |
 | disease:痰饮 | heldout | hyp_40c55f5cfa8a | formula_evolution | survived | herb_retained | herb:厚朴,herb:葛根,herb:陈皮 |  | not judged | not judged |  | not judged by this benchmark |
-| disease:痰饮 | heldout | hyp_3196175ee3f3 | association_rule | survived | cooccurrence_after | pulse:微,symptom:拘急 | formula:附子汤 | no | no |  |  |
-| disease:痰饮 | heldout | hyp_50b7cabffc3b | concept_drift | survived | sense_shift | disease:痰饮 |  | not judged | not judged |  |  |
-| disease:痰饮 | heldout | hyp_0ccd266e27f9 | association_rule | survived | cooccurrence_after | pulse:微 | formula:附子汤 | no | no |  |  |
-| disease:痰饮 | heldout | hyp_db0d098c3ba7 | lost_knowledge | survived | absent_after | etiology:寒 | disease:痰饮 | no | no | 2 |  |
+| disease:痰饮 | heldout | hyp_de003d6e5453 | lost_knowledge | survived | absent_after | etiology:寒 | disease:痰饮 | no | no | 4 |  |
 | disease:痰饮 | heldout | hyp_c4211fadc6e5 | lost_knowledge | survived | absent_after | formula:小半夏汤 | disease:痰饮 | yes | yes | 0 |  |
+| disease:痰饮 | heldout | hyp_aebb0187f181 | concept_drift | survived | sense_shift | disease:痰饮 |  | not judged | not judged |  |  |
 | disease:痰饮 | heldout | hyp_d4166477be17 | concept_drift | survived | sense_shift | disease:伤寒 | 伤寒#广义 | no | no |  |  |
-| disease:痰饮 | heldout | hyp_992d7302feb3 | formula_evolution | survived | herb_retained | herb:人参,herb:甘草,herb:白术 |  | not judged | not judged |  | not judged by this benchmark |
+| disease:痰饮 | heldout | hyp_6682c9b596f1 | association_rule | survived | cooccurrence_after | pulse:微,symptom:拘急 | formula:附子汤 | no | no |  |  |
+| disease:痰饮 | heldout | hyp_ae8cc119ea3c | association_rule | survived | cooccurrence_after | pulse:微 | formula:附子汤 | no | no |  |  |
+| disease:痰饮 | heldout | hyp_529d6ca54699 | formula_evolution | survived | herb_retained | herb:人参,herb:白术 |  | not judged | not judged |  | not judged by this benchmark |
 | disease:痰饮 | heldout | hyp_20f5f4132d38 | concept_drift | survived | sense_shift | disease:中风 | 风#外风 | no | no |  |  |
 | disease:痰饮 | heldout | hyp_c2c854128b6c | contradiction | survived | resolution | disease:痰饮 | contradiction | not judged | not judged |  | not judged by this benchmark |
 
@@ -356,42 +359,63 @@ Two lists record what the harness predicted before it could see the outcome, on 
 
 | Cutoff | Topic | Past passages | Future passages | Candidates | Came true | AP Adamic–Adar | AP popularity | AP chance | First true link (Adamic–Adar rank) | True links in Adamic–Adar's top 20 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1127 | disease:中风 | 757 | 968 | 173 | 1 | 0.0667 | 0.0074 | 0.0243 | 15 | formula:麻黄汤 (rank 15, 2 later books) |
-| 1127 | disease:伤寒 | 1962 | 2752 | 231 | 6 | 0.0952 | 0.106 | 0.0441 | 4 | herb:麻黄 (rank 4, 2 later books) |
-| 1127 | symptom:下利 | 1145 | 1320 | 171 | 2 | 0.0355 | 0.0811 | 0.0318 | 22 |  |
-| 1127 | symptom:下血 | 403 | 454 | 109 | 1 | 0.0122 | 0.013 | 0.0355 | 82 |  |
-| 1127 | symptom:发热 | 1661 | 2767 | 163 | 3 | 0.0389 | 0.0172 | 0.0582 | 39 |  |
-| 1127 | symptom:呕吐 | 854 | 1276 | 245 | 2 | 0.127 | 0.0103 | 0.0395 | 5 | formula:五苓散 (rank 5, 4 later books) |
-| 1127 | symptom:咳 | 1727 | 1783 | 227 | 1 | 0.1667 | 0.1111 | 0.0173 | 6 | herb:杏仁 (rank 6, 2 later books) |
-| 1127 | symptom:喘 | 1461 | 1639 | 157 | 3 | 0.0592 | 0.123 | 0.0436 | 19 | herb:人参 (rank 19, 2 later books) |
-| 1127 | symptom:头痛 | 974 | 1318 | 144 | 2 | 0.135 | 0.0201 | 0.0343 | 4 | formula:四逆汤 (rank 4, 3 later books) |
-| 1127 | symptom:寒热 | 1715 | 1800 | 250 | 1 | 0.0069 | 0.0048 | 0.0204 | 145 |  |
-| 1127 | symptom:小便不利 | 569 | 514 | 83 | 1 | 0.0417 | 0.0139 | 0.0898 | 24 |  |
-| 1127 | symptom:心烦 | 665 | 547 | 139 | 1 | 0.0213 | 0.0108 | 0.0246 | 47 |  |
-| 1127 | symptom:无汗 | 247 | 534 | 18 | 1 | 0.0588 | 0.0667 | 0.1659 | 17 | formula:茵陈汤 (rank 17, 2 later books) |
-| 1127 | symptom:汗出 | 2217 | 1914 | 207 | 1 | 0.0185 | 0.0062 | 0.0249 | 54 |  |
-| 1127 | symptom:浊 | 391 | 976 | 91 | 1 | 0.025 | 0.0233 | 0.0732 | 40 |  |
-| 1127 | symptom:渴 | 1654 | 2732 | 224 | 4 | 0.0234 | 0.0166 | 0.0273 | 65 |  |
-| 1127 | symptom:腹满 | 1004 | 711 | 166 | 3 | 0.1417 | 0.0151 | 0.0699 | 3 | formula:桂枝汤 (rank 3, 2 later books) |
-| 1127 | symptom:谵语 | 316 | 402 | 34 | 1 | 0.0435 | 0.0588 | 0.1126 | 23 |  |
-| 1368 | disease:中风 | 1089 | 616 | 266 | 1 | 0.25 | 0.0147 | 0.0104 | 4 | formula:麻黄汤 (rank 4, 2 later books) |
-| 1368 | disease:伤寒 | 2811 | 1856 | 308 | 2 | 0.0361 | 0.0164 | 0.039 | 27 |  |
-| 1368 | disease:疮 | 3404 | 2082 | 425 | 1 | 0.0132 | 0.0033 | 0.0111 | 76 |  |
-| 1368 | symptom:发热 | 2369 | 2083 | 262 | 3 | 0.0202 | 0.0193 | 0.053 | 53 |  |
-| 1368 | symptom:喘 | 2117 | 1070 | 309 | 2 | 0.2588 | 0.2539 | 0.0208 | 2 | herb:人参 (rank 2, 2 later books) |
-| 1368 | symptom:头痛 | 1468 | 843 | 213 | 1 | 0.0075 | 0.0069 | 0.0107 | 134 |  |
-| 1368 | symptom:寒热 | 2334 | 1222 | 314 | 1 | 0.0123 | 0.0035 | 0.0122 | 81 |  |
-| 1368 | symptom:汗出 | 2896 | 1263 | 281 | 1 | 0.0112 | 0.0044 | 0.0175 | 89 |  |
-| 1368 | symptom:浊 | 626 | 727 | 142 | 1 | 0.0204 | 0.0139 | 0.0274 | 49 |  |
-| 1368 | symptom:淋 | 898 | 619 | 231 | 1 | 0.0078 | 0.005 | 0.0121 | 128 |  |
-| 1368 | symptom:渴 | 2567 | 1814 | 329 | 5 | 0.0159 | 0.0116 | 0.0396 | 122 |  |
-| 1368 | symptom:腹满 | 1325 | 408 | 266 | 2 | 0.0387 | 0.0074 | 0.021 | 15 | formula:桂枝汤 (rank 15, 2 later books) |
+| 1127 | disease:中风 | 763 | 1325 | 172 | 1 | 0.0667 | 0.0074 | 0.0245 | 15 | formula:麻黄汤 (rank 15, 2 later books) |
+| 1127 | disease:伤寒 | 1971 | 3526 | 231 | 8 | 0.1832 | 0.1967 | 0.0565 | 2 | herb:人参 (rank 2, 3 later books); herb:麻黄 (rank 4, 3 later books) |
+| 1127 | disease:痹 | 1766 | 1685 | 226 | 1 | 0.0128 | 0.0045 | 0.0123 | 78 |  |
+| 1127 | disease:结胸 | 212 | 322 | 48 | 2 | 0.0662 | 0.0431 | 0.1014 | 22 |  |
+| 1127 | disease:霍乱 | 372 | 643 | 120 | 1 | 0.1 | 0.0084 | 0.0231 | 10 | formula:四逆汤 (rank 10, 2 later books) |
+| 1127 | symptom:下利 | 1145 | 1765 | 172 | 5 | 0.0486 | 0.0476 | 0.0609 | 22 |  |
+| 1127 | symptom:下血 | 409 | 586 | 114 | 1 | 0.0118 | 0.0125 | 0.0348 | 85 |  |
+| 1127 | symptom:不渴 | 266 | 386 | 35 | 1 | 0.0333 | 0.037 | 0.1115 | 30 |  |
+| 1127 | symptom:发热 | 1673 | 3674 | 166 | 4 | 0.0377 | 0.026 | 0.048 | 39 |  |
+| 1127 | symptom:呕吐 | 857 | 1758 | 244 | 5 | 0.063 | 0.015 | 0.0503 | 5 | formula:五苓散 (rank 5, 5 later books) |
+| 1127 | symptom:咳 | 1748 | 2457 | 228 | 2 | 0.0913 | 0.0554 | 0.0295 | 6 | herb:杏仁 (rank 6, 2 later books) |
+| 1127 | symptom:喘 | 1485 | 2272 | 161 | 4 | 0.3181 | 0.3953 | 0.0417 | 1 | herb:甘草 (rank 1, 2 later books); herb:人参 (rank 19, 2 later books) |
+| 1127 | symptom:头痛 | 984 | 1805 | 145 | 2 | 0.1349 | 0.0189 | 0.0342 | 4 | formula:四逆汤 (rank 4, 4 later books) |
+| 1127 | symptom:寒热 | 1742 | 2447 | 250 | 1 | 0.0059 | 0.0048 | 0.0204 | 169 |  |
+| 1127 | symptom:小便不利 | 570 | 648 | 84 | 1 | 0.0417 | 0.0137 | 0.0896 | 24 |  |
+| 1127 | symptom:心烦 | 675 | 724 | 142 | 2 | 0.027 | 0.0137 | 0.0496 | 40 |  |
+| 1127 | symptom:拘急 | 366 | 453 | 170 | 1 | 0.006 | 0.0093 | 0.0273 | 167 |  |
+| 1127 | symptom:无汗 | 249 | 756 | 18 | 1 | 0.0588 | 0.0667 | 0.1659 | 17 | formula:茵陈汤 (rank 17, 2 later books) |
+| 1127 | symptom:汗出 | 2234 | 2516 | 207 | 3 | 0.0265 | 0.0118 | 0.0461 | 37 |  |
+| 1127 | symptom:浊 | 397 | 1332 | 93 | 1 | 0.0244 | 0.0227 | 0.0728 | 41 |  |
+| 1127 | symptom:渴 | 1687 | 3531 | 225 | 5 | 0.0272 | 0.0183 | 0.0318 | 67 |  |
+| 1127 | symptom:腹满 | 1010 | 926 | 168 | 4 | 0.1152 | 0.0181 | 0.0778 | 3 | formula:桂枝汤 (rank 3, 2 later books) |
+| 1127 | symptom:腹痛 | 976 | 1826 | 207 | 3 | 0.2778 | 0.3432 | 0.0449 | 3 | herb:当归 (rank 3, 2 later books); herb:人参 (rank 7, 2 later books); formula:四逆汤 (rank 14, 2 later books) |
+| 1127 | symptom:谵语 | 316 | 543 | 34 | 1 | 0.0435 | 0.0588 | 0.1126 | 23 |  |
+| 1368 | disease:中风 | 1123 | 957 | 262 | 1 | 0.0043 | 0.0068 | 0.0122 | 232 |  |
+| 1368 | disease:伤寒 | 2943 | 2545 | 306 | 3 | 0.155 | 0.186 | 0.0247 | 3 | herb:人参 (rank 3, 3 later books) |
+| 1368 | disease:热病 | 781 | 433 | 57 | 1 | 0.0175 | 0.0256 | 0.0639 | 57 |  |
+| 1368 | disease:疟 | 1112 | 1115 | 181 | 1 | 0.0141 | 0.0081 | 0.0713 | 71 |  |
+| 1368 | disease:疮 | 3570 | 2838 | 429 | 1 | 0.012 | 0.0033 | 0.0111 | 83 |  |
+| 1368 | disease:痈 | 1706 | 1425 | 274 | 1 | 0.004 | 0.0039 | 0.0143 | 253 |  |
+| 1368 | disease:痹 | 2195 | 1304 | 300 | 1 | 0.0061 | 0.0034 | 0.0603 | 165 |  |
+| 1368 | disease:霍乱 | 567 | 432 | 160 | 1 | 0.0909 | 0.0063 | 0.0411 | 11 | formula:四逆汤 (rank 11, 2 later books) |
+| 1368 | symptom:下利 | 1609 | 1299 | 271 | 1 | 0.0083 | 0.0052 | 0.0469 | 120 |  |
+| 1368 | symptom:发热 | 2486 | 2910 | 267 | 4 | 0.0211 | 0.0213 | 0.0389 | 53 |  |
+| 1368 | symptom:呕吐 | 1452 | 1207 | 341 | 4 | 0.012 | 0.0085 | 0.02 | 80 |  |
+| 1368 | symptom:咳 | 2359 | 1902 | 339 | 1 | 0.0179 | 0.0063 | 0.016 | 56 |  |
+| 1368 | symptom:喘 | 2198 | 1665 | 309 | 3 | 0.6818 | 0.678 | 0.024 | 1 | herb:甘草 (rank 1, 2 later books); herb:人参 (rank 2, 2 later books) |
+| 1368 | symptom:头痛 | 1550 | 1280 | 215 | 3 | 0.0471 | 0.0138 | 0.0417 | 9 | formula:大承气汤 (rank 9, 2 later books) |
+| 1368 | symptom:寒热 | 2427 | 1829 | 317 | 3 | 0.0176 | 0.0089 | 0.018 | 63 |  |
+| 1368 | symptom:小便不利 | 779 | 466 | 147 | 1 | 0.0222 | 0.0078 | 0.0396 | 45 |  |
+| 1368 | symptom:心烦 | 933 | 506 | 201 | 1 | 0.0357 | 0.0063 | 0.0359 | 28 |  |
+| 1368 | symptom:恶寒 | 1296 | 1279 | 173 | 1 | 0.0098 | 0.006 | 0.0125 | 102 |  |
+| 1368 | symptom:拘急 | 511 | 309 | 216 | 1 | 0.0047 | 0.0076 | 0.041 | 213 |  |
+| 1368 | symptom:汗出 | 2980 | 1815 | 282 | 1 | 0.011 | 0.0044 | 0.0174 | 91 |  |
+| 1368 | symptom:浊 | 646 | 1070 | 144 | 2 | 0.0215 | 0.0153 | 0.0351 | 52 |  |
+| 1368 | symptom:淋 | 943 | 934 | 232 | 1 | 0.0078 | 0.0049 | 0.0119 | 129 |  |
+| 1368 | symptom:渴 | 2664 | 2560 | 330 | 5 | 0.0156 | 0.0115 | 0.0224 | 124 |  |
+| 1368 | symptom:腹满 | 1368 | 597 | 267 | 2 | 0.0387 | 0.0074 | 0.0209 | 15 | formula:桂枝汤 (rank 15, 2 later books) |
+| 1368 | symptom:腹痛 | 1487 | 1329 | 291 | 3 | 0.5159 | 0.5065 | 0.0234 | 1 | herb:当归 (rank 1, 2 later books); herb:人参 (rank 6, 2 later books); formula:四逆汤 (rank 14, 2 later books) |
+| 1368 | symptom:谵语 | 449 | 409 | 65 | 1 | 0.02 | 0.0213 | 0.0584 | 50 |  |
+| 1368 | symptom:身疼痛 | 380 | 365 | 79 | 1 | 0.25 | 0.0435 | 0.1242 | 4 | formula:白虎汤 (rank 4, 2 later books) |
 
 ## Supplementary Figure
 
 ![Supplementary Fig. 1](../figures/out/suppfig1_failures.png)
 
-**Supplementary Fig. 1 | Where the end-to-end run of Fig. 3 went wrong, and why.** **a**, Books merged into one source family under three rules: the harness's (the same work or author, or any transcription or rephrasing link between their passages, closed transitively), transcription links only, and the same work or author only. Under the harness's rule 35 of the 38 books that supplied evidence, and 182 of the 368 books of the open corpus, fall into one family. **b**, The independent families each final hypothesis rests on under the three rules; dashed line, the two that G5 requires. Five hypotheses that G5 failed (H4, H5, H9, H12, H13) rest on two to four families once rephrasing links are left out. **c**, The failure modes found by reading every surviving hypothesis against its evidence, with what each did and the check that would catch it. None is repaired here: the run is reported as it happened.
+**Supplementary Fig. 1 | Where the end-to-end run of Fig. 3 went wrong, and why.** **a**, Books merged into one source family under three rules: the harness's (the same work or author, or any transcription or rephrasing link between their passages, closed transitively), transcription links only, and the same work or author only. Under the harness's rule 36 of the 46 books that supplied evidence, and 233 of the 553 books of the open corpus, fall into one family. **b**, The independent families each final hypothesis rests on under the three rules; dashed line, the two that G5 requires. The hypotheses that G5 failed and that rest on two to three families once rephrasing links are left out (H5, H7, H12, H13) include two (H5, H13) whose evidence is copies of one clause, for which one family is right. **c**, The failure modes found by reading every surviving hypothesis against its evidence, with what each did and the check that would catch it. None is repaired here: the run is reported as it happened.
 
 ## Supplementary Data
 

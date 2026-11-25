@@ -13,16 +13,16 @@
   0.6,
   0.7
  ],
- "n_texts": 98,
+ "n_texts": 141,
  "width_mm": 183.0,
- "height_mm": 80.0,
+ "height_mm": 115.0,
  "fonts": [
   "Arial-BoldMT",
   "Arial-ItalicMT",
   "ArialMT",
   "NotoSansCJKsc-Regular"
  ],
- "live_text_chars": 979,
+ "live_text_chars": 1341,
  "files": [
   "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.pdf",
   "/home/user/TaoChronos/paper/figures/out/extfig2_canon_replication.svg",

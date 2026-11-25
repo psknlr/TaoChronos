@@ -22,92 +22,92 @@
    "period": "先秦两汉",
    "id": "qin_han",
    "passages": 39,
-   "total": 15743,
-   "per_10k": 24.77,
+   "total": 16605,
+   "per_10k": 23.49,
    "ci_per_10k": [
-    18.13,
-    33.85
+    17.19,
+    32.09
    ],
-   "characters": 761330
+   "characters": 791068
   },
   {
    "period": "魏晋南北朝",
    "id": "wei_jin",
-   "passages": 40,
-   "total": 11140,
-   "per_10k": 35.91,
+   "passages": 41,
+   "total": 11529,
+   "per_10k": 35.56,
    "ci_per_10k": [
-    26.38,
-    48.85
+    26.23,
+    48.21
    ],
-   "characters": 708658
+   "characters": 730960
   },
   {
    "period": "隋唐五代",
    "id": "sui_tang",
    "passages": 89,
-   "total": 26780,
-   "per_10k": 33.23,
+   "total": 27185,
+   "per_10k": 32.74,
    "ci_per_10k": [
-    27.02,
-    40.88
+    26.61,
+    40.27
    ],
-   "characters": 1512524
+   "characters": 1535351
   },
   {
    "period": "宋金元",
    "id": "song_jin_yuan",
-   "passages": 84,
-   "total": 32471,
-   "per_10k": 25.87,
+   "passages": 97,
+   "total": 35214,
+   "per_10k": 27.55,
    "ci_per_10k": [
-    20.9,
-    32.01
+    22.59,
+    33.59
    ],
-   "characters": 2175499
+   "characters": 2320469
   },
   {
    "period": "明",
    "id": "ming",
    "passages": 57,
-   "total": 19919,
-   "per_10k": 28.62,
+   "total": 27602,
+   "per_10k": 20.65,
    "ci_per_10k": [
-    22.1,
-    37.05
+    15.94,
+    26.74
    ],
-   "characters": 1319785
+   "characters": 1662082
   },
   {
    "period": "清",
    "id": "qing",
-   "passages": 188,
-   "total": 28638,
-   "per_10k": 65.65,
+   "passages": 304,
+   "total": 49455,
+   "per_10k": 61.47,
    "ci_per_10k": [
-    56.93,
-    75.68
+    54.95,
+    68.75
    ],
-   "characters": 2008139
+   "characters": 3358495
   },
   {
    "period": "民国",
    "id": "minguo",
-   "passages": 8,
-   "total": 353,
-   "per_10k": 226.63,
+   "passages": 10,
+   "total": 555,
+   "per_10k": 180.18,
    "ci_per_10k": [
-    115.27,
-    440.76
+    98.16,
+    328.47
    ],
-   "characters": 21339
+   "characters": 48950
   }
  ],
  "trend": {
-  "z": 6.62,
+  "z": 7.304,
   "p": 0.0
  },
- "total_passages": 505,
+ "total_passages": 637,
  "earliest": [
   {
    "passage_id": "cm_lingshu_sibucongkan.00381",
@@ -337,127 +337,127 @@
      "term": "寒",
      "term_id": "etiology:寒",
      "count": 9,
-     "lift": 3.38
+     "lift": 3.42
     },
     {
      "term": "中风",
      "term_id": "disease:中风",
      "count": 3,
-     "lift": 8.51
+     "lift": 7.55
     },
     {
      "term": "咳",
      "term_id": "symptom:咳",
      "count": 3,
-     "lift": 4.79
+     "lift": 6.14
     },
     {
      "term": "身灼热",
      "term_id": "symptom:身灼热",
      "count": 2,
-     "lift": 10.21
+     "lift": 9.35
     },
     {
      "term": "发汗后",
      "term_id": "condition:发汗后",
      "count": 2,
-     "lift": 7.29
-    },
-    {
-     "term": "湿温",
-     "term_id": "disease:湿温",
-     "count": 2,
-     "lift": 5.67
+     "lift": 7.27
     },
     {
      "term": "不恶寒",
      "term_id": "symptom:不恶寒",
      "count": 3,
-     "lift": 2.47
+     "lift": 2.45
+    },
+    {
+     "term": "湿温",
+     "term_id": "disease:湿温",
+     "count": 2,
+     "lift": 5.03
     },
     {
      "term": "发热",
      "term_id": "symptom:发热",
      "count": 2,
-     "lift": 1.02
+     "lift": 1.11
     },
     {
      "term": "热病",
      "term_id": "disease:热病",
      "count": 2,
-     "lift": 0.6
+     "lift": 0.65
     },
     {
      "term": "伤寒",
      "term_id": "disease:伤寒",
      "count": 2,
-     "lift": 0.39
+     "lift": 0.41
     }
    ]
   },
   {
    "period": "魏晋南北朝",
-   "sampled": 40,
+   "sampled": 41,
    "top": [
     {
      "term": "脉细",
      "term_id": "pulse:细",
      "count": 5,
-     "lift": 10.94
+     "lift": 9.64
+    },
+    {
+     "term": "刺皮",
+     "term_id": "herb:刺皮",
+     "count": 3,
+     "lift": 25.06
     },
     {
      "term": "下利",
      "term_id": "symptom:下利",
      "count": 4,
-     "lift": 9.72
+     "lift": 10.03
     },
     {
      "term": "腹满",
      "term_id": "symptom:腹满",
      "count": 4,
-     "lift": 8.75
+     "lift": 9.11
     },
     {
      "term": "腹痛",
      "term_id": "symptom:腹痛",
      "count": 4,
-     "lift": 7.96
+     "lift": 8.35
     },
     {
      "term": "痰饮",
      "term_id": "disease:痰饮",
      "count": 2,
-     "lift": 21.88
+     "lift": 25.06
     },
     {
      "term": "大热",
      "term_id": "symptom:大热",
      "count": 3,
-     "lift": 5.47
+     "lift": 4.7
     },
     {
      "term": "中满",
      "term_id": "symptom:中满",
      "count": 2,
-     "lift": 10.94
+     "lift": 12.53
     },
     {
      "term": "汗出",
      "term_id": "symptom:汗出",
      "count": 3,
-     "lift": 3.13
+     "lift": 3.42
     },
     {
      "term": "脉大",
      "term_id": "pulse:大",
      "count": 2,
-     "lift": 5.47
-    },
-    {
-     "term": "伤寒",
-     "term_id": "disease:伤寒",
-     "count": 3,
-     "lift": 0.5
+     "lift": 6.27
     }
    ]
   },
@@ -469,127 +469,127 @@
      "term": "伤寒",
      "term_id": "disease:伤寒",
      "count": 17,
-     "lift": 1.15
+     "lift": 1.1
     },
     {
      "term": "头痛",
      "term_id": "symptom:头痛",
      "count": 9,
-     "lift": 2.74
+     "lift": 2.91
     },
     {
      "term": "壮热",
      "term_id": "symptom:壮热",
      "count": 6,
-     "lift": 5.3
+     "lift": 6.2
     },
     {
      "term": "阴阳",
      "term_id": "concept:阴阳",
      "count": 5,
-     "lift": 4.02
+     "lift": 4.31
     },
     {
      "term": "呕吐",
      "term_id": "symptom:呕吐",
      "count": 4,
-     "lift": 5.89
+     "lift": 6.89
     },
     {
      "term": "寒热",
      "term_id": "symptom:寒热",
      "count": 4,
-     "lift": 3.93
+     "lift": 4.59
     },
     {
      "term": "汗出",
      "term_id": "symptom:汗出",
      "count": 5,
-     "lift": 2.1
-    },
-    {
-     "term": "麻黄",
-     "term_id": "herb:麻黄",
-     "count": 3,
-     "lift": 4.42
+     "lift": 2.35
     },
     {
      "term": "肾",
      "term_id": "organ:肾",
      "count": 2,
-     "lift": 8.84
+     "lift": 10.33
+    },
+    {
+     "term": "茅根",
+     "term_id": "herb:茅根",
+     "count": 2,
+     "lift": 10.33
     },
     {
      "term": "霍乱",
      "term_id": "disease:霍乱",
      "count": 2,
-     "lift": 8.84
+     "lift": 10.33
     }
    ]
   },
   {
    "period": "宋金元",
-   "sampled": 84,
+   "sampled": 97,
    "top": [
     {
      "term": "伤寒",
      "term_id": "disease:伤寒",
-     "count": 18,
-     "lift": 0.88
+     "count": 21,
+     "lift": 0.9
     },
     {
      "term": "下法",
      "term_id": "treatment_method:下法",
      "count": 5,
-     "lift": 4.59
+     "lift": 4.31
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 10,
+     "lift": 1.17
     },
     {
      "term": "长夏",
      "term_id": "condition:长夏",
      "count": 4,
-     "lift": 5.14
-    },
-    {
-     "term": "发热",
-     "term_id": "symptom:发热",
-     "count": 9,
-     "lift": 1.16
+     "lift": 5.51
     },
     {
      "term": "发汗",
      "term_id": "treatment_method:发汗",
      "count": 6,
-     "lift": 2.14
-    },
-    {
-     "term": "火毒",
-     "term_id": "pathogenesis:火毒",
-     "count": 4,
-     "lift": 4.28
+     "lift": 1.97
     },
     {
      "term": "头痛",
      "term_id": "symptom:头痛",
      "count": 7,
-     "lift": 1.55
+     "lift": 1.51
+    },
+    {
+     "term": "火毒",
+     "term_id": "pathogenesis:火毒",
+     "count": 4,
+     "lift": 3.94
     },
     {
      "term": "目眩",
      "term_id": "symptom:目眩",
      "count": 3,
-     "lift": 6.43
+     "lift": 6.89
     },
     {
-     "term": "异气",
-     "term_id": "etiology:异气",
-     "count": 3,
-     "lift": 4.82
+     "term": "热病",
+     "term_id": "disease:热病",
+     "count": 11,
+     "lift": 0.75
     },
     {
-     "term": "阴阳",
-     "term_id": "concept:阴阳",
-     "count": 4,
-     "lift": 2.34
+     "term": "大热",
+     "term_id": "symptom:大热",
+     "count": 5,
+     "lift": 2.15
     }
    ]
   },
@@ -601,163 +601,163 @@
      "term": "热病",
      "term_id": "disease:热病",
      "count": 27,
-     "lift": 1.56
+     "lift": 1.64
     },
     {
      "term": "伤寒",
      "term_id": "disease:伤寒",
      "count": 31,
-     "lift": 1.16
+     "lift": 1.19
     },
     {
      "term": "寒",
      "term_id": "etiology:寒",
      "count": 19,
-     "lift": 1.37
+     "lift": 1.36
     },
     {
      "term": "不恶寒",
      "term_id": "symptom:不恶寒",
      "count": 14,
-     "lift": 2.22
-    },
-    {
-     "term": "发热",
-     "term_id": "symptom:发热",
-     "count": 13,
-     "lift": 1.28
+     "lift": 2.15
     },
     {
      "term": "恶寒",
      "term_id": "symptom:恶寒",
      "count": 8,
-     "lift": 2.81
+     "lift": 3.07
+    },
+    {
+     "term": "发热",
+     "term_id": "symptom:发热",
+     "count": 13,
+     "lift": 1.35
     },
     {
      "term": "辛凉",
      "term_id": "treatment_principle:辛凉",
      "count": 4,
-     "lift": 3.93
+     "lift": 4.09
     },
     {
      "term": "疟",
      "term_id": "disease:疟",
      "count": 3,
-     "lift": 3.69
+     "lift": 4.6
     },
     {
      "term": "壮热",
      "term_id": "symptom:壮热",
      "count": 4,
-     "lift": 1.97
+     "lift": 2.45
     },
     {
      "term": "头痛",
      "term_id": "symptom:头痛",
      "count": 6,
-     "lift": 1.02
+     "lift": 1.15
     }
    ]
   },
   {
    "period": "清",
-   "sampled": 188,
+   "sampled": 304,
    "top": [
-    {
-     "term": "热病",
-     "term_id": "disease:热病",
-     "count": 41,
-     "lift": 1.16
-    },
     {
      "term": "伤寒",
      "term_id": "disease:伤寒",
-     "count": 47,
-     "lift": 0.86
+     "count": 73,
+     "lift": 0.91
+    },
+    {
+     "term": "热病",
+     "term_id": "disease:热病",
+     "count": 54,
+     "lift": 1.07
     },
     {
      "term": "寒",
      "term_id": "etiology:寒",
-     "count": 29,
-     "lift": 1.03
+     "count": 47,
+     "lift": 1.09
     },
     {
      "term": "风温",
      "term_id": "disease:风温",
-     "count": 14,
-     "lift": 1.98
+     "count": 18,
+     "lift": 1.71
     },
     {
      "term": "渴",
      "term_id": "symptom:渴",
-     "count": 12,
-     "lift": 2.06
+     "count": 16,
+     "lift": 1.68
     },
     {
      "term": "发热",
      "term_id": "symptom:发热",
-     "count": 17,
-     "lift": 0.82
+     "count": 24,
+     "lift": 0.81
     },
     {
-     "term": "咳",
-     "term_id": "symptom:咳",
-     "count": 9,
-     "lift": 1.35
+     "term": "初起",
+     "term_id": "condition:初起",
+     "count": 11,
+     "lift": 2.0
     },
     {
-     "term": "发汗",
-     "term_id": "treatment_method:发汗",
-     "count": 9,
-     "lift": 1.2
+     "term": "不恶寒",
+     "term_id": "symptom:不恶寒",
+     "count": 16,
+     "lift": 0.8
     },
     {
-     "term": "不渴",
-     "term_id": "symptom:不渴",
-     "count": 6,
-     "lift": 2.06
+     "term": "无汗",
+     "term_id": "symptom:无汗",
+     "count": 8,
+     "lift": 2.0
     },
     {
-     "term": "温热",
-     "term_id": "disease:温热",
-     "count": 7,
-     "lift": 1.53
+     "term": "上焦",
+     "term_id": "organ:上焦",
+     "count": 8,
+     "lift": 2.0
     }
    ]
   },
   {
    "period": "民国",
-   "sampled": 8,
+   "sampled": 10,
    "top": [
     {
      "term": "伤寒",
      "term_id": "disease:伤寒",
      "count": 13,
-     "lift": 3.65
+     "lift": 3.42
     },
     {
      "term": "太阳病",
      "term_id": "disease:太阳病",
      "count": 2,
-     "lift": 14.7
+     "lift": 16.83
     },
     {
      "term": "发热",
      "term_id": "symptom:发热",
-     "count": 3,
-     "lift": 2.21
+     "count": 4,
+     "lift": 2.85
     },
     {
      "term": "不恶寒",
      "term_id": "symptom:不恶寒",
      "count": 2,
-     "lift": 2.37
+     "lift": 2.1
     },
     {
      "term": "热病",
      "term_id": "disease:热病",
      "count": 2,
-     "lift": 0.86
+     "lift": 0.83
     }
    ]
   }
@@ -776,6 +776,18 @@
    "category": "温病"
   },
   {
+   "book_id": "jc_e011",
+   "title": "温热逢源",
+   "dynasty": "清",
+   "years": [
+    1862,
+    1902
+   ],
+   "passages": 30,
+   "share": 0.2381,
+   "category": "温病"
+  },
+  {
    "book_id": "yijing_suhui",
    "title": "医经溯洄集",
    "dynasty": "元明",
@@ -786,6 +798,18 @@
    "passages": 10,
    "share": 0.1515,
    "category": "医论"
+  },
+  {
+   "book_id": "jc_e013",
+   "title": "温病指南",
+   "dynasty": "清",
+   "years": [
+    1903,
+    1903
+   ],
+   "passages": 47,
+   "share": 0.1395,
+   "category": "温病"
   },
   {
    "book_id": "jc_e004a",
@@ -860,6 +884,18 @@
    "category": "医案"
   },
   {
+   "book_id": "jc_p0006",
+   "title": "医宗金鉴·伤寒心法要诀",
+   "dynasty": "清",
+   "years": [
+    1742,
+    1742
+   ],
+   "passages": 9,
+   "share": 0.072,
+   "category": "综合"
+  },
+  {
    "book_id": "jc_n021",
    "title": "市隐庐医学杂著",
    "dynasty": "清",
@@ -906,42 +942,6 @@
    "passages": 4,
    "share": 0.0625,
    "category": "医案"
-  },
-  {
-   "book_id": "jc_e009",
-   "title": "增订叶评伤暑全书",
-   "dynasty": "清",
-   "years": [
-    1675,
-    1675
-   ],
-   "passages": 7,
-   "share": 0.0551,
-   "category": "温病"
-  },
-  {
-   "book_id": "wenyilun_skqs",
-   "title": "瘟疫论",
-   "dynasty": "明",
-   "years": [
-    1642,
-    1642
-   ],
-   "passages": 15,
-   "share": 0.0543,
-   "category": "温病"
-  },
-  {
-   "book_id": "jc_b024",
-   "title": "伤寒悬解",
-   "dynasty": "清",
-   "years": [
-    1644,
-    1911
-   ],
-   "passages": 6,
-   "share": 0.0526,
-   "category": "伤寒"
   }
  ],
  "senses": [
@@ -1003,5 +1003,205 @@
    "note": "现代概念仅为候选映射，不等同"
   }
  ],
- "notice": "频率为“含该词段落 / 该期全部段落”，括号内为 95% Wilson 区间；各期存世文献多寡不同，比例而非绝对数才可比较。"
+ "notice": "频率为“含该词段落 / 该期全部段落”，括号内为 95% Wilson 区间；各期存世文献多寡不同，比例而非绝对数才可比较。",
+ "charts": [
+  {
+   "version": 1,
+   "type": "line",
+   "title": "温病 · 各时期出现率",
+   "rows": [
+    {
+     "period": "先秦两汉",
+     "per_10k": 23.49,
+     "lo": 17.19,
+     "hi": 32.09,
+     "passages": 39,
+     "total": 16605
+    },
+    {
+     "period": "魏晋南北朝",
+     "per_10k": 35.56,
+     "lo": 26.23,
+     "hi": 48.21,
+     "passages": 41,
+     "total": 11529
+    },
+    {
+     "period": "隋唐五代",
+     "per_10k": 32.74,
+     "lo": 26.61,
+     "hi": 40.27,
+     "passages": 89,
+     "total": 27185
+    },
+    {
+     "period": "宋金元",
+     "per_10k": 27.55,
+     "lo": 22.59,
+     "hi": 33.59,
+     "passages": 97,
+     "total": 35214
+    },
+    {
+     "period": "明",
+     "per_10k": 20.65,
+     "lo": 15.94,
+     "hi": 26.74,
+     "passages": 57,
+     "total": 27602
+    },
+    {
+     "period": "清",
+     "per_10k": 61.47,
+     "lo": 54.95,
+     "hi": 68.75,
+     "passages": 304,
+     "total": 49455
+    },
+    {
+     "period": "民国",
+     "per_10k": 180.18,
+     "lo": 98.16,
+     "hi": 328.47,
+     "passages": 10,
+     "total": 555
+    }
+   ],
+   "columns": [
+    {
+     "key": "period",
+     "label": "时期"
+    },
+    {
+     "key": "per_10k",
+     "label": "每万段"
+    },
+    {
+     "key": "lo",
+     "label": "区间下限"
+    },
+    {
+     "key": "hi",
+     "label": "区间上限"
+    },
+    {
+     "key": "passages",
+     "label": "段落"
+    },
+    {
+     "key": "total",
+     "label": "该期总段落"
+    }
+   ],
+   "id": "term-periods",
+   "subtitle": "每万段中含该词的段数，阴影为 95% Wilson 区间；趋势 z = 7.30",
+   "x": {
+    "key": "period",
+    "label": "时期"
+   },
+   "y": {
+    "label": "每万段",
+    "min": 0
+   },
+   "series": [
+    {
+     "key": "per_10k",
+     "label": "温病",
+     "lo": "lo",
+     "hi": "hi"
+    }
+   ],
+   "source": "道乃久（TaoChronos）· 术语源流 · 语料版本 b6ae29b53b4c"
+  }
+ ],
+ "tables": [
+  {
+   "version": 1,
+   "id": "term-periods",
+   "title": "“温病”各时期的出现率",
+   "columns": [
+    {
+     "key": "period",
+     "label": "时期",
+     "align": "left"
+    },
+    {
+     "key": "total",
+     "label": "段落总数",
+     "align": "center"
+    },
+    {
+     "key": "n",
+     "label": "含该词段落",
+     "align": "center"
+    },
+    {
+     "key": "rate",
+     "label": "每万段",
+     "align": "center"
+    },
+    {
+     "key": "ci",
+     "label": "95% CI",
+     "align": "center"
+    }
+   ],
+   "rows": [
+    {
+     "period": "先秦两汉",
+     "total": "16605",
+     "n": "39",
+     "rate": "23.5",
+     "ci": "17.2–32.1"
+    },
+    {
+     "period": "魏晋南北朝",
+     "total": "11529",
+     "n": "41",
+     "rate": "35.6",
+     "ci": "26.2–48.2"
+    },
+    {
+     "period": "隋唐五代",
+     "total": "27185",
+     "n": "89",
+     "rate": "32.7",
+     "ci": "26.6–40.3"
+    },
+    {
+     "period": "宋金元",
+     "total": "35214",
+     "n": "97",
+     "rate": "27.6",
+     "ci": "22.6–33.6"
+    },
+    {
+     "period": "明",
+     "total": "27602",
+     "n": "57",
+     "rate": "20.6",
+     "ci": "15.9–26.7"
+    },
+    {
+     "period": "清",
+     "total": "49455",
+     "n": "304",
+     "rate": "61.5",
+     "ci": "55.0–68.8"
+    },
+    {
+     "period": "民国",
+     "total": "555",
+     "n": "10",
+     "rate": "180.2",
+     "ci": "98.2–328.5"
+    }
+   ],
+   "notes": [
+    "每万段：含该词（及其异名）的段落数 ÷ 该期段落总数 × 10 000；CI：Wilson 区间。",
+    "趋势检验（Cochran–Armitage）：z = 7.30，P < 0.001。"
+   ],
+   "source": "道乃久（TaoChronos）· 术语源流 · 语料版本 b6ae29b53b4c"
+  }
+ ]
 }

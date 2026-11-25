@@ -989,6 +989,66 @@
    "irreversible": false
   },
   {
+   "name": "mydata.compare",
+   "family": "mydata",
+   "permission": "mydata:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "mydata.describe",
+   "family": "mydata",
+   "permission": "mydata:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "mydata.list",
+   "family": "mydata",
+   "permission": "mydata:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "mydata.prescriptions",
+   "family": "mydata",
+   "permission": "mydata:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "mydata.read",
+   "family": "mydata",
+   "permission": "mydata:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "mydata.search",
+   "family": "mydata",
+   "permission": "mydata:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": false,
+   "irreversible": false
+  },
+  {
    "name": "philology.assess_passage",
    "family": "philology",
    "permission": "classics:read",
@@ -1129,6 +1189,16 @@
    "irreversible": false
   },
   {
+   "name": "study.compare",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
    "name": "study.concordance",
    "family": "study",
    "permission": "classics:read",
@@ -1169,6 +1239,16 @@
    "irreversible": false
   },
   {
+   "name": "study.family",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
    "name": "study.formula",
    "family": "study",
    "permission": "classics:read",
@@ -1206,6 +1286,16 @@
    "parallel_safe": true,
    "exclusive": false,
    "expensive": false,
+   "irreversible": false
+  },
+  {
+   "name": "study.incompat",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
    "irreversible": false
   },
   {
@@ -1260,6 +1350,26 @@
   },
   {
    "name": "study.places",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.properties",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.protocol",
    "family": "study",
    "permission": "classics:read",
    "read_only": true,
@@ -1370,6 +1480,16 @@
   },
   {
    "name": "study.transmission",
+   "family": "study",
+   "permission": "classics:read",
+   "read_only": true,
+   "parallel_safe": true,
+   "exclusive": false,
+   "expensive": true,
+   "irreversible": false
+  },
+  {
+   "name": "study.usage",
    "family": "study",
    "permission": "classics:read",
    "read_only": true,

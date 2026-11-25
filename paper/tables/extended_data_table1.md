@@ -19,7 +19,7 @@
 
 †Used for local research only and never redistributed; the open web corpus carries none of the texts whose terms forbid redistribution.
 
-§JiCheng releases its selection, arrangement, punctuation and notes on public-domain texts under CC0 1.0 and its own writing under CC BY 4.0 (https://jicheng.tw/tcm/copyright.html, consulted 29 September 2026); the open web corpus carries 250 JiCheng witnesses under these terms, crediting JiCheng. The modern editors' part of the few texts JiCheng transcribed from modern reconstructions of lost books is not covered.
+§JiCheng releases its selection, arrangement, punctuation and notes on public-domain texts under CC0 1.0 and its own writing under CC BY 4.0 (https://jicheng.tw/tcm/copyright.html, consulted 29 September 2026); the open web corpus carries 427 JiCheng witnesses under these terms, crediting JiCheng. The modern editors' part of the few texts JiCheng transcribed from modern reconstructions of lost books is not covered.
 
 ‖Mostly simplified-character copies of JiCheng texts; de-duplication removes every copy, and the 8 texts kept match no JiCheng text. The 4 in the open web corpus are carried on the decision of the releasing institute (IMPF-AI); the others are used for local research only.
 

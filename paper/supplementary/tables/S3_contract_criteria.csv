@@ -1,6 +1,6 @@
 Criterion,Requirement,Judge,State when unmet,H1 in Fig. 3 (observed)
 min_supporting_evidence,≥ 2,validator:contract,inconclusive,pass: 2 verified supporting record(s)
-semantic_support,every supporting claim borne by its quote,validator:contract,inconclusive,pass: every supporting claim is stated by its quote
+semantic_support,every supporting claim borne by its quote,validator:contract,"inconclusive (a quote contradicts its claim, or its author rejects it); needs_expert (a quote does not clearly state its claim)",pass: every supporting claim is stated by its quote
 source_dependence,"≥ 2 independent source families, on the current version",validator:contract,inconclusive,"pass: G5 pass: 2 independent source cluster(s) (need 2): baoming_ji, jc_o128"
 falsification_review,a skeptic review,validator:contract,inconclusive,pass: reviewed
 unresolved_hard_objections,≤ 0,validator:contract,inconclusive,pass: 0 open hard objection(s)
