@@ -25,7 +25,7 @@ everything in the download meant to be there"**.  It was not:
 * **`taochronos.zip` was the whole package**: 277 modules, 53 of which no browser imports — a quarter of its lines
   (some 21,000 of 80,000): the server, the command line, the site's own build, the evaluation suites, the D1 tooling
   and the pipeline that builds the corpus — never run in a browser, published all the same.
-* **Nothing said what may ship.**  `package_zip()` zipped the directory; `home_zip()` zipped six directories by name.
+* **Nothing said what may ship.**  `package_zip()` zipped the directory; `home_zip()` zipped eight directories by name.
   A file added to either was published by the next merge.
 
 The corpus store is not a leak: `corpus/web` is public-domain texts in openly licensed transcriptions, packed to be
@@ -141,7 +141,7 @@ Result: `taochronos.zip` 1,507,509 → 1,113,458 bytes (225 of the package's 279
 ## Not done here
 
 * **Moving the harness, or the prompts, to the server** (the plan's seventh point).  The page reaching the model with
-  the visitor's own key, the conversation passing no server of ours, the runtime working offline and at
+  the visitor's own key, the conversation passing no server of ours, the same runtime in the browser and at
   `taochronos serve`: these are the design, and each ends the day the tools run on our machines.  Nor would it hide
   much: a system prompt is recoverable from any model that follows it, and the tools' value is the corpus work behind
   them, which is published under open licences.  What the policy does give is the lever the plan wanted: **a capability
@@ -152,7 +152,7 @@ Result: `taochronos.zip` 1,507,509 → 1,113,458 bytes (225 of the package's 279
   before it can do anything, so the page would carry whatever opens the gate.  A challenge costs readers instead: it
   does not open in several in-app browsers, and not reliably from the mainland.  Edge rules 2, 4 and 5 already stand
   before these files (not before the mirror).
-* **Blocking `HeadlessChrome`** (in the first point; Lightpanda is blocked since the rules of the same day).  The
+* **Blocking `HeadlessChrome`** (in the first point; Lightpanda is in rule 4 and the sentinel since the same day).  The
   project's own checks are a headless Chromium, and eight page loads in seven weeks came from others.
 * **Taking the mirror down** (the ninth point).  It is the documented fallback for when Cloudflare is unreachable, and
   serves the same public files; it is outside every edge rule and its downloads are in no log of ours.  That is a
