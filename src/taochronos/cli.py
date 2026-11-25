@@ -1687,12 +1687,30 @@ def cmd_serve(args: argparse.Namespace) -> None:
 
 def cmd_web(args: argparse.Namespace) -> None:
     """The web client as a static site (GitHub Pages): ``build`` — client, in-browser runtime, providers, Pyodide and
-    the 要籍语料; ``pack`` — write that corpus (corpus/web) from the full corpus store and corpus/catalog/canon.yaml;
-    ``canon`` — rank the 要籍 anew and write the list, the pack and the D1 backup's tables in one go."""
+    the 要籍语料; ``audit`` — a built site against distribution-policy.yaml (what the site may carry); ``pack`` — write
+    that corpus (corpus/web) from the full corpus store and corpus/catalog/canon.yaml; ``canon`` — rank the 要籍 anew
+    and write the list, the pack and the D1 backup's tables in one go."""
     from .chat.build import build_site
     from .config import find_home
 
     home = find_home(args.home)
+    if args.action == "audit":
+        import subprocess
+
+        from .chat.distribution import audit_site, browser_modules, home_files, load_policy, unclassified
+        policy = load_policy(home)
+        site = Path(args.output or "_site")
+        problems = audit_site(site, home, policy) if site.is_dir() else [f"{site} is not a directory: build the site first (taochronos web build)"]
+        try:  # every tracked path has a class: a new directory is classified before anything is built from it
+            tracked = subprocess.run(["git", "-C", str(home), "ls-files"], capture_output=True, text=True, check=True, timeout=60).stdout.split("\n")
+        except (OSError, subprocess.SubprocessError):
+            tracked = []
+        without = unclassified([t for t in tracked if t], policy)
+        _out({"site": str(site), "ok": not problems and not without, "problems": problems, "unclassified": without,
+              "package_modules": len(browser_modules(home, policy)), "home_files": len(home_files(home, policy))})
+        if problems or without:
+            raise SystemExit(1)
+        return
     if args.action == "canon":
         import sqlite3
 
@@ -2198,8 +2216,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--verbose", action="store_true", help="log requests (paths only)")
     sp = add("web", cmd_web, "the web chat client: build the static site; pack the 要籍语料 it carries (canon: rank the 要籍 anew "
                              "and pack them); write, upload and repair the full corpus its server carries (Cloudflare)", profile=False)
-    sp.add_argument("action", choices=["build", "pack", "canon", "store", "upload", "repair"])
-    sp.add_argument("-o", "--output", help="build: the site directory (default _site); pack, canon: the pack directory (default "
+    sp.add_argument("action", choices=["build", "audit", "pack", "canon", "store", "upload", "repair"])
+    sp.add_argument("-o", "--output", help="build, audit: the site directory (default _site); pack, canon: the pack directory (default "
                                            "corpus/web); store, repair: where store.json and ATTRIBUTION.md go (default cloud)")
     sp.add_argument("--data", help="pack, canon, store: the data directory holding the full corpus store")
     sp.add_argument("--size", type=int, help="canon: how many works the 要籍 list keeps (default 535)")

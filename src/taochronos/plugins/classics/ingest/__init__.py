@@ -17,6 +17,7 @@ from typing import Any, Callable, Iterable
 
 from ....protocol.yamlio import load_yaml
 from ..repairs import repair_rows
+from ..sources import JC_SOURCE, load_external_works  # here too, as before: the site's corpus reads them without this package
 from ..store import CorpusStore
 from .kanripo import BookSpec, KanripoFile, KanripoParser, LayerSpec, read_file
 
@@ -27,12 +28,6 @@ def load_catalog(path: str | Path) -> dict[str, Any]:
     data = load_yaml(Path(path))
     data["_path"] = str(path)
     return data
-
-
-def load_external_works(path: str | Path) -> list[dict[str, Any]]:
-    """``corpus/catalog/external-works.yaml``: works cited in the corpus but not in it (lost, or extant elsewhere)."""
-    p = Path(path)
-    return list((load_yaml(p) or {}).get("works") or []) if p.exists() else []
 
 
 def _range(v: Any) -> tuple[int, int] | None:
@@ -232,15 +227,6 @@ JC_CATEGORY = {"內經、難經": "医经", "傷寒": "伤寒", "金匱": "杂�
                "雜病": "内科", "婦產": "妇科", "兒科": "儿科", "外科": "外科", "傷科": "伤科", "針灸": "针灸", "眼科": "眼科",
                "五官科": "五官", "診法": "诊法", "醫案": "医案", "綜合": "综合", "叢書": "综合", "短篇": "歌赋", "資料庫": "现代",
                "其他": "非医籍"}
-JC_SOURCE = {
-    "id": "jicheng",
-    "name": "笈成（JiCheng）中医古籍整理本 · 笈成檢閱系統 v1.4.8 资料",
-    "url": "https://jicheng.tw/",
-    "license": "CC0 1.0（中醫笈成对公有领域古籍的筛选、编排、标点、附注等编辑成果；网站自行创作的内容为 CC BY 4.0；"
-               "见 https://jicheng.tw/tcm/copyright.html），使用时请注明来自中醫笈成；古籍原文属公有领域；笈成所据今人辑校、"
-               "校注本中的今人成分不在 CC0 之列；当代著作与现代整理本除经审定保留者外不入库（保留者的今人整理成分单列为层或移入元数据）",
-    "transcription": "笈成志愿者录入、校对并加新式标点（各书“品质”见 [book] 信息）；未经本项目逐字核对",
-}
 FRONT_MATTER_UPPER = 1911  # paratext of undetermined date is placed at the end of the imperial era (never earlier)
 APPARATUS_KEYS = ("paragraphs", "apparatus", "drop_sections", "heading_layers", "own_sections")  # a kept edition's modern apparatus
 UNDATED_NOTE = "成书年代无从考定，按清代（1644—1911）保守计"
@@ -592,4 +578,4 @@ def jicheng_variant_rows(groups: list[list[str]], normalize: Callable[[str], str
 
 
 __all__ = ["BigramModel", "book_record", "book_spec", "build_jicheng_catalog", "git_head", "ingest_jicheng", "ingest_kanripo",
-           "jicheng_book_record", "jicheng_spec", "jicheng_variant_rows", "load_catalog", "load_external_works"]
+           "jicheng_book_record", "jicheng_spec", "jicheng_variant_rows", "load_catalog", "load_external_works", "JC_SOURCE"]

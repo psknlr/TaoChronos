@@ -1,0 +1,122 @@
+# TaoChronos distribution policy — what the published site may carry.  Enforced by `taochronos web build` (which fails
+# rather than publish a violation), by `taochronos web audit` and by CI (tests/test_distribution.py).
+# docs/adr/0034-what-the-site-ships.md says why.
+#
+# The page runs in the visitor's browser, so whatever the site carries can be read, kept and copied by anyone — the
+# files are static, the mirror on GitHub Pages serves them outside every edge rule, and no check of an address or a
+# user agent survives a client that lies about itself.  The line is therefore drawn here, by what is built into the
+# site, and not at the edge: what is not named below does not leave the repository.
+version: 1
+
+# ---------------------------------------------------------------- the classes
+# Every tracked path of the repository falls under one (the most specific entry wins; a path under none fails the
+# check, so a new directory is classified before anything is built from it).
+#
+#   public        may be published as it is
+#   restricted    the project's own work: the repository and the server.  Published only where `site` below names a
+#                 part of it — the parts the runtime in the browser cannot work without
+#   confidential  never in a published artifact, and never quoted in a build log or an issue
+assets:
+  public:
+    - web                       # the client: a browser cannot run what it is not sent
+    - corpus/web                # the 要籍语料: public-domain texts in openly licensed transcriptions (its ATTRIBUTION.md)
+    - corpus/demo               # the demonstration corpus
+  restricted:
+    - src                       # the package: only the modules the browser can import are published (site.package)
+    - profiles                  # only the browser's profiles are published (site.home)
+    - agents                    # published: the research run in the browser loads them
+    - skills                    # published: the V2 workflows in the browser load them
+    - domains                   # published but the harvested lexicon: the tools in the browser read them
+    - corpus/catalog            # published: the 要籍 list and the witnesses' records the tools read
+    - corpus/modern             # published: the curated modern evidence
+    - corpus/sources.lock.yaml
+    - architecture-policy.yaml  # its name is published, empty (site.home.marker); its content is not
+    - distribution-policy.yaml
+    - cloud
+    - relay
+    - security
+    - tests
+    - docs
+    - paper
+    - requirements
+    - pyproject.toml
+    - README.md
+    - README.en.md
+    - .github
+    - .gitignore
+    - .dockerignore
+  confidential:
+    - data                      # visitors' conversation records and the security logs (addresses, request headers)
+    - evals                     # gold sets and their held-out splits: a published gold set is a spent one
+
+# ---------------------------------------------------------------- the site
+site:
+  # runtime/taochronos.zip — the package as the browser can import it: the modules reachable from what the page's
+  # worker imports (web/js/worker.js), from the plugins the browser's profiles load and from the modules the shipped
+  # agents name.  Computed from the imports, not listed by hand: a list goes stale, and a module the runtime needs but
+  # a list forgot fails in a visitor's browser, not here.  To keep a capability on the server, take it out of what the
+  # browser's profiles load: its modules leave the archive with it.
+  package:
+    entry: [taochronos.chat, taochronos.plugins.classics.domain, taochronos.plugins.classics.webcorpus]
+    profiles: [web-canon, full-discovery]   # the runtime in the browser starts on one of these
+    # What must never be among those modules (a module, or a package with everything under it): the server, the
+    # command line, the site's own build, the evaluation suites, the pipeline that builds the corpus.  An import that
+    # would ship one fails the build, which names the chain of imports.
+    never:
+      - taochronos.__main__
+      - taochronos.cli
+      - taochronos.governance
+      - taochronos.workspace
+      - taochronos.evals
+      - taochronos.chat.build
+      - taochronos.chat.distribution
+      - taochronos.chat.server
+      - taochronos.chat.cloud
+      - taochronos.chat.records
+      - taochronos.chat.providers
+      - taochronos.chat.d1
+      - taochronos.chat.d1fixture
+      - taochronos.chat.d1results
+      - taochronos.chat.d1tables
+      - taochronos.plugins.classics.ingest
+      - taochronos.plugins.classics.harvest
+      - taochronos.plugins.classics.aliasbuild
+
+  # runtime/home.zip — what the runtime reads from its home.  The build starts the runtime on exactly these files (and
+  # the package above) before it publishes them: a file the runtime needs and this list lacks stops the build.
+  home:
+    marker: architecture-policy.yaml        # the harness finds its home by this name: shipped empty
+    ship:
+      - profiles/base.yaml                  # the browser's profiles and the ones they extend, no other
+      - profiles/full-discovery.yaml
+      - profiles/full-corpus.yaml
+      - profiles/web-canon.yaml
+      - agents
+      - skills
+      - domains
+      - corpus/demo
+      - corpus/catalog
+      - corpus/modern
+    except:
+      - domains/classics/lexicon-harvested  # harvested from the full corpus, read only with it
+
+  # Nowhere in the site, under whatever name: the mark every file of the confidential evaluation data carries in its
+  # first line (evals/gold/README.md).  A copy that reached the site's text or its archives under another name is found
+  # by it at build time — and one found anywhere else, later, is known for what it is.
+  canaries:
+    - "3695bca7-79fa-407b-bbf0-315f84993981"
+
+  # Nowhere in the site, whatever put it there: file names (shell patterns, matched against every file of the site and
+  # every entry of its archives)
+  never:
+    - "*.map"
+    - "*.pyc"
+    - "*.pem"
+    - "*.key"
+    - "*.p12"
+    - "*.sqlite"
+    - ".env"
+    - ".env.*"
+    - ".dev.vars"
+    - "wrangler*.toml"
+    - ".git*"
