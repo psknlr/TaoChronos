@@ -21,13 +21,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CACHE = Path(os.environ.get("TAOCHRONOS_FONT_CACHE", Path.home() / ".cache" / "taochronos" / "fonts"))
 FAMILY = "Noto Sans CJK SC"
+EXTRA_SOURCES: list[Path] = []  # a figure script elsewhere appends itself here before the fonts are prepared
 
 
 def needed_characters() -> str:
-    """Every non-ASCII character a case figure can draw: those in the scripts and in the source data."""
+    """Every non-ASCII character a figure can draw: those in the scripts and source data of this directory, and in
+    any file named in ``EXTRA_SOURCES``."""
     chars: set[str] = set()
-    for f in [*HERE.glob("*.py"), *(HERE / "source_data").glob("*")]:
-        chars.update(c for c in f.read_text(encoding="utf-8") if ord(c) > 0x7F)
+    for f in [*HERE.glob("*.py"), *(HERE / "source_data").glob("*"), *EXTRA_SOURCES]:
+        chars.update(c for c in Path(f).read_text(encoding="utf-8") if ord(c) > 0x7F)
     return "".join(sorted(chars))
 
 

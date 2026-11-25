@@ -1,5 +1,6 @@
 % Compile with xelatex (the Chinese text needs xeCJK and a CJK font). Figures are the vector PDFs in
-% paper/figures/out; the references are already formatted (citeproc), so no BibTeX run is needed.
+% paper/figures/out (Fig. 1, the graphical abstract, in paper/manuscript/figures); the references
+% are already formatted (citeproc), so no BibTeX run is needed.
 % Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
@@ -116,13 +117,13 @@ design}\label{supplementary-note-1-evaluation-design}}
 TaoChronos-Eval has forty suites in three layers. The first tests the
 harness's boundaries: nineteen invariants run as probes against the
 harness under test, each checked by mutation (the boundary removed, the
-invariant broken, the boundary restored; Fig. 4b measures all nineteen
+invariant broken, the boundary restored; Fig. 5b measures all nineteen
 on every variant). The second tests readings: 107 verbatim quotations
 that can still be read wrongly, in eight classes, with unsafe errors
 (those that would let a false claim through) counted apart. The split
 into 23 development and 84 held-out cases was fixed before the suite
 first ran, and four blind rounds were each written before the rules that
-first read them (Fig. 4d). The third tests research value: a blind
+first read them (Fig. 5d). The third tests research value: a blind
 temporal benchmark in which the store is split at a cutoff year,
 passages that may have been written on either side belong to neither
 side, the rules were written before the first run
@@ -136,7 +137,7 @@ constructed data where an answer can be constructed (planted drug pairs,
 artificial manuscript traditions, a lost work quoted by four books), a
 development set where rules need examples, and results the literature
 already holds where the real corpus can be checked (the taboo renamings
-of Fig. 6, the Yunqi chapters of the Suwen, the first gloss of 几几).
+of Fig. 7, the Yunqi chapters of the Suwen, the first gloss of 几几).
 Development and constructed sets were written with the rules they test;
 they are regression tests of intended behaviour, and only held-out or
 real-corpus results estimate generalization (Supplementary Fig. 2). The
@@ -190,7 +191,7 @@ under test; six boundaries removed in turn (mutation) & held / exercised
 / broken & 19/19 held (P01--P10 and nine boundaries added with them);
 each of six boundaries removed on purpose (scope guard, result firewall,
 semantic support hook, reducer authority, evidence bounds, publish
-guard) breaks its invariant & Fig. 4b; Table 2 \\
+guard) breaks its invariant & Fig. 5b; Table 2 \\
 Readings & interpretive & Are true quotes read right where the reading
 is hard --- inverted relations, a prohibition beside a prescription,
 consequences, reported and rejected views, omitted conditions, mixed
@@ -200,7 +201,7 @@ fixed before the first run; 4 blind rounds & accuracy and unsafe errors,
 per class and per split (dev / held-out) & held-out 82/84 (0.976), 2
 unsafe (大黄牡丹汤 read as an indication; 里水, a crux the harvest does
 not find); dev 23/23. First blind round 43/53 (0.811); round 3, before
-the crux registry, 7/10 with 3 unsafe cruxes; see below & Fig. 4c,d;
+the crux registry, 7/10 with 3 unsafe cruxes; see below & Fig. 5c,d;
 Table 2 \\
 Research value & research\_value & On the full corpus split at a cutoff
 year: do the graph rankings D4 uses anticipate the remedies later books
@@ -215,7 +216,7 @@ split and review status; leakage & precision@10 0.168 (popularity 0.134;
 chance 0.054); average precision above popularity in 149 of 189 pairs (P
 = 2.4 × 10⁻¹⁶); held-out predictions: discoveries 7/19; open corpus:
 above popularity 24/6 (P = 0.0014), not separable from chance 13/17 (P =
-0.58) & Fig. 5; Supplementary Fig. 3; Table 2 \\
+0.58) & Fig. 6; Supplementary Fig. 3; Table 2 \\
 Verification & philology & Are contested readings kept with
 probabilities and an uncertain mass? Are variant spellings normalised
 for matching? & 7 contested readings (gold/philology.yaml) & pass rate &
@@ -238,7 +239,7 @@ and mis-positioned quotes caught, without flagging real quotes or
 variant spellings? & 60 random passages × 4 probes: verbatim, one
 character replaced, random characters, shifted span & detection rates ·
 verbatim recall & fabricated 100\% · perturbed 100\% · wrong span 100\%
-detected; verbatim recall 100\%; variant spelling accepted & Fig. 4a;
+detected; verbatim recall 100\%; variant spelling accepted & Fig. 5a;
 Table 2 \\
 Verification & contradiction & Contradiction vs conditional vs apparent
 vs support vs unrelated (including differential diagnosis and
@@ -392,7 +393,7 @@ with three planted pairs; the store's 66 196 compositions & planted
 top-3 · false significant · real: textbook pairs · 方证 links of 桂枝汤
 and 麻黄汤 & planted top-3 1.0 · false significant 0.0 · real: 7/7
 textbook pairs significant with lift \textgreater{} 1.5 (桂枝---芍药
-2527 compositions, lift 2.05; 麻黄---杏仁 5.08 \ldots) & Fig. 6d; Table
+2527 compositions, lift 2.05; 麻黄---杏仁 5.08 \ldots) & Fig. 7d; Table
 2 \\
 Task specification & schools & Are a school's planted words found, and
 do the textbooks' doctrines come out as its own? & 5 synthetic 温病
@@ -407,7 +408,7 @@ dated, and its names equated and completed? & 20 synthetic works (薯蓣 →
 nested names apart · equations · candidates · real: dated taboo renames
 & switch interval, nested names, equation, candidate 山芋 all right ·
 real: 2/2 (薯蓣→山药 in 1000--1200, 玄参→元参 in 1600--1800) & Fig.
-6a,b \\
+7a,b \\
 Task specification & chain & Does each witness of a passage hang from
 the witness it was copied from? & 6 artificial traditions of 12
 witnesses; with each copy regularising spellings on its own & witnesses
@@ -482,7 +483,7 @@ off 0.800 · naive 0.806 · on 0.933; Wrong@10 6 · 7 · 3; on: CandRecall
 authority}\label{supplementary-note-2-gates-permissions-and-authority}}
 
 Five mechanisms bound what any part of the harness can do, and they are
-layered so that the failure of one is caught by another (Fig. 4b). (1)
+layered so that the failure of one is caught by another (Fig. 5b). (1)
 Permissions: every tool needs one permission, and an agent holds only
 those its specification lists (Supplementary Tables 4 and 5); an agent
 that asks for a tool outside them is refused and the refusal is logged.
@@ -492,7 +493,7 @@ research's scope, a claim whose quote is not verbatim or contradicts it,
 an anachronistic equation and a report on unjudged versions. (3) Event
 authority: every change to the research object is an event, and the
 reducer refuses an event its principal may not emit; 61 event types,
-nine patterns of permission (Fig. 1b, Supplementary Table 7). An agent
+nine patterns of permission (Fig. 2b, Supplementary Table 7). An agent
 proposes; only validators grade, and only a human sets G7. (4) Gates
 G0--G8 grade each claim, evidence record and hypothesis on its current
 version (Supplementary Table 2). (5) The research contract, hashed
@@ -586,7 +587,7 @@ Judge
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
 State when unmet
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-H1 in Fig. 3 (observed)
+H1 in Fig. 4 (observed)
 \end{minipage} \\
 \midrule\noalign{}
 \endhead
@@ -616,7 +617,7 @@ all required gates pass on this version \\
 expert\_review & an expert's approval & human & needs\_expert & pending:
 G7 pending \\
 falsification & not rejected & validator:contract & rejected & R1 in
-Fig. 3: status rejected \\
+Fig. 4: status rejected \\
 \end{longtable}
 
 \textbf{Supplementary Table 4 \textbar{} The sixteen agents of a
@@ -1041,7 +1042,7 @@ Fig. 1), the largest being that the independence check merged 36 of the
 46 books that supplied evidence into one source family.
 
 \textbf{Supplementary Table 9 \textbar{} Every hypothesis of the
-end-to-end run (Fig. 3), with its gates, unmet criteria, objections and
+end-to-end run (Fig. 4), with its gates, unmet criteria, objections and
 testable prediction} (\texttt{tables/S9\_e2e\_hypotheses.csv})
 
 \begin{longtable}[]{@{}
@@ -1300,7 +1301,7 @@ books are not). No passage outside the past view was read (leakage 0).
 Supplementary Table 12 lists, for each of the 51 topic--cutoff pairs in
 which a link came true (109 links among 10,115 candidates), the average
 precision of three rankers and the true links Adamic--Adar placed in its
-top 20. The full-corpus runs of Fig. 5 (189 pairs, 1,314 links) need the
+top 20. The full-corpus runs of Fig. 6 (189 pairs, 1,314 links) need the
 store that is not distributed; their aggregates are in docs/evals.md.
 
 \textbf{Supplementary Table 11 \textbar{} The predictions of the
@@ -1741,7 +1742,7 @@ books); formula:四逆汤 (rank 14, 2 later books) \\
 \end{figure}
 
 \textbf{Supplementary Fig. 1 \textbar{} Where the end-to-end run of Fig.
-3 went wrong, and why.} \textbf{a}, Books merged into one source family
+4 went wrong, and why.} \textbf{a}, Books merged into one source family
 under three rules: the harness's (the same work or author, or any
 transcription or rephrasing link between their passages, closed
 transitively), transcription links only, and the same work or author
@@ -1780,7 +1781,7 @@ to agents, and review without the Skeptic.
 \includegraphics[width=1\textwidth,height=\textheight]{../../../figures/out/extfig2_canon_replication.pdf}
 
 \textbf{Supplementary Fig. 3 \textbar{} The research-value benchmark on
-the open canon corpus.} The benchmark of Fig. 5 re-run with identical
+the open canon corpus.} The benchmark of Fig. 6 re-run with identical
 rules on the open web corpus (533 works, most sampled by chapters).
 \textbf{a}, Average precision of Adamic--Adar (blue), popularity (grey)
 and the expectation under chance (open circles) in each of the 51
@@ -1922,6 +1923,6 @@ conversation client and the command line show it.
 run} (\texttt{Supplementary\_Data\_2\_e2e\_event\_log.jsonl.gz}): every
 event in order, one JSON object a line, each with its sequence number,
 type, actor, principal and payload; replaying it rebuilds the state from
-which Fig. 3 and the report were drawn.
+which Fig. 4 and the report were drawn.
 
 \end{document}

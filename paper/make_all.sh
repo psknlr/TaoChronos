@@ -18,3 +18,4 @@ python3 qc_report.py > /dev/null && echo "QC: every figure passes (paper/figures
 cd ../..
 python3 paper/tables/make_tables.py
 python3 paper/supplementary/make_supplementary.py
+python3 paper/manuscript/figures/graphical_abstract.py   # Fig. 1 of the manuscripts, from the same source data

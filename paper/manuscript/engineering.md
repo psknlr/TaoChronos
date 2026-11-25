@@ -55,20 +55,20 @@ medical texts the failure modes are specific (Table 1).
 We argue that reliability must be engineered into the agent's architecture. TaoChronos (道乃久) follows one principle,
 *deterministic harness, stochastic intelligence*: state, permissions, verification, stopping and acceptance are
 deterministic code, and intelligence — a language model or a rule-based procedure standing in for one — may only
-propose. Our four contributions are:
+propose (Fig. 1). Our four contributions are:
 
 1. **An agent architecture that separates proposal from verdict:** an event-sourced research object, authority by
    principal over 61 event types, a permissioned tool mesh, hooks that require verbatim and semantically supported
-   quotations, nine epistemic gates and an executable research contract (Fig. 1).
+   quotations, nine epistemic gates and an executable research contract (Fig. 2).
 2. **A dated, layered and license-tracked corpus** of 966 witnesses of 761 works (about 123 million characters,
    2.05 million passages, 475 BCE–1949), with an openly licensed canon defined by the tradition's own citations that
-   runs in a web browser (Fig. 2).
+   runs in a web browser (Fig. 3).
 3. **A three-layer evaluation of reliability and research value:** safety invariants checked by mutation, hard
    interpretive cases with unsafe errors counted apart in blind rounds, and a blind temporal benchmark in which
-   leakage is counted rather than assumed (Figs. 4 and 5).
+   leakage is counted rather than assumed (Figs. 5 and 6).
 4. **Guarded ancient–modern translation and full transparency:** phenotypic similarity to modern diseases through the
    Human Phenotype Ontology [@kohler2021hpo], never retrospective diagnosis, and a complete, replayable research run
-   released with its unrepaired failure analysis (Fig. 3).
+   released with its unrepaired failure analysis (Fig. 4).
 
 # Materials and methods
 
@@ -84,13 +84,13 @@ witness is placed in the Qing (1644–1911), never earlier. Each passage keeps i
 layer, transcription source and license; normalization of variant forms is used for matching only. A work's influence
 is 10 log₂(1 + citing works) + 2 × (periods citing it) + 2 log₂(1 + citations) + 3 log₂(1 + witnesses) + 6 × (inclusion
 in the *Siku quanshu*); the openly licensed witnesses of the 535 ranked works (533 have one) form the web corpus
-(553 witnesses, 10.46 million characters, 168,278 passages) used in Figs. 2e and 3.
+(553 witnesses, 10.46 million characters, 168,278 passages) used in Figs. 3e and 4.
 
 ## Agent architecture
 
 The research object holds all scientific state and is changed only by a reducer applying typed events in
 transactions; each event carries its principal (kernel, human, validator or agent), set from an identity object, and
-the reducer refuses an event its principal may not emit (Fig. 1b). Agents propose; only validators grade gates,
+the reducer refuses an event its principal may not emit (Fig. 2b). Agents propose; only validators grade gates,
 scores and the contract; only a human sets gate G7 (expert approval); an objection closes only when a validator
 re-runs its check or an expert decides. Sixteen agents (a Director and fifteen specialists, from Curator and
 Philologist to Hypothesis agent and Skeptic) are configurations naming permissions, tools, context view, output
@@ -129,23 +129,23 @@ two-sided exact sign tests. Rules were written before the first run; all results
 ## A dated, layered corpus
 
 The store holds 966 witnesses, 537 dated to a single year; the basis of each date is recorded, from curation (329) to
-signed prefaces (139); 104 undated witnesses are counted as Qing (Fig. 2). Records of 10,001 printed and manuscript
+signed prefaces (139); 104 undated witnesses are counted as Qing (Fig. 3). Records of 10,001 printed and manuscript
 copies in eleven digitized collections link 179 works to physical witnesses (Supplementary Fig. 4). The openly
-licensed texts of 533 of the 535 canon works form a web corpus of 553 witnesses that runs in the browser (Fig. 2e).
+licensed texts of 533 of the 535 canon works form a web corpus of 553 witnesses that runs in the browser (Fig. 3e).
 
 ## One research question, end to end
 
 We asked how the composition and indications of Shenqi wan changed over time, with Shenqi wan and Liuwei dihuang wan as
-focus terms and 消渴 = diabetes forbidden, on the open canon corpus (273 books, 1,620 passages; Fig. 3a). The run
+focus terms and 消渴 = diabetes forbidden, on the open canon corpus (273 books, 1,620 passages; Fig. 4a). The run
 planned 30 tasks in three rounds, wrote 678 events, called 143 tools (none refused) and no model; it extracted 935
-claims and recorded 80 evidence and 13 counter-evidence records (Fig. 3b). Of 14 hypotheses, the Skeptic kept 2, sent
-11 to be narrowed and rejected 1, raising 102 objections (Fig. 3c). Four await an expert: two meet every
+claims and recorded 80 evidence and 13 counter-evidence records (Fig. 4b). Of 14 hypotheses, the Skeptic kept 2, sent
+11 to be narrowed and rejected 1, raising 102 objections (Fig. 4c). Four await an expert: two meet every
 machine-checkable criterion — restlessness (烦躁) with strangury (淋) as an indication of Liuwei dihuang wan, on two
 independent families of Qing books (H1), and a Ming-to-Qing shift of 中风 from wind attack to stroke (H2) — and two
 rest in part on a quotation that does not clearly state its claim. Nine were inconclusive, all short of two
 independent families; the association of copious drinking and urine with Shenqi wan (H5) rests on six books that all
-carry one *Jingui yaolüe* clause (Fig. 1c). One, that heat (热) and counterflow qi (上气) were not linked after 960
-(R1), was rejected because three later books state the link (Fig. 3d,e). A second run wrote the same report.
+carry one *Jingui yaolüe* clause (Fig. 2c). One, that heat (热) and counterflow qi (上气) were not linked after 960
+(R1), was rejected because three later books state the link (Fig. 4d,e). A second run wrote the same report.
 
 Reading every hypothesis against its evidence found six failure modes (Supplementary Fig. 1). The independence gate
 merged books linked by any transcription or rephrasing, transitively, putting 36 of the 46 evidence books in one
@@ -159,21 +159,21 @@ and the largest made the gate stricter, not looser; we report them unrepaired.
 ## Quotations, boundaries and hard readings
 
 On 60 random passages, all verbatim quotations were accepted and all 180 corrupted ones (one character replaced,
-random characters, shifted span) rejected (Fig. 4a). All 19 invariants held on the intact agent; each removed boundary
-broke the invariant named for it and no other (127 of 133 cells held; Fig. 4b). The agent read 82 of 84 held-out hard
-cases correctly (0.976); both errors were unsafe, textual cruxes the harvest does not find (Fig. 4c). Blind rounds
+random characters, shifted span) rejected (Fig. 5a). All 19 invariants held on the intact agent; each removed boundary
+broke the invariant named for it and no other (127 of 133 cells held; Fig. 5b). The agent read 82 of 84 held-out hard
+cases correctly (0.976); both errors were unsafe, textual cruxes the harvest does not find (Fig. 5c). Blind rounds
 scored 43/53, 30/32, 7/10 (a new class of cruxes) and, after a registry of 127 cruxes was harvested from the
-commentaries, 5/5 (Fig. 4d). On 25,000 full-corpus passages this second reader found 71 rule claims contradicted by
+commentaries, 5/5 (Fig. 5d). On 25,000 full-corpus passages this second reader found 71 rule claims contradicted by
 their own quotes; after the extractor was fixed, the 12 left are refused at commit.
 
 ## Rankings from the past anticipate later links
 
 In 189 topic–cutoff pairs with a link that came true (29,467 candidates, 1,314 true; base rate 4.5%), Adamic–Adar
 reached precision@10 0.168 (95% CI 0.152–0.185) against 0.134 for popularity and 0.054 for chance, and mean average
-precision 0.199 against 0.143 and 0.092 (Fig. 5b); it beat popularity in 149 pairs and lost in 39
-(*P* = 2.4 × 10⁻¹⁶; Fig. 5c). Leakage was zero. Run on the past view at 1368, the pipeline's surviving held-out
+precision 0.199 against 0.143 and 0.092 (Fig. 6b); it beat popularity in 149 pairs and lost in 39
+(*P* = 2.4 × 10⁻¹⁶; Fig. 6c). Leakage was zero. Run on the past view at 1368, the pipeline's surviving held-out
 predictions were discoveries (true and new) in 7 of 19 (0.37; 95% CI 0.19–0.59), after absence checks rejected two
-wrong 'lost' and two already-written 'hidden' associations and no discovery (Fig. 5d). On the open canon corpus alone
+wrong 'lost' and two already-written 'hidden' associations and no discovery (Fig. 6d). On the open canon corpus alone
 (51 pairs, 109 true links) Adamic–Adar beat popularity (37/14, *P* = 0.0018) but not chance (19/32, *P* = 0.092;
 Supplementary Fig. 3): the benchmark needs the full corpus.
 
@@ -224,9 +224,19 @@ suites, source data and a complete research record released for checking.
 
 # Figure captions {.unnumbered}
 
+{{FIG graphical_abstract}}
+
+**Fig. 1.** Graphical abstract. A question, fixed as a research contract, and the dated corpus (histogram, witnesses
+per 50 years by date of composition) enter a pipeline in which agents (filled, may consult a model) only propose,
+commit hooks refuse, validators grade gates G0–G8 and the contract, and a human expert alone decides (G7, outlined);
+each claim of a finding walks back to its witness and license. Bottom, the four measurements, made with rules alone:
+quotation checks (light, verbatim, accepted; dark, corrupted, refused); 19 invariants (columns) on the intact agent
+(top row) and with each of six safeguards removed (vermilion, broken); held-out hard cases (vermilion, unsafe errors);
+and precision at 10 of the ranking, popularity and chance (lines, 95% CIs).
+
 {{FIG fig1_architecture}}
 
-**Fig. 1.** TaoChronos: agents propose, validators grade, experts decide. (a) The agent by principal (rows) and stage
+**Fig. 2.** TaoChronos: agents propose, validators grade, experts decide. (a) The agent by principal (rows) and stage
 of a research round (columns); letters, permissions; filled circles, agents that may consult a model; vermilion, the
 hooks; validators alone grade, and only the expert sets G7. (b) Event authority: which principals may emit each group
 of the 61 event types. (c) One clause of the *Jingui yaolüe* in three witnesses aligned character by character, with
@@ -234,27 +244,27 @@ the provenance chain of one witness from claim to license.
 
 {{FIG fig2_corpus}}
 
-**Fig. 2.** The corpus. (a) Construction from ten sources. (b) Witnesses per 25-year bin (n = 966; blue, the 740
+**Fig. 3.** The corpus. (a) Construction from ten sources. (b) Witnesses per 25-year bin (n = 966; blue, the 740
 witnesses of the 535 canon works). (c) Basis of dating; undated witnesses counted as Qing. (d) Influence score of the
 canon works against composition date. (e) Characters kept per witness of the open web corpus against canon rank.
 
 {{FIG fig3_end_to_end}}
 
-**Fig. 3.** One research question end to end (rules only). (a) Question and contract. (b) The 30 tasks by round and
+**Fig. 4.** One research question end to end (rules only). (a) Question and contract. (b) The 30 tasks by round and
 agent; numbers, tool calls. (c) The 14 hypotheses through the Skeptic and the validators, and the 102 objections by
 check. (d) Final hypotheses against gates and contract criteria. (e) Three outcomes with verbatim evidence. D1–D5,
 discovery tracks.
 
 {{FIG fig4_verification}}
 
-**Fig. 4.** Verification and safety. (a) Quotation checks on 60 random passages; lines, Wilson 95% CIs. (b) Nineteen
+**Fig. 5.** Verification and safety. (a) Quotation checks on 60 random passages; lines, Wilson 95% CIs. (b) Nineteen
 invariants on the intact agent and six variants with one boundary removed each (outlined, the invariant named for that
 boundary). (c) 107 hard interpretive cases in eight classes; numbers, held-out correct. (d) Accuracy in four blind
 rounds and on all held-out cases; lines, Wilson 95% CIs.
 
 {{FIG fig5_research_value}}
 
-**Fig. 5.** Research value. (a) The blind temporal benchmark. (b) Precision at 10 and 20 and mean average precision of
+**Fig. 6.** Research value. (a) The blind temporal benchmark. (b) Precision at 10 and 20 and mean average precision of
 five rankers over 189 topic–cutoff pairs (95% CIs). (c) Paired comparisons of average precision, two-sided sign tests.
 (d) Predictions of the whole pipeline at 1368 on four held-out topics borne out by later books (Wilson 95% CIs).
 

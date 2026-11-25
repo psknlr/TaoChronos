@@ -37,19 +37,19 @@ def table1() -> dict:
          "The harness, not the producer, locates every quote in its passage at commit (verbatim, or after "
          "length-preserving variant normalization); the conversation client checks every cited passage",
          f"{3 * n}/{3 * n} corrupted quotations rejected, {n}/{n} verbatim accepted; "
-         f"{m('provenance')['claims_verbatim']:.0%} of committed claims verbatim (Fig. 4a)"],
+         f"{m('provenance')['claims_verbatim']:.0%} of committed claims verbatim (Fig. 5a)"],
         ["True quote, false reading",
          "「不可发汗，宜桂枝汤」 (a prohibition beside a prescription); 「或曰…余曰非也」 (a view the author rejects)",
          "Semantic-support hook reads each claim's statement frame (speaker, stance, conditions, negations) and refuses "
          "a claim its quote contradicts; a registry of textual cruxes harvested from commentaries makes doubtful "
          "clauses read as ambiguous",
          f"Held-out hard cases {round(it['heldout']['accuracy'] * 84)}/84, {it['heldout']['unsafe']} unsafe; "
-         "four blind rounds (Fig. 4c,d)"],
+         "four blind rounds (Fig. 5c,d)"],
         ["Copies counted as independent testimony",
          "Five witnesses of one clause of the Jingui yaolüe and its copy in the Maijing",
          "Gate G5 counts independent source families (author and transcription clusters), not books; the Skeptic "
          "checks transcription dependence and single sources",
-         "H5 held inconclusive on one family (Fig. 3e); an over-merging of families reported (Supplementary Fig. 1)"],
+         "H5 held inconclusive on one family (Fig. 4e); an over-merging of families reported (Supplementary Fig. 1)"],
         ["Anachronism (presentism)",
          "Xiaoke 消渴 read as diabetes mellitus; shanghan 伤寒 read as typhoid",
          "Anachronism guard at claim, hypothesis and graph-write hooks; the contract's forbidden equivalences; the "
@@ -59,19 +59,19 @@ def table1() -> dict:
          "An association called lost after 960 that a later book still states",
          "The Skeptic searches the whole scope for explicit, supported statements; one later statement refutes a "
          "loss and any statement refutes a hidden link, as hard, critical objections no rewording can close",
-         "2 wrong lost and 2 already-written hidden associations rejected, and no discovery (Fig. 5d); R1 rejected "
-         "(Fig. 3)"],
+         "2 wrong lost and 2 already-written hidden associations rejected, and no discovery (Fig. 6d); R1 rejected "
+         "(Fig. 4)"],
         ["Self-grading and premature acceptance",
          "A model closing its own objection, setting expert approval, or a finished run taken as an accepted finding",
          "Every event carries its principal and the reducer refuses an event its principal may not emit (61 types); "
          "only validators grade, only a human sets G7; an executable contract judges acceptance",
          f"{inv['held']}/{inv['invariants']} invariants held; each of 6 boundaries removed broke its invariant and "
-         "no other (Fig. 4b)"],
+         "no other (Fig. 5b)"],
         ["Hindsight in testing foresight",
          "A 'prediction' made after reading the books that later confirm it",
          "Time-machine views bounded in SQL on every read path; passages that straddle the cutoff belong to neither "
          "side; leakage counted, not assumed",
-         "Leakage 0; precision@10 0.168 against 0.134 (popularity) and 0.054 (chance)† (Fig. 5)"],
+         "Leakage 0; precision@10 0.168 against 0.134 (popularity) and 0.054 (chance)† (Fig. 6)"],
         ["Irreproducible runs",
          "A result that cannot be rerun or audited step by step",
          "Append-only event log replayed and hashed every round; tool-call receipts in a hash chain; recorded model "

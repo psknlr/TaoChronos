@@ -12,6 +12,10 @@
 - 补充材料：[`supplementary/Supplementary_Information.md`](supplementary/Supplementary_Information.md)（另有 `.docx`），
   补充表 1–12 的 CSV 在 `supplementary/tables/`，补充数据 1–2 为端到端案例的完整报告与事件日志
 - 合规报告：[`figures/out/qc/QC_REPORT.md`](figures/out/qc/QC_REPORT.md)（10 张图全部 PASS）
+- 投稿稿件：[`manuscript/`](manuscript/README.md)（npj Digital Medicine 与 Engineering 两个版本）。稿件的 Fig. 1 是图形摘要
+  （`manuscript/figures/graphical_abstract.py` 依据本目录的源数据绘制），本目录的 Fig. 1–6 在稿件中顺延为 Fig. 2–7
+  （Engineering 版为 Fig. 2–6 与 Supplementary Fig. 5）；本目录的文件名、图注与下文沿用图表包自身的编号，由
+  `manuscript/build.py` 在生成稿件时换号
 - 案例图：[`cases/`](cases/README.md)（三次真实问答各一张图：方剂、本草、针灸；英文图注、源数据、出图时的逐项核对与
   读回成品 PDF 的校验脚本；不计入上面的 10 张图与合规报告）
 

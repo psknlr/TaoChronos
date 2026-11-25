@@ -65,7 +65,8 @@ should be impossible, not merely unlikely, for the agent to commit a misquotatio
 finished run for an accepted finding, or to see the future when its foresight is tested. TaoChronos (道乃久) is built on
 this principle, which we call *deterministic harness, stochastic intelligence*: everything that must be trustworthy —
 state, permissions, verification, stopping and acceptance — is deterministic code, and intelligence, whether a
-language model or a rule-based procedure standing in for one, may only propose. This paper makes four contributions.
+language model or a rule-based procedure standing in for one, may only propose (Fig. 1). This paper makes four
+contributions.
 
 1. **An agent architecture that separates proposal from verdict.** Sixteen agents, a Director and fifteen
    specialists, work on an event-sourced
@@ -74,24 +75,24 @@ language model or a rule-based procedure standing in for one, may only propose. 
    approves. Lifecycle hooks require every claim to quote its passage verbatim and to be stated by that quote; nine
    epistemic gates (G0–G8) grade sources, readings, independence of testimony and falsification; and an executable
    research contract, fixed before the first task, decides whether a research is accepted, so that finishing the
-   tasks never counts as success (Fig. 1, Table 1).
+   tasks never counts as success (Fig. 2, Table 1).
 2. **A dated, layered and licence-tracked corpus of the Chinese medical classics.** It holds 966 witnesses of 761
    works (about 123 million characters in 2.05 million passages, 475 BCE–1949), each passage with its book, edition,
    locator, date range, textual layer, transcription source and licence. Commentaries and later additions are dated
    apart from the text they annotate, independent transcriptions are kept as separate witnesses, and an openly
    licensed canon, defined by the tradition's own citation network, runs in a web browser together with a
-   deterministic study layer for philology and the history of formulas, drugs and terms (Figs. 2 and 6).
+   deterministic study layer for philology and the history of formulas, drugs and terms (Figs. 3 and 7).
 3. **A three-layer evaluation of reliability and research value.** Safety invariants are run as probes against the
    agent and checked by mutation; hard interpretive cases are scored with unsafe errors counted apart, on a held-out
    split fixed before the first run and in blind rounds; and a blind temporal benchmark asks whether what the agent
    ranks from the past anticipates what later physicians wrote, with every read path bounded in time so that leakage
-   is counted rather than assumed (Figs. 4 and 5, Table 2).
+   is counted rather than assumed (Figs. 5 and 6, Table 2).
 4. **Guarded translation to modern medicine and complete transparency.** An ancient–modern bridge projects the
    findings of a passage into the Human Phenotype Ontology [@kohler2021hpo] with typed relations and reports
    phenotypic similarity, never a retrospective diagnosis; modern evidence is typed by study design and population,
    and real-world-data queries are compiled from checked specifications, never written by a model [@hripcsak2015ohdsi].
    A complete research run is released with its replayable event log and an analysis of its failures that were
-   reported, not repaired (Fig. 3, Supplementary Fig. 1).
+   reported, not repaired (Fig. 4, Supplementary Fig. 1).
 
 Every result in this paper was obtained with the deterministic procedures alone, without calling a language model.
 The numbers therefore measure the floor the architecture guarantees whichever model is plugged in.
@@ -102,7 +103,7 @@ The numbers therefore measure the floor the architecture guarantees whichever mo
 
 A scientist's question becomes a research contract: its focus terms, forbidden equivalences (for example 消渴 = diabetes
 mellitus), discovery tracks, required gates, acceptance criteria and stop rule, hashed before the first task
-(Fig. 1a). The Director plans each round and chooses, among fifteen specialists, the agents the kernel spawns: a
+(Fig. 2a). The Director plans each round and chooses, among fifteen specialists, the agents the kernel spawns: a
 Curator who freezes the scope, a Philologist (readings, variants and collation), a Semanticist (period-bound senses), an
 Extractor (claims with verbatim spans), Lineage and Scholar agents (citation, transcription and the textual history of
 the focus terms), an Evidence agent, a Pattern Miner running five discovery engines (D1, lost knowledge; D2, concept
@@ -114,7 +115,7 @@ which one commit function verifies.
 
 Every change to the research is a typed event in an append-only log, and the reducer is the only code that changes
 state. Each event carries its principal (kernel, human, validator or agent), set from an identity object and never by
-the emitter; the reducer checks it against an authority table of 61 event types (Fig. 1b, Supplementary Table 7).
+the emitter; the reducer checks it against an authority table of 61 event types (Fig. 2b, Supplementary Table 7).
 Agents may plan, read, extract, propose and review; only validators grade gates, scores, rankings and the contract;
 only a human expert may approve or reject a hypothesis (gate G7) or steer a research; an objection is closed only by a
 validator's passing re-run of its check or by an expert, never by a model. Each of the 85 tools needs one of eight
@@ -126,25 +127,25 @@ provenance, independent source families, falsification, expert approval and, for
 biomedical evidence (Supplementary Table 2). At the end of a run a validator judges every hypothesis against the
 contract on its current version: the research is accepted, needs an expert, is inconclusive or exhausted its budget,
 and individual hypotheses may be rejected (Supplementary Table 3). Every claim can be walked back through a provenance chain, in the sense of the W3C PROV model
-[@moreau2013provdm], to the words of a witness, its edition, its transcription and its licence (Fig. 1c).
+[@moreau2013provdm], to the words of a witness, its edition, its transcription and its licence (Fig. 2c).
 
 ## A dated, layered corpus spanning two millennia
 
-The corpus joins transcriptions from ten sources (Fig. 2a, Supplementary Table 13). Admission keeps historical texts
+The corpus joins transcriptions from ten sources (Fig. 3a, Supplementary Table 13). Admission keeps historical texts
 and removes contemporary publications, works of contemporary physicians and modern annotated editions;
 de-duplication against more trusted sources uses normalized 12-character shingles, while independently collated
 transcriptions are kept as separate witnesses. Dating is layer-aware: main text, commentaries, editors' notes and
 later additions are dated apart, and a witness that cannot be dated is counted as Qing (1644–1911), never earlier.
 The store holds 966 witnesses of 761 works, about 123 million characters in 2.05 million passages, from the Warring
-States to the Republican period (Fig. 2b). Of the 966 witnesses, 537 are dated to a single year; the basis of every
+States to the Republican period (Fig. 3b). Of the 966 witnesses, 537 are dated to a single year; the basis of every
 date is recorded, from curation by the editors (329) and the year in the book's record (204) to signed prefaces (139) and the
-author's life (116); 104 are undated and counted as Qing (Fig. 2c). Normalization of variant and simplified forms is
+author's life (116); 104 are undated and counted as Qing (Fig. 3c). Normalization of variant and simplified forms is
 used for matching only; the transcription is never altered.
 
 The tradition's own citations define its canon. An influence score combines the works that cite a work, the periods
-in which it is cited, its citations, its witnesses and its inclusion in the *Siku quanshu* (Fig. 2d). The openly
+in which it is cited, its citations, its witnesses and its inclusion in the *Siku quanshu* (Fig. 3d). The openly
 licensed texts of 533 of the 535 ranked works form a web corpus of 553 witnesses (10.46 million characters, 168,278
-passages) that runs in the browser, whole for the first classics and by chapters for the rest (Fig. 2e). Catalogue
+passages) that runs in the browser, whole for the first classics and by chapters for the rest (Fig. 3e). Catalogue
 records of 10,001 printed and manuscript copies in eleven digitized collections link 179 works to physical witnesses
 (Supplementary Fig. 4).
 
@@ -152,23 +153,23 @@ records of 10,001 printed and manuscript copies in eleven digitized collections 
 
 We put one question to the agent on the open canon corpus: 肾气丸的组成与主治如何随时代演变？ (How did the
 composition and indications of Shenqi wan change over time?), with Shenqi wan and Liuwei dihuang wan as focus terms
-and 消渴 = diabetes forbidden (Fig. 3a). The contract required verbatim quotations and at least two evidence records
+and 消渴 = diabetes forbidden (Fig. 4a). The contract required verbatim quotations and at least two evidence records
 from at least two independent source families, gates G0–G6 to pass on the current version of each hypothesis (G4–G6
 strictly), no open hard or critical objection, rival explanations addressed and expert review before publication;
 the run would stop after two rounds or when new evidence added less than 5%. The scope held 273 books and 1,620
 passages naming a focus term.
 
 The run planned 30 tasks in three rounds and wrote 678 events (agents 442, validators 103, kernel 133); it called 143
-tools, none refused, and no language model (Fig. 3b). It extracted 935 claims and recorded 80 evidence and 13
+tools, none refused, and no language model (Fig. 4b). It extracted 935 claims and recorded 80 evidence and 13
 counter-evidence records. Of 14 hypotheses proposed in round 1, the Skeptic kept 2, sent 11 back to be narrowed and
-rejected 1, raising 102 objections (Fig. 3c, Supplementary Table 10). The run stopped after round 2, which added no
-evidence. The contract's verdict (Fig. 3d,e): four hypotheses wait for an expert. Two meet every criterion a machine
+rejected 1, raising 102 objections (Fig. 4c, Supplementary Table 10). The run stopped after round 2, which added no
+evidence. The contract's verdict (Fig. 4d,e): four hypotheses wait for an expert. Two meet every criterion a machine
 can check — that restlessness (烦躁) with strangury (淋) is a characteristic indication of Liuwei dihuang wan, resting on
 two independent families of Qing books (H1), and that the dominant sense of 中风 shifted from wind attack to stroke
 between the Ming and the Qing (H2) — and two (H3, H4) rest in part on a quotation that does not clearly state its claim,
 a judgement the contract leaves to an expert. Nine were inconclusive, all short of two independent source families;
 the clearest case, the association of copious drinking and urine with Shenqi wan (H5), rests on six books that all
-carry one clause of the *Jingui yaolüe* — the clause of Fig. 1c — or copy or cite it. One hypothesis, that heat (热)
+carry one clause of the *Jingui yaolüe* — the clause of Fig. 2c — or copy or cite it. One hypothesis, that heat (热)
 and counterflow qi (上气), associated before 960, were not linked afterwards (R1), was rejected because three later
 books state the link. A second run wrote the same report. The report, the event log and every hypothesis and
 objection are released (Supplementary Data 1 and 2, Supplementary Tables 9 and 10).
@@ -192,13 +193,13 @@ judgement, gate G7, belongs to an expert.
 ## Quotations stay verbatim, boundaries hold and hard readings stay safe
 
 On 60 random passages, every verbatim quotation was accepted and every quotation with one character replaced, of
-random characters or of the right words at a shifted span was rejected (240 of 240 decisions; Fig. 4a); variant
+random characters or of the right words at a shifted span was rejected (240 of 240 decisions; Fig. 5a); variant
 spellings were accepted after normalization. Every claim and evidence record committed in a demonstration run was
 verbatim, with a mean provenance chain of 7.8 levels.
 
 Nineteen invariants (the boundaries the agent promises) were run as probes against the intact agent and against six
 variants, each with one boundary removed at run time, in the manner of mutation testing [@jia2011mutation]. All 19 held on the intact agent; each removal broke the
-invariant named for its boundary and no other, so 127 of 133 cells held (Fig. 4b). In three cases a second safeguard
+invariant named for its boundary and no other, so 127 of 133 cells held (Fig. 5b). In three cases a second safeguard
 limited the damage: without the scope guard, the tool it no longer refused returned nothing of the withheld passage;
 forged expert approvals reached the log but not the state; and without the bound checks two of five impossible
 evidence records were verified.
@@ -207,10 +208,10 @@ Hard interpretive cases test readings that a verbatim quotation does not protect
 beside a prescription, a consequence that is a warning rather than a cure, a view the author reports or rejects, an
 omitted condition, mixed witnesses, a disputed date and a textual crux. Of 107 such cases in eight classes, 23 were
 used to write the rules and 84 were held out, the split fixed before the first run. The agent read 82 of the 84
-held-out cases correctly (0.976; Fig. 4c). Both errors were unsafe: a clause in which most commentators place the
+held-out cases correctly (0.976; Fig. 5c). Both errors were unsafe: a clause in which most commentators place the
 formula Dahuang mudan tang before the prohibition 不可下也, and a doubted word (里水) in the Yuebi jia zhu tang clause,
 neither stated in a form the crux harvest reads. Accuracy was measured in four blind
-rounds, each on cases written before the rules that first read them (Fig. 4d). The first scored 43 of 53, with four
+rounds, each on cases written before the rules that first read them (Fig. 5d). The first scored 43 of 53, with four
 unsafe errors; general rules (a report governs until its author answers it; a 者-clause followed by an action is a
 condition; an intervention named by 之 is read through its pronoun) raised the second to 30 of 32. The third round
 introduced textual cruxes and scored 7 of 10, three unsafe; a registry of 127 cruxes harvested from the commentaries
@@ -222,19 +223,19 @@ fixing the extractor at the source left 12, which the commit hook refuses.
 
 To ask whether the agent's discoveries have research value without relying on experts' hindsight, we split the full
 corpus at two cutoffs, 1127 and 1368, into passages written wholly before and wholly after each; passages that may
-have been written on either side belong to neither (Fig. 5a). The rules were written before the first run. For every
+have been written on either side belong to neither (Fig. 6a). The rules were written before the first run. For every
 disease or symptom with 150–6,000 past and at least 300 future passages, the formulas and drugs of its past graph not
 yet linked to it were ranked, and a candidate came true when claims in two or more later books linked it to the
 topic. In 189 topic–cutoff pairs at least one of the 29,467 candidates came true (1,314 in all; base rate 4.5%).
 Adamic–Adar [@adamic2003friends], the ranking engine D4 uses, reached a precision@10 of 0.168 (95% confidence
 interval 0.152–0.185) and a mean average precision of 0.199, against 0.134 and 0.143 for popularity and 0.054 and 0.092
-for chance (Fig. 5b). It ranked above popularity in 149 pairs and below it in 39 (two-sided sign test,
-*P* = 2.4 × 10⁻¹⁶), at each cutoff (Fig. 5c). Common neighbours scored as well as Adamic–Adar within the intervals.
+for chance (Fig. 6b). It ranked above popularity in 149 pairs and below it in 39 (two-sided sign test,
+*P* = 2.4 × 10⁻¹⁶), at each cutoff (Fig. 6c). Common neighbours scored as well as Adamic–Adar within the intervals.
 Examples of anticipated links include 消渴 (wasting-thirst) with Zhuling tang and Gegen, 胸痹 (chest impediment) with
 Gualou shi, and 霍乱 (sudden turmoil) with dried ginger. No passage outside the past view was read.
 
 The whole pipeline was then run on the past view at 1368 for two development and four held-out topics, and its
-structured predictions were judged by later books (Fig. 5d). Of 25 held-out predictions, lost associations stayed
+structured predictions were judged by later books (Fig. 6d). Of 25 held-out predictions, lost associations stayed
 absent in 4 of 9, association rules held in 1 of 7, and hidden associations came true in 4 of 8, of which two were new.
 The checks on arguments from silence rejected two wrong 'lost' and two already-written 'hidden' associations and no
 discovery, raising the share of surviving predictions that were discoveries, true and new, from 7 of 23 to 7 of 19
@@ -247,19 +248,19 @@ one): Adamic–Adar still ranked above popularity (37 of 51, *P* = 0.0018) but c
 ## The study layer recovers history written into the texts
 
 The deterministic study layer answers the questions scholars ask of the literature daily, and on the open canon
-corpus it recovers results the history of medicine already holds (Fig. 6). The share of works writing 山药 rather than
+corpus it recovers results the history of medicine already holds (Fig. 7). The share of works writing 山药 rather than
 薯蓣 switches between 1000 and 1200, after naming taboos on the names of the Tang emperor Daizong (762) and the Song
 emperor Yingzong (1063), and 元参 replaces 玄参 between 1600 and 1800, after the taboo on the Kangxi emperor's name
-(1662) (Fig. 6a,b). Passages on warm disease (温病) per 10,000 passages stay between 21 and 36 from the Han to the
+(1662) (Fig. 7a,b). Passages on warm disease (温病) per 10,000 passages stay between 21 and 36 from the Han to the
 Ming and rise to 61 in the Qing (Cochran–Armitage *z* = 7.30, *P* = 2.8 × 10⁻¹³), when the doctrine of warm diseases
-grew into a school of its own (Fig. 6c). Drug pairs that co-occur
+grew into a school of its own (Fig. 7c). Drug pairs that co-occur
 beyond chance in 4,554 compositions (1,184 pairs; one-sided Fisher exact tests, Benjamini–Hochberg *q* < 0.05
 [@benjamini1995fdr]) form communities found without formula names; of the twelve largest, the five whose drugs hold
 together most tightly are the cores of classical formulas — 乳香, 没药 and 血竭 of Qili san, 大戟, 甘遂 and 芫花 of Shizao tang,
 水蛭, 虻虫, 桃仁 and 大黄 of Didang tang, 连翘, 薄荷 and 栀子 of Liangge san, and 牛黄, 麝香, 冰片, 朱砂 and 雄黄 of
-Angong niuhuang wan — while liquorice, in 43% of compositions, joins none (Fig. 6d); on the full store all seven
+Angong niuhuang wan — while liquorice, in 43% of compositions, joins none (Fig. 7d); on the full store all seven
 textbook pairs tested were significant with lift above 1.5. Of 1,446 citations between 78 physicians, 569 (39%) cite
-Zhang Ji, the author of the *Shanghan lun* (Fig. 6e).
+Zhang Ji, the author of the *Shanghan lun* (Fig. 7e).
 
 ## Generalization and the bridge to modern medicine
 
@@ -374,7 +375,7 @@ and matching only.
 The influence of a work is 10 log₂(1 + citing works not older than it) + 2 × (periods in which it is cited) +
 2 log₂(1 + citations) + 3 log₂(1 + witnesses) + 6 × (inclusion in the *Siku quanshu*), computed on the citation network
 the study layer resolves. The openly licensed witnesses of the 535 ranked works (533 have one) form the web corpus used
-for Figs. 2e, 3 and 6 and Supplementary Fig. 3 (553 witnesses, 10.46 million characters, 168,278 passages): a work's
+for Figs. 3e, 4 and 7 and Supplementary Fig. 3 (553 witnesses, 10.46 million characters, 168,278 passages): a work's
 first witness kept up to 350,000 characters for ranks 1–10, then 50,000 (to rank 40), 25,000 (to rank 120) and 12,000,
 whole where shorter and by sampled chapters otherwise, and second and third witnesses for the ten highest-ranked works.
 
@@ -468,14 +469,14 @@ aggregates were examined. Any passage read outside the past view would have been
 
 ## Study-layer analyses
 
-Name switches (Fig. 6a,b) are the share of works per century writing each name; the switch interval is where the
-preferred name changes. Term frequencies (Fig. 6c) are passages per 10,000 by period with Wilson intervals and a
-two-sided Cochran–Armitage test for trend [@armitage1955tests]. Drug pairs (Fig. 6d) count a composition repeated in
+Name switches (Fig. 7a,b) are the share of works per century writing each name; the switch interval is where the
+preferred name changes. Term frequencies (Fig. 7c) are passages per 10,000 by period with Wilson intervals and a
+two-sided Cochran–Armitage test for trend [@armitage1955tests]. Drug pairs (Fig. 7d) count a composition repeated in
 copies of one work once, test pairs present in at least ten works with one-sided Fisher exact tests and
 Benjamini–Hochberg control, and rank significant pairs by normalized pointwise mutual information [@bouma2009npmi];
 groups are communities of the graph of strong pairs (significant, NPMI ≥ 0.3, at least ten works), and the panel
 shows the five of the twelve largest with the highest mean NPMI among their significant pairs.
-Citations (Fig. 6e) are resolved from explicit attributions to physicians; links whose cited physician lived after the
+Citations (Fig. 7e) are resolved from explicit attributions to physicians; links whose cited physician lived after the
 citing one (five links, 28 citations) were omitted as chronologically impossible.
 
 ## The ancient–modern bridge, modern evidence and real-world data
@@ -541,40 +542,46 @@ ZhongJingGPT.]
 
 # Figure legends
 
+![](../../figures/graphical_abstract.png){width=100%}
+
+::: legend
+**Fig. 1 | Graphical abstract: a question and a dated corpus become findings that can be checked.** A scientist's question, fixed as a research contract before the first task, and the corpus are the two inputs. Histogram, the 966 witnesses per 50 years by date of composition, a witness dated to a range spread evenly over it (475 BCE–1949). Sixteen agents (a Director, centre, and fifteen specialists; filled, agents that may consult a language model) work through 85 permissioned tools and may only propose. Commit hooks refuse a claim whose quotation is not verbatim or does not state it, and an anachronism; validators grade the nine gates (G0–G8) and the research contract; a human expert alone approves or rejects a hypothesis (gate G7, outlined). Every change is a typed event in an append-only log, refused if its principal may not emit it, and each claim of a finding can be walked back to its quotation, passage, witness, edition, date and licence. Bottom, what was measured, with rules alone and without calling a language model: quotation checks, four probes on 60 random passages (light, verbatim quotations, accepted; dark, corrupted quotations, refused); the 19 safety invariants (columns) on the intact agent (top row) and on six variants with one safeguard removed each (vermillion, broken; 127 of 133 cells held); the 84 held-out hard interpretive cases (vermillion, the two unsafe errors); and precision at 10 on the blind temporal benchmark of the ranking computed from earlier texts (blue), of popularity (grey) and of chance (light grey; 20 random rankings) over 189 topic–cutoff pairs (lines, 95% confidence intervals). The agent, the corpus, one research run, verification and research value are shown in full in Figs. 2–6.
+:::
+
 ![](../../../figures/out/fig1_architecture.png){width=100%}
 
 ::: legend
-**Fig. 1 | TaoChronos (道乃久): agents propose, validators grade, experts decide.** **a**, The harness as configured (web-canon profile), by principal (rows) and by the stage of a research round (columns). A scientist's question becomes a research contract, hashed before the first task. The Director plans each round and picks, from fifteen specialists, the agents the kernel spawns; each reads only through the research's scoped view and calls only the tools its permissions allow (letters). Filled circles, agents that may consult a language model where their rules leave a case uncertain (Fig. 3 called none). The Skeptic's objections return to the Hypothesis agent, which may only narrow a claim. Every write is an event in the log. Hooks (vermillion) refuse a tool call or result outside the research's scope, a claim whose quote is not verbatim or contradicts it, an equation of a historical with a modern concept, and a report on versions the contract never judged. Validators alone grade claims, gates G0–G6 and G8, scores and the contract's verdict, and close a hard objection only by re-running its check; the expert alone sets G7. **b**, Event authority: the principals allowed to emit each group of the 61 event types (number of types); the reducer refuses any other event. **c**, One clause of the *Jingui yaolüe* (chapter 13) in three witnesses, aligned character by character: the Deng Zhen print (1340), the Wu Qian manuscript (1395), which lacks 小便一斗, and the Yuan print of the *Maijing* (1330), which writes 圎 for 丸, a Song taboo form that dates its exemplar after 1126; shaded, variant positions. Below, the provenance chain of the first witness from claim to licence; the conversation client checks every cited passage (✓ verbatim, ≠ quotation differs, × no such passage). CMETA, 數位中醫校書郎. Agents, tools and permissions: Supplementary Tables 4–8.
+**Fig. 2 | TaoChronos (道乃久): agents propose, validators grade, experts decide.** **a**, The harness as configured (web-canon profile), by principal (rows) and by the stage of a research round (columns). A scientist's question becomes a research contract, hashed before the first task. The Director plans each round and picks, from fifteen specialists, the agents the kernel spawns; each reads only through the research's scoped view and calls only the tools its permissions allow (letters). Filled circles, agents that may consult a language model where their rules leave a case uncertain (Fig. 4 called none). The Skeptic's objections return to the Hypothesis agent, which may only narrow a claim. Every write is an event in the log. Hooks (vermillion) refuse a tool call or result outside the research's scope, a claim whose quote is not verbatim or contradicts it, an equation of a historical with a modern concept, and a report on versions the contract never judged. Validators alone grade claims, gates G0–G6 and G8, scores and the contract's verdict, and close a hard objection only by re-running its check; the expert alone sets G7. **b**, Event authority: the principals allowed to emit each group of the 61 event types (number of types); the reducer refuses any other event. **c**, One clause of the *Jingui yaolüe* (chapter 13) in three witnesses, aligned character by character: the Deng Zhen print (1340), the Wu Qian manuscript (1395), which lacks 小便一斗, and the Yuan print of the *Maijing* (1330), which writes 圎 for 丸, a Song taboo form that dates its exemplar after 1126; shaded, variant positions. Below, the provenance chain of the first witness from claim to licence; the conversation client checks every cited passage (✓ verbatim, ≠ quotation differs, × no such passage). CMETA, 數位中醫校書郎. Agents, tools and permissions: Supplementary Tables 4–8.
 :::
 
 ![](../../../figures/out/fig2_corpus.png){width=100%}
 
 ::: legend
-**Fig. 2 | A dated, layered corpus spanning two millennia, and the canon its citations define.** **a**, Construction of the corpus. Transcriptions from ten sources pass admission (historical texts only), de-duplication against more trusted sources (normalized 12-character shingles; independently collated transcriptions are kept as separate witnesses), layer-aware dating (main text, commentaries, editors' notes and later additions dated apart; undated material counted as Qing, never earlier) and normalization used for matching only. **b**, Witnesses per 25-year bin by composition date; each witness counts once, its weight spread evenly over its date range (n = 966; blue, the 740 witnesses of the 535 canon works). Bands mark the analysis periods; the last, unlabelled band is the Republican period (1912–1949). **c**, Basis on which each witness was dated; the 104 undated witnesses are counted as Qing (vermillion), never earlier. **d**, Influence score of the 535 canon works against the midpoint of their composition range; point area, witnesses in the corpus (capped at 10). Score = 10 log₂(1 + citing works not older than it) + 2 × periods in which it is cited + 2 log₂(1 + citations) + 3 log₂(1 + witnesses) + 6 × inclusion in the *Siku quanshu*; the ten highest (blue) are keyed by rank. Later works have had fewer chances to be cited: the score describes what the corpus cites, not a verdict on the tradition. **e**, Characters kept for each witness of the open web corpus against the canon rank of its work (log–log). Dashed line, the budget of a work's first witness (350,000 characters for ranks 1–10, then 50,000, 25,000 and 12,000); blue, texts kept whole; triangles, second and third witnesses of the ten highest-ranked works. Data: corpus catalogues (`corpus/catalog`) and the web corpus pack (`corpus/web`).
+**Fig. 3 | A dated, layered corpus spanning two millennia, and the canon its citations define.** **a**, Construction of the corpus. Transcriptions from ten sources pass admission (historical texts only), de-duplication against more trusted sources (normalized 12-character shingles; independently collated transcriptions are kept as separate witnesses), layer-aware dating (main text, commentaries, editors' notes and later additions dated apart; undated material counted as Qing, never earlier) and normalization used for matching only. **b**, Witnesses per 25-year bin by composition date; each witness counts once, its weight spread evenly over its date range (n = 966; blue, the 740 witnesses of the 535 canon works). Bands mark the analysis periods; the last, unlabelled band is the Republican period (1912–1949). **c**, Basis on which each witness was dated; the 104 undated witnesses are counted as Qing (vermillion), never earlier. **d**, Influence score of the 535 canon works against the midpoint of their composition range; point area, witnesses in the corpus (capped at 10). Score = 10 log₂(1 + citing works not older than it) + 2 × periods in which it is cited + 2 log₂(1 + citations) + 3 log₂(1 + witnesses) + 6 × inclusion in the *Siku quanshu*; the ten highest (blue) are keyed by rank. Later works have had fewer chances to be cited: the score describes what the corpus cites, not a verdict on the tradition. **e**, Characters kept for each witness of the open web corpus against the canon rank of its work (log–log). Dashed line, the budget of a work's first witness (350,000 characters for ranks 1–10, then 50,000, 25,000 and 12,000); blue, texts kept whole; triangles, second and third witnesses of the ten highest-ranked works. Data: corpus catalogues (`corpus/catalog`) and the web corpus pack (`corpus/web`).
 :::
 
 ![](../../../figures/out/fig3_end_to_end.png){width=100%}
 
 ::: legend
-**Fig. 3 | One research question, end to end.** **a**, The question, put to the harness on the open canon corpus (web-canon profile; rules only, no model called), and the contract fixed before the first task. **b**, The 30 tasks in the order the Director planned them over three rounds: agent tasks (blue), validator tasks (grey); numbers, tool calls. Below each round, the evidence records, new books and hypotheses it added; the run stopped after the last round the contract allowed, which added no evidence. **c**, The 14 hypotheses proposed in round 1: the Skeptic kept 2, sent 11 back to be narrowed and rejected 1; validators then judged the 13 candidates. Below, the Skeptic's 102 objections by check: closed by a validator once the claim was narrowed, left open, or critical. **d**, The final hypotheses against the gates and the contract's criteria. H1 and H2 meet every criterion a machine can check; H3 and H4 rest in part on a quotation that does not clearly state its claim, which the contract leaves to an expert. Nine fail on independent sources (G5): passage reuse, closed transitively, puts 36 of the 46 evidence books into one source family (Supplementary Fig. 1). **e**, Three outcomes with their verbatim evidence. H1 waits for an expert. H5 rests on six books of one family: the 消渴 clause of the *Jingui yaolüe*, its witnesses and copies. R1 is rejected because three later books state the link; they copy the canonical list of the kidney channel's illnesses that the earlier passage holds, and the rules read two findings of one list as an association. A second run writes the same report; report, event log, hypotheses and objections: Supplementary Data 1–2 and Supplementary Tables 9–10. D1–D5, discovery tracks: lost knowledge, concept evolution, formula evolution, hidden associations, contradictions.
+**Fig. 4 | One research question, end to end.** **a**, The question, put to the harness on the open canon corpus (web-canon profile; rules only, no model called), and the contract fixed before the first task. **b**, The 30 tasks in the order the Director planned them over three rounds: agent tasks (blue), validator tasks (grey); numbers, tool calls. Below each round, the evidence records, new books and hypotheses it added; the run stopped after the last round the contract allowed, which added no evidence. **c**, The 14 hypotheses proposed in round 1: the Skeptic kept 2, sent 11 back to be narrowed and rejected 1; validators then judged the 13 candidates. Below, the Skeptic's 102 objections by check: closed by a validator once the claim was narrowed, left open, or critical. **d**, The final hypotheses against the gates and the contract's criteria. H1 and H2 meet every criterion a machine can check; H3 and H4 rest in part on a quotation that does not clearly state its claim, which the contract leaves to an expert. Nine fail on independent sources (G5): passage reuse, closed transitively, puts 36 of the 46 evidence books into one source family (Supplementary Fig. 1). **e**, Three outcomes with their verbatim evidence. H1 waits for an expert. H5 rests on six books of one family: the 消渴 clause of the *Jingui yaolüe*, its witnesses and copies. R1 is rejected because three later books state the link; they copy the canonical list of the kidney channel's illnesses that the earlier passage holds, and the rules read two findings of one list as an association. A second run writes the same report; report, event log, hypotheses and objections: Supplementary Data 1–2 and Supplementary Tables 9–10. D1–D5, discovery tracks: lost knowledge, concept evolution, formula evolution, hidden associations, contradictions.
 :::
 
 ![](../../../figures/out/fig4_verification.png){width=100%}
 
 ::: legend
-**Fig. 4 | Quotations stay verbatim, the harness's boundaries hold, and hard readings stay safe.** **a**, Quotation checks on 60 random passages of the demonstration corpus: verbatim quotations accepted; quotations with one character replaced, of random characters, or verbatim at a shifted span rejected. Dots, proportions; lines, Wilson 95% confidence intervals. **b**, Nineteen invariants (I01–I19) run as probes on the intact harness and on six variants, each with one boundary removed by deleting its check at run time. Every removal broke the invariant named for its boundary (outlined) and no other; 127 of 133 cells held. In three cases a second safeguard limited the damage: without the scope guard the tool it no longer refused returned nothing of the withheld passage; forged G7 events reached the log but not the state; without the bound checks two of five impossible evidence records verified. **c**, 107 hard interpretive cases in eight classes, each a verbatim quotation with one correct reading (development, 23 cases used to write the rules; held-out, 84). Numbers, held-out cases read correctly. Both errors were unsafe, a reading that commentators dispute accepted as supported (the Dahuang mudan tang clause and the 里水 of the Yuebi jia zhu tang clause); they are reported, not patched. **d**, Accuracy in four blind rounds, each on new cases written before the rules that first read them, and on all held-out cases under the current rules. Lines, Wilson 95% confidence intervals; below, correct/total and unsafe errors. Data: `taochronos eval` on the demonstration corpus (**a**, **c**), `paper/figures/mutation_matrix.py` (**b**) and `docs/evals.md` (**d**).
+**Fig. 5 | Quotations stay verbatim, the harness's boundaries hold, and hard readings stay safe.** **a**, Quotation checks on 60 random passages of the demonstration corpus: verbatim quotations accepted; quotations with one character replaced, of random characters, or verbatim at a shifted span rejected. Dots, proportions; lines, Wilson 95% confidence intervals. **b**, Nineteen invariants (I01–I19) run as probes on the intact harness and on six variants, each with one boundary removed by deleting its check at run time. Every removal broke the invariant named for its boundary (outlined) and no other; 127 of 133 cells held. In three cases a second safeguard limited the damage: without the scope guard the tool it no longer refused returned nothing of the withheld passage; forged G7 events reached the log but not the state; without the bound checks two of five impossible evidence records verified. **c**, 107 hard interpretive cases in eight classes, each a verbatim quotation with one correct reading (development, 23 cases used to write the rules; held-out, 84). Numbers, held-out cases read correctly. Both errors were unsafe, a reading that commentators dispute accepted as supported (the Dahuang mudan tang clause and the 里水 of the Yuebi jia zhu tang clause); they are reported, not patched. **d**, Accuracy in four blind rounds, each on new cases written before the rules that first read them, and on all held-out cases under the current rules. Lines, Wilson 95% confidence intervals; below, correct/total and unsafe errors. Data: `taochronos eval` on the demonstration corpus (**a**, **c**), `paper/figures/mutation_matrix.py` (**b**) and `docs/evals.md` (**d**).
 :::
 
 ![](../../../figures/out/fig5_research_value.png){width=100%}
 
 ::: legend
-**Fig. 5 | Rankings computed from the past anticipate the links later physicians wrote.** **a**, Blind temporal benchmark on the full corpus. At each cutoff (1127, 1368) the store splits into passages dated wholly before and wholly after it; passages that straddle it belong to neither side. For every disease or symptom of the lexicon with 150–6,000 past and at least 300 future passages, the formulas and drugs of its past graph not yet linked to it are ranked; a candidate comes true when claims in two or more later books link it to the topic. **b**, Precision at 10 and 20 and mean average precision of five rankers over the 189 topic–cutoff pairs in which at least one link came true. Dots, means; lines, 95% confidence intervals; chance, 20 random rankings; dashed line, base rate (4.5%). **c**, Paired comparisons of average precision over topic–cutoff pairs; two-sided sign tests, one tie excluded. **d**, Predictions of the whole pipeline run on the past view at 1368 for four held-out topics (胸痹, 霍乱, 虚劳, 痰饮): proportion borne out by later books, with Wilson 95% confidence intervals. Open circle, before the absence checks, which rejected two wrong 'lost' and two already attested 'hidden' associations and no discovery. No passage outside the past view was read (leakage 0). Values of the full-corpus run documented in `docs/evals.md`; the full store is not distributed, and Supplementary Fig. 3 repeats the benchmark on the open corpus.
+**Fig. 6 | Rankings computed from the past anticipate the links later physicians wrote.** **a**, Blind temporal benchmark on the full corpus. At each cutoff (1127, 1368) the store splits into passages dated wholly before and wholly after it; passages that straddle it belong to neither side. For every disease or symptom of the lexicon with 150–6,000 past and at least 300 future passages, the formulas and drugs of its past graph not yet linked to it are ranked; a candidate comes true when claims in two or more later books link it to the topic. **b**, Precision at 10 and 20 and mean average precision of five rankers over the 189 topic–cutoff pairs in which at least one link came true. Dots, means; lines, 95% confidence intervals; chance, 20 random rankings; dashed line, base rate (4.5%). **c**, Paired comparisons of average precision over topic–cutoff pairs; two-sided sign tests, one tie excluded. **d**, Predictions of the whole pipeline run on the past view at 1368 for four held-out topics (胸痹, 霍乱, 虚劳, 痰饮): proportion borne out by later books, with Wilson 95% confidence intervals. Open circle, before the absence checks, which rejected two wrong 'lost' and two already attested 'hidden' associations and no discovery. No passage outside the past view was read (leakage 0). Values of the full-corpus run documented in `docs/evals.md`; the full store is not distributed, and Supplementary Fig. 3 repeats the benchmark on the open corpus.
 :::
 
 ![](../../../figures/out/fig6_case_studies.png){width=100%}
 
 ::: legend
-**Fig. 6 | On the open canon corpus, the study layer recovers history written into the texts.** All panels are computed by the deterministic study layer on the open web corpus (533 works, 168,278 passages). **a**, **b**, Share of works per century writing an original drug name and the name a naming taboo imposed: 薯蓣 and 山药 (**a**), 玄参 and 元参 (**b**). Dashed lines, the years from which the names were avoided: Tang Daizong (李豫, 762) and Song Yingzong (赵曙, 1063) in **a**; the Song ancestor Shengzu (赵玄朗, 1012) and the Kangxi emperor (玄烨, 1662) in **b**; shading, the switch interval the tool detected; marker area, works in the century; open markers, centuries with fewer than three works or only undated front matter dated conservatively to 1911. A work writing both names counts for both. **c**, Passages mentioning 温病 (warm disease) per 10,000 passages by period, with Wilson 95% confidence intervals; numbers, passages with the term. Two-sided Cochran–Armitage test for trend across the ordered periods. **d**, Normalized pointwise mutual information (NPMI) of drug pairs co-occurring significantly in 4,554 compositions (a composition repeated in copies of one work counted once; pairs in at least ten works tested; one-sided Fisher exact test, Benjamini–Hochberg q < 0.05; 1,184 pairs). Groups are communities of the strong pairs (NPMI ≥ 0.3), found without formula names; shown (outlined) are the five of twelve whose drugs hold together most tightly (mean NPMI of their significant pairs). Each holds the core of a classical formula (right); liquorice (甘草), present in 43% of compositions, joins none. **e**, Citations between physicians: arcs join citing and cited physicians placed at the midpoints of their dates; width ∝ √citations; blue, citations of Zhang Ji (张机). Five links whose cited physician lived after the citing one (28 citations) are omitted as chronologically impossible.
+**Fig. 7 | On the open canon corpus, the study layer recovers history written into the texts.** All panels are computed by the deterministic study layer on the open web corpus (533 works, 168,278 passages). **a**, **b**, Share of works per century writing an original drug name and the name a naming taboo imposed: 薯蓣 and 山药 (**a**), 玄参 and 元参 (**b**). Dashed lines, the years from which the names were avoided: Tang Daizong (李豫, 762) and Song Yingzong (赵曙, 1063) in **a**; the Song ancestor Shengzu (赵玄朗, 1012) and the Kangxi emperor (玄烨, 1662) in **b**; shading, the switch interval the tool detected; marker area, works in the century; open markers, centuries with fewer than three works or only undated front matter dated conservatively to 1911. A work writing both names counts for both. **c**, Passages mentioning 温病 (warm disease) per 10,000 passages by period, with Wilson 95% confidence intervals; numbers, passages with the term. Two-sided Cochran–Armitage test for trend across the ordered periods. **d**, Normalized pointwise mutual information (NPMI) of drug pairs co-occurring significantly in 4,554 compositions (a composition repeated in copies of one work counted once; pairs in at least ten works tested; one-sided Fisher exact test, Benjamini–Hochberg q < 0.05; 1,184 pairs). Groups are communities of the strong pairs (NPMI ≥ 0.3), found without formula names; shown (outlined) are the five of twelve whose drugs hold together most tightly (mean NPMI of their significant pairs). Each holds the core of a classical formula (right); liquorice (甘草), present in 43% of compositions, joins none. **e**, Citations between physicians: arcs join citing and cited physicians placed at the midpoints of their dates; width ∝ √citations; blue, citations of Zhang Ji (张机). Five links whose cited physician lived after the citing one (28 citations) are omitted as chronologically impossible.
 :::
 
 
@@ -585,13 +592,13 @@ ZhongJingGPT.]
 
 | Failure mode | Example in the classics | Mechanism in TaoChronos | Evidence in this study |
 |---|---|---|---|
-| Fabricated or altered quotation | A quote with one character changed, or the right words at the wrong place | The harness, not the producer, locates every quote in its passage at commit (verbatim, or after length-preserving variant normalization); the conversation client checks every cited passage | 180/180 corrupted quotations rejected, 60/60 verbatim accepted; 100% of committed claims verbatim (Fig. 4a) |
-| True quote, false reading | 「不可发汗，宜桂枝汤」 (a prohibition beside a prescription); 「或曰…余曰非也」 (a view the author rejects) | Semantic-support hook reads each claim's statement frame (speaker, stance, conditions, negations) and refuses a claim its quote contradicts; a registry of textual cruxes harvested from commentaries makes doubtful clauses read as ambiguous | Held-out hard cases 82/84, 2 unsafe; four blind rounds (Fig. 4c,d) |
-| Copies counted as independent testimony | Five witnesses of one clause of the Jingui yaolüe and its copy in the Maijing | Gate G5 counts independent source families (author and transcription clusters), not books; the Skeptic checks transcription dependence and single sources | H5 held inconclusive on one family (Fig. 3e); an over-merging of families reported (Supplementary Fig. 1) |
+| Fabricated or altered quotation | A quote with one character changed, or the right words at the wrong place | The harness, not the producer, locates every quote in its passage at commit (verbatim, or after length-preserving variant normalization); the conversation client checks every cited passage | 180/180 corrupted quotations rejected, 60/60 verbatim accepted; 100% of committed claims verbatim (Fig. 5a) |
+| True quote, false reading | 「不可发汗，宜桂枝汤」 (a prohibition beside a prescription); 「或曰…余曰非也」 (a view the author rejects) | Semantic-support hook reads each claim's statement frame (speaker, stance, conditions, negations) and refuses a claim its quote contradicts; a registry of textual cruxes harvested from commentaries makes doubtful clauses read as ambiguous | Held-out hard cases 82/84, 2 unsafe; four blind rounds (Fig. 5c,d) |
+| Copies counted as independent testimony | Five witnesses of one clause of the Jingui yaolüe and its copy in the Maijing | Gate G5 counts independent source families (author and transcription clusters), not books; the Skeptic checks transcription dependence and single sources | H5 held inconclusive on one family (Fig. 4e); an over-merging of families reported (Supplementary Fig. 1) |
 | Anachronism (presentism) | Xiaoke 消渴 read as diabetes mellitus; shanghan 伤寒 read as typhoid | Anachronism guard at claim, hypothesis and graph-write hooks; the contract's forbidden equivalences; the ancient–modern bridge states phenotypic similarity with typed relations, never a retrospective diagnosis | Statements 10/10, mappings 8/8, translations 24/24; agent-asserted equivalence blocked |
-| Arguments from silence | An association called lost after 960 that a later book still states | The Skeptic searches the whole scope for explicit, supported statements; one later statement refutes a loss and any statement refutes a hidden link, as hard, critical objections no rewording can close | 2 wrong lost and 2 already-written hidden associations rejected, and no discovery (Fig. 5d); R1 rejected (Fig. 3) |
-| Self-grading and premature acceptance | A model closing its own objection, setting expert approval, or a finished run taken as an accepted finding | Every event carries its principal and the reducer refuses an event its principal may not emit (61 types); only validators grade, only a human sets G7; an executable contract judges acceptance | 19/19 invariants held; each of 6 boundaries removed broke its invariant and no other (Fig. 4b) |
-| Hindsight in testing foresight | A 'prediction' made after reading the books that later confirm it | Time-machine views bounded in SQL on every read path; passages that straddle the cutoff belong to neither side; leakage counted, not assumed | Leakage 0; precision@10 0.168 against 0.134 (popularity) and 0.054 (chance)† (Fig. 5) |
+| Arguments from silence | An association called lost after 960 that a later book still states | The Skeptic searches the whole scope for explicit, supported statements; one later statement refutes a loss and any statement refutes a hidden link, as hard, critical objections no rewording can close | 2 wrong lost and 2 already-written hidden associations rejected, and no discovery (Fig. 6d); R1 rejected (Fig. 4) |
+| Self-grading and premature acceptance | A model closing its own objection, setting expert approval, or a finished run taken as an accepted finding | Every event carries its principal and the reducer refuses an event its principal may not emit (61 types); only validators grade, only a human sets G7; an executable contract judges acceptance | 19/19 invariants held; each of 6 boundaries removed broke its invariant and no other (Fig. 5b) |
+| Hindsight in testing foresight | A 'prediction' made after reading the books that later confirm it | Time-machine views bounded in SQL on every read path; passages that straddle the cutoff belong to neither side; leakage counted, not assumed | Leakage 0; precision@10 0.168 against 0.134 (popularity) and 0.054 (chance)† (Fig. 6) |
 | Irreproducible runs | A result that cannot be rerun or audited step by step | Append-only event log replayed and hashed every round; tool-call receipts in a hash chain; recorded model responses replayed exactly | Resume after a crash at 4 of 4 points reaches the same state; reruns and parallel runs identical; the end-to-end report rewritten identically |
 
 
