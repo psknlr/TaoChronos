@@ -158,6 +158,11 @@ Result: `taochronos.zip` 1,507,509 → 1,113,458 bytes (225 of the package's 279
   serves the same public files; it is outside every edge rule and its downloads are in no log of ours.  That is a
   trade the owner made knowingly and may make again; nothing confidential is on it after this change.  Old copies of
   the site — GitHub's Pages artifacts, any cache or archive — still hold the gold sets and cannot be recalled.
+* **Telling a reader's mail program from a scanner.**  What is not a browser but fetches for a reader on the reader's
+  own device — a desktop mail client loading a message's remote image, a linked picture in an office document — sends
+  no `Sec-Fetch-Site`, and reads as its own request: a mail carrying an image at a scanner's path can still get the
+  address of whoever opens it refused (six hours on a home or carrier network).  It takes a message to each person,
+  not one image on a page; `HONEYPOT = "observe"` is the switch that ends it, at the price of refusing no scanner.
 * **An identity for whoever sends a record** (finding 4 of the audit): a record or a rating is taken from anyone who
   sends the page's `Origin`, within the per-address limits and — for the default service's — only from an address the
   relay answered in the last 26 hours.  `data/chat-logs/` is what visitors chose to send, and is to be read as
