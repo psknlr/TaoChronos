@@ -24,6 +24,9 @@ export const ABI = 1;
  * @property {(id: number, ptr: number, len: number, df: number, room: number) => number} tc_count
  * @property {(id: number, idf: number, width: number, avgdl: number, k1: number, b: number, k: number, places: number, scores: number) => number} tc_bm25
  * @property {(id: number, docs: number, count: number, query: number, queryLen: number, dim: number, ngram: number, sizes: number, compensated: number, threshold: number, k: number, places: number, scores: number) => number} tc_dense
+ * @property {(ptr: number, len: number, count: number) => number} tc_grams
+ * @property {() => number} tc_result
+ * @property {() => number} tc_result_len
  */
 
 /**
@@ -112,8 +115,20 @@ export async function loadTaoCore(bytes) {
     },
   });
 
+  const dec = new TextDecoder();
   return {
     abi: ABI,
+    /** The full-text index's tokens of each text (store.py's grams), "\u001f"-separated as the texts are.
+     * @param {Bytes} texts @param {number} count @returns {string} */
+    grams(texts, count) {
+      try {
+        const [p, len] = put(texts);
+        if (x.tc_grams(p, len, count) !== 0) throw new Error("taocore: the texts are not as many as said, or not UTF-8");
+        return dec.decode(new Uint8Array(x.memory.buffer, x.tc_result(), x.tc_result_len()));
+      } finally {
+        giveBack();
+      }
+    },
     /** A search's candidates: their texts ("\u001f"-separated UTF-8) and how many. @param {Bytes} texts @param {number} count */
     batch(texts, count) {
       try {

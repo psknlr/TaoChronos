@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 from test_retrieval_index import plain_tokens, texts
 
+from taochronos.plugins.classics.store import grams
 from taochronos.plugins.retrieval import taocore
 from taochronos.plugins.retrieval.index import BM25Index, DenseIndex, HashingEmbedder, query_tokens
 from taochronos.plugins.retrieval.taocore import LocalIndexes
@@ -183,6 +184,20 @@ def test_the_extension_ranks_as_the_definitions_do():
                 assert bits(local._dense_kernel(kern, text, k)) == bits(local._dense_python(text, k)), text
 
 
+# texts for the full-text tokens (store.grams): its runs are of another class than the indexes' — planes 2 and 3, 〇, 〓
+TOKEN_EDGES = ["", "。", "桂", "桂枝汤", "桂枝，汤。", "，桂", "abc 桂 x", "〇𠀀𪚥〓", "\U0003134f\U00031350\u3007", "한글\ue3e7桂枝",
+               "桂\ud800枝", "汤汤汤", "\u33ff\u3400\u9fff\ua000\uf8ff\uf900\ufaff\ufb00", "\x1e桂\x1e"]
+
+
+def test_the_extension_makes_the_full_text_tokens_the_store_makes():
+    kern = native()
+    every = [*TOKEN_EDGES, *texts()]
+    assert taocore._grams_kernel(kern, every) == [grams(t) for t in every]
+    assert taocore._grams_kernel(kern, ["桂枝"]) == ["桂枝 枝z"]
+    with pytest.raises(taocore.Unsuitable):
+        taocore._grams_kernel(kern, ["桂\x1f枝", "汤"])  # the separator inside a text: the definitions' to do
+
+
 def test_the_extension_refuses_what_is_not_its_input():
     kern = native()
     import _taocore
@@ -230,6 +245,7 @@ for (const c of input.cases) {
   b.free();
   out.push(r);
 }
+const tokens = core.grams(enc.encode(input.grams.join("\u001f")), input.grams.length).split("\u001f");
 let refused = 0;  // what the module must not take
 for (const bad of [() => core.batch(enc.encode("a\u001fb"), 3), () => core.batch(new Uint8Array([0xff]), 1)]) {
   try { bad(); } catch { refused++; }
@@ -242,7 +258,8 @@ for (const bad of [() => one.count(enc.encode("桂枝汤")), () => one.bm25(f64(
 }
 for (let i = 0; i < 6; i++) core.batch(enc.encode("x"), 1);  // the module keeps the last few batches: one pushed out is refused
 try { one.count(enc.encode("桂")); } catch { refused++; }
-writeFileSync("out.json", JSON.stringify({ out, refused }));
+try { core.grams(enc.encode("a\u001fb"), 3); } catch { refused++; }
+writeFileSync("out.json", JSON.stringify({ out, refused, tokens }));
 """
 
 
@@ -271,12 +288,14 @@ def test_the_browser_module_ranks_as_the_definitions_do(tmp_path):
             want.append({"dense": local._dense_python(text, 60)})
     shutil.copy(ROOT / "web" / "js" / "taocore.js", tmp_path / "taocore.js")
     shutil.copy(MODULE, tmp_path / "taocore.wasm")
-    (tmp_path / "in.json").write_text(json.dumps({"cases": cases}), encoding="utf-8")
+    token_texts = [*TOKEN_EDGES, *all_texts]
+    (tmp_path / "in.json").write_text(json.dumps({"cases": cases, "grams": token_texts}), encoding="utf-8")
     (tmp_path / "run.mjs").write_text(NODE_RUN, encoding="utf-8")
     run = subprocess.run([node, "run.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=300)
     assert run.returncode == 0, run.stderr
     got = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
-    assert got["refused"] == 7
+    assert got["refused"] == 8
+    assert got["tokens"] == [grams(t) for t in token_texts]  # the full-text tokens, every one
     for case, w, g in zip(cases, want, got["out"]):
         if "bm25" in w:
             assert g["df"] == w["df"] and g["total"] == w["total"]
@@ -299,7 +318,7 @@ def test_the_module_is_what_the_source_builds():
                                                  check=True).stdout)
     assert imports == []
     assert exports == sorted(["memory", "tc_abi", "tc_alloc", "tc_free", "tc_batch", "tc_batch_free", "tc_total", "tc_count",
-                              "tc_bm25", "tc_dense"])
+                              "tc_bm25", "tc_dense", "tc_grams", "tc_result", "tc_result_len"])
 
 
 # ---------------------------------------------------------------- choosing, and failing closed
@@ -308,8 +327,14 @@ class Fake:
 
     name = "fake"
 
-    def __init__(self, inner, *, broken: bool = False, wrong: bool = False):
-        self.inner, self.broken, self.wrong = inner, broken, wrong
+    def __init__(self, inner, *, broken: bool = False, wrong: bool = False, wrong_tokens: bool = False):
+        self.inner, self.broken, self.wrong, self.wrong_tokens = inner, broken, wrong, wrong_tokens
+
+    def grams(self, data, count):
+        if self.broken:
+            raise RuntimeError("a trap")
+        got = self.inner.grams(data, count)
+        return got.replace("z", "y", 1) if self.wrong_tokens else got
 
     def batch(self, data, count):
         inner = self.inner.batch(data, count)
@@ -335,6 +360,11 @@ class Definitions:
     """A kernel that is the definitions themselves (to test the choosing without the extension)."""
 
     name = "definitions"
+
+    def grams(self, data, count):
+        texts = data.decode("utf-8").split(taocore.SEPARATOR)
+        assert len(texts) == count
+        return taocore.SEPARATOR.join(grams(t) for t in texts)
 
     def batch(self, data, count):
         texts = data.decode("utf-8").split(taocore.SEPARATOR)
@@ -415,3 +445,42 @@ def test_the_modes(monkeypatch):
     assert taocore.kernel() is drifting and taocore.status()["failed"] == 0
     monkeypatch.setenv("TAOCHRONOS_TAOCORE", "nonsense")
     assert taocore.mode() == "auto"
+
+
+def test_the_full_text_tokens_by_every_way(monkeypatch):
+    """The first visit indexes the 要籍语料 with store.grams of each passage (webcorpus.index_store): by the kernel where
+    there is one, the same strings; and what the kernel may not or cannot do, the definitions do."""
+    every = [*TOKEN_EDGES, *texts()[:80]]
+    want = [grams(t) for t in every]
+    monkeypatch.setattr(taocore, "_find", lambda: (None, "none here"))
+    assert taocore.grams_many(every) == want and taocore.grams_many([]) == []
+    taocore.reset()
+    kernel = Fake(Definitions())
+    monkeypatch.setattr(taocore, "_find", lambda: (kernel, ""))
+    assert taocore.grams_many(every) == want and taocore.status()["grams"] == 1
+    assert taocore.grams_many(["桂\x1f枝"]) == [grams("桂\x1f枝")]  # the separator: the definitions, the kernel kept
+    kernel.wrong_tokens = True
+    monkeypatch.setenv("TAOCHRONOS_TAOCORE", "shadow")
+    assert taocore.grams_many(every) == want and taocore.status()["differed"] == 1
+    kernel.wrong_tokens, kernel.broken = False, True
+    monkeypatch.setenv("TAOCHRONOS_TAOCORE", "auto")
+    assert taocore.grams_many(every) == want and taocore.status()["kernel"] is None  # put aside
+    taocore.reset()
+    kernel.broken, kernel.wrong_tokens = False, True
+    assert taocore.kernel() is None and "full-text tokens differed" in taocore.status()["reason"]  # the self-test
+
+    class Before:  # an extension built before it made the tokens: searched with, the tokens made in Python
+        name = "before"
+
+        def __init__(self):
+            self.inner = Definitions()
+
+        def batch(self, data, count):
+            return self.inner.batch(data, count)
+
+        def grams(self, data, count):
+            raise taocore.Unsuitable("no grams here")
+
+    taocore.reset()
+    monkeypatch.setattr(taocore, "_find", lambda: (Before(), ""))
+    assert taocore.kernel() is not None and taocore.grams_many(every) == want and taocore.status()["python"] >= 1

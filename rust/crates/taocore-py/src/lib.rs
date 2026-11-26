@@ -91,10 +91,17 @@ impl Batch {
     }
 }
 
+/// The full-text index's tokens (store.py's `grams`) of `count` texts — UTF-8, separated by U+001F — separated the same way.
+#[pyfunction]
+fn grams(texts: &[u8], count: usize) -> PyResult<String> {
+    guarded(|| taocore::grams_many(std::str::from_utf8(texts).map_err(|_| taocore::Error::Utf8)?, count))
+}
+
 #[pymodule]
 fn _taocore(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("ABI", taocore::ABI)?;
     m.add("VERSION", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<Batch>()?;
+    m.add_function(wrap_pyfunction!(grams, m)?)?;
     Ok(())
 }

@@ -76,6 +76,72 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+/// The characters the corpus store's full-text index reads (store.py's `is_han`, `HAN_RUN`): the unified ideographs of the
+/// Basic Multilingual Plane and the compatibility ones, those of planes 2 and 3, 〇 and 〓 — not the retrieval indexes'
+/// [`keep`]: each reads what it was made for.
+#[inline]
+pub const fn run_char(c: u32) -> bool {
+    matches!(c, 0x3400..=0x9FFF | 0xF900..=0xFAFF | 0x20000..=0x3134F | 0x3007 | 0x3013)
+}
+
+/// store.py's `grams(norm)`, the full-text index's tokens of a normalised text: each run of [`run_char`] characters gives
+/// its overlapping bigrams and then its last character with "z" (so that every character starts a token); runs are
+/// separated by "x", and one more follows the last run when anything comes after it; the tokens joined by spaces.
+pub fn grams_into(text: &str, out: &mut String) {
+    let mut tokens = 0usize;
+    let mut run: Vec<char> = Vec::new();
+    let token = |out: &mut String, tokens: &mut usize, parts: &[char], end: Option<char>| {
+        if *tokens > 0 {
+            out.push(' ');
+        }
+        out.extend(parts.iter().chain(end.as_ref()));
+        *tokens += 1;
+    };
+    let flush = |out: &mut String, tokens: &mut usize, run: &[char]| {
+        if *tokens > 0 {
+            token(out, tokens, &['x'], None);
+        }
+        for pair in run.windows(2) {
+            token(out, tokens, pair, None);
+        }
+        token(out, tokens, &run[run.len() - 1..], Some('z'));
+    };
+    for c in text.chars() {
+        if run_char(c as u32) {
+            run.push(c);
+        } else if !run.is_empty() {
+            flush(out, &mut tokens, &run);
+            run.clear();
+        }
+    }
+    if !run.is_empty() {
+        flush(out, &mut tokens, &run);
+    } else if tokens > 0 {
+        token(out, &mut tokens, &['x'], None);
+    }
+}
+
+/// [`grams_into`] of `count` texts separated by [`SEPARATOR`], the results separated by it too (no token holds it).
+pub fn grams_many(texts: &str, count: usize) -> Result<String, Error> {
+    let mut out = String::with_capacity(texts.len() * 3);
+    let mut found = 0;
+    if count > 0 {
+        for (i, text) in texts.split(SEPARATOR).enumerate() {
+            if i > 0 {
+                out.push(SEPARATOR);
+            }
+            grams_into(text, &mut out);
+            found += 1;
+        }
+    } else if !texts.is_empty() {
+        found = 1;
+    }
+    if found != count {
+        return Err(Error::Count { expected: count, found });
+    }
+    Ok(out)
+}
+
 /// The kept characters of a text, in order (index.py's `"".join(han(text))`).
 pub fn kept(text: &str) -> Vec<u16> {
     let mut out = Vec::with_capacity(text.len() / 3);
@@ -584,6 +650,26 @@ mod tests {
         assert_eq!(scored[1].1.to_bits(), scored[2].1.to_bits());
         assert_eq!(b.bm25(&[1.0, 2.0], 1.0, 1.4, 0.75, 2).unwrap().len(), 2);
         assert!(b.bm25(&[1.0], 1.0, 1.4, 0.75, 10).is_err());
+    }
+
+    #[test]
+    fn the_full_text_tokens_are_store_pys() {
+        let g = |t: &str| {
+            let mut out = String::new();
+            grams_into(t, &mut out);
+            out
+        };
+        // from Python: taochronos.plugins.classics.store.grams
+        assert_eq!(g("桂枝汤"), "桂枝 枝汤 汤z");
+        assert_eq!(g("桂枝，汤。"), "桂枝 枝z x 汤z x");
+        assert_eq!(g("，桂"), "桂z");
+        assert_eq!(g("abc"), "");
+        assert_eq!(g(""), "");
+        assert_eq!(g("〇𠀀𪚥〓"), "〇𠀀 𠀀𪚥 𪚥〓 〓z");
+        assert_eq!(g("한글\u{e3e7}桂"), "桂z");
+        assert_eq!(grams_many("桂枝\u{1f}\u{1f}汤。", 3), Ok("桂枝 枝z\u{1f}\u{1f}汤z x".to_string()));
+        assert!(grams_many("a\u{1f}b", 3).is_err());
+        assert_eq!(grams_many("", 0), Ok(String::new()));
     }
 
     #[test]

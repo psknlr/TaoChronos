@@ -28,6 +28,7 @@ struct Held {
 thread_local! {
     static HELD: RefCell<Held> = const { RefCell::new(Held { next: 1, batches: Vec::new() }) };
     static CACHE: RefCell<Option<GramCache>> = const { RefCell::new(None) };
+    static RESULT: RefCell<String> = const { RefCell::new(String::new()) };
 }
 
 fn with_batch<T>(id: u32, work: impl FnOnce(&mut Batch) -> Option<T>) -> Option<T> {
@@ -243,4 +244,38 @@ pub unsafe extern "C" fn tc_dense(
             })
         })
         .unwrap_or(-1)
+}
+
+/// The full-text index's tokens (store.py's `grams`) of `count` texts — UTF-8 at `ptr`, separated by U+001F — kept until
+/// the next call as UTF-8, separated the same way ([`tc_result`], [`tc_result_len`]).  Returns 0, or -1 when the texts are
+/// not what is said.
+///
+/// # Safety
+/// `ptr` names `len` readable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tc_grams(ptr: *const u8, len: usize, count: usize) -> i32 {
+    // SAFETY: the caller's promise
+    let bytes = unsafe { read(ptr, len) };
+    let (true, Ok(texts)) = (bytes.len() == len, std::str::from_utf8(bytes)) else {
+        return -1;
+    };
+    match taocore::grams_many(texts, count) {
+        Ok(out) => {
+            RESULT.with(|r| *r.borrow_mut() = out);
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Where the last [`tc_grams`] result is in this module's memory.
+#[unsafe(no_mangle)]
+pub extern "C" fn tc_result() -> *const u8 {
+    RESULT.with(|r| r.borrow().as_ptr())
+}
+
+/// How many bytes the last [`tc_grams`] result is.
+#[unsafe(no_mangle)]
+pub extern "C" fn tc_result_len() -> usize {
+    RESULT.with(|r| r.borrow().len())
 }
