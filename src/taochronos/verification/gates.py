@@ -18,6 +18,7 @@ from .provenance import verify_claim, verify_evidence
 from .support import support_layers
 
 PRECLINICAL = frozenset({"animal", "cell", "in_silico", "in_vitro", "computational", "network_pharmacology", "docking"})
+CONTEXTS_KEPT = 4096  # passages whose lexicon terms an evaluator keeps for G3 (_context): 0.6 KB each on average
 
 _RANK = {"fail": 0, "pending": 1, "warn": 2, "pass": 3, "not_applicable": 4}
 GATE_NAMES = {
@@ -48,6 +49,7 @@ class GateEvaluator:
         self.min_independent_sources = min_independent_sources
         self.sense_threshold = sense_threshold
         self.normalize = pack.variants.normalize_text
+        self._contexts: dict[str, set[str]] = {}  # normalised passage text → the terms the lexicon finds in it
 
     # ------------------------------------------------------------- passages
     def g0(self, book_id: str, subject: str) -> GateResult:
@@ -87,10 +89,21 @@ class GateEvaluator:
         return GateResult(gate="G2", subject_id=subject, status="pass", score=a.philological_confidence, details="collated text")
 
     # ---------------------------------------------------------------- claims
+    def _context(self, norm: str) -> set[str]:
+        """The terms the lexicon finds in a passage's normalised text, which G3 weighs a homonym's senses by.  They
+        depend on the text alone and a passage has two claims on average, so they are found once per text, for the
+        life of this evaluator (one evaluation), and all dropped when CONTEXTS_KEPT are held."""
+        context = self._contexts.get(norm)
+        if context is None:
+            context = {m.entry.term for m in self.pack.lexicon.match(norm)}
+            if len(self._contexts) >= CONTEXTS_KEPT:
+                self._contexts.clear()
+            self._contexts[norm] = context
+        return context
+
     def g3(self, claim: Claim) -> GateResult:
         passage = self.corpus.passage(claim.passage_id)
         norm = self.normalize(passage.text)
-        context = {m.entry.term for m in self.pack.lexicon.match(norm)}
         risks = []
         for arg in claim.arguments:
             if not arg.term_id:
@@ -98,7 +111,7 @@ class GateEvaluator:
             surface = arg.term_id.split(":", 1)[-1]
             if self.pack.terminology.term(surface) is None:
                 continue
-            sense, p, alts, _ = self.pack.terminology.resolve(surface, norm, context, self.corpus.year(passage))
+            sense, p, alts, _ = self.pack.terminology.resolve(surface, norm, self._context(norm), self.corpus.year(passage))
             if len(alts) > 1 and p < self.sense_threshold:
                 risks.append(f"{surface}→{sense} ({p:.2f})")
         if risks:
