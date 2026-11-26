@@ -1,0 +1,42 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 15
+   },
+   "by_provider": {
+    "custom": 2,
+    "gemini": 1,
+    "impf": 15
+   },
+   "by_status": {
+    "done": 1,
+    "error": 13,
+    "stopped": 4
+   },
+   "feedback": {
+    "down": 1
+   },
+   "model_calls": 34,
+   "questions": 18,
+   "tokens_in": 530937,
+   "tokens_out": 17597,
+   "tool_calls": 40,
+   "tools": {
+    "classics.get_passage": 35,
+    "classics.search": 3,
+    "study.commentaries": 1,
+    "study.formula": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-06",
+  "label": "2026-11-06",
+  "to": "2026-11-06"
+ },
+ "v": 1
+}

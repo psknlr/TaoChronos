@@ -2107,6 +2107,121 @@ def test_a_turn_keeps_within_its_context_budget_under_node(tmp_path):
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+# what the page tells the site of its own use (web/js/telemetry.js): counts, and only where it may
+NODE_TELEMETRY = r"""
+import assert from "node:assert/strict";
+
+const kept = new Map();
+globalThis.localStorage = { getItem: (k) => (kept.has(k) ? kept.get(k) : null), setItem: (k, v) => { kept.set(k, String(v)); }, removeItem: (k) => { kept.delete(k); } };
+const browser = {};
+Object.defineProperty(globalThis, "navigator", { value: browser, configurable: true });
+const sent = [];
+const site = { visitor: "v_0123456789abcdef01234567", off: false };
+globalThis.fetch = async (url, init = {}) => {
+  sent.push({ url: String(url), method: init.method || "GET", type: init.headers?.["Content-Type"], body: init.body ? JSON.parse(init.body) : null });
+  const told = () => (site.off ? { v: 1, ledger: true, ids: "notice", state: "off", visitor: null, pass: null, expires: null }
+    : { v: 1, ledger: true, ids: "notice", state: "valid", visitor: site.visitor, pass: "PASS", expires: Date.now() + 86400000 });
+  if (url === "api/activity/hello") return Response.json(told());
+  if (url === "api/activity/choice") { site.off = JSON.parse(init.body).ids === "off"; return Response.json(told()); }
+  if (url === "api/activity/forget") { site.off = true; return Response.json({ ...told(), forgotten: true }); }
+  return new Response(null, { status: 204 });
+};
+const t = await import("./js/telemetry.js");
+const RELAY = "https://relay.example";
+
+// no relay, or one without a ledger: the page sends what it always sent — a turn's name only where the relay takes it
+assert.equal(t.sending(), false);
+assert.deepEqual(t.turnHeaders("m_1"), {});
+assert.deepEqual(t.status(), { ledger: false, mode: null, on: false, declined: false, visitor: null, state: null });
+t.setRelay({ url: RELAY, ok: true, activity: { turn: true } });
+assert.deepEqual(t.turnHeaders("m_1"), { "X-Tao-Turn": "m_1" });
+assert.deepEqual(t.turnHeaders("m_1", { named: false }), {});
+assert.equal(await t.hello(), null);
+t.report({ v: 1 });
+assert.equal(sent.length, 0);
+
+// a site with a ledger: the page asks who this browser is, once, and its turns carry the name and the pass
+t.setRelay({ url: RELAY, ok: true, activity: { turn: true, beacon: true, ids: "notice" } });
+assert.equal(t.sending(), true);
+const told = await t.hello();
+await t.hello();
+assert.deepEqual(sent.map((x) => [x.url, x.method, x.body]), [["api/activity/hello", "POST", { v: 1, lang: "zh" }]]);
+assert.equal(told.visitor, site.visitor);
+assert.deepEqual(t.status(), { ledger: true, mode: "notice", on: true, declined: false, visitor: site.visitor, state: "valid" });
+assert.deepEqual(t.turnHeaders("m_1"), { "X-Tao-Turn": "m_1", "X-Tao-Visitor": "PASS" });
+assert.deepEqual(t.turnHeaders("m_1", { unnamed: true }), { "X-Tao-Turn": "m_1" }); // the visitor's own health or data: for no one
+
+// a turn's end: counts and short words — the tools by the site's names, never their arguments
+const trace = { tools: [{ name: "classics.search", args: { query: "我的病历" } }, { name: "taochronos_call", args: { tool: "study.formula", arguments: { name: "桂枝汤" } } },
+  { name: "classics__search", args: {} }, { name: "Not A Tool", args: {} }], requests: [{ attempt: 1 }, { attempt: 2 }, { attempt: 1 }] };
+const own = { id: "deepseek", model: "deepseek-chat", examples: ["deepseek-chat", "deepseek-reasoner"], apiKey: "sk-secret", baseUrl: "https://api.deepseek.com/v1" };
+const end = t.turnEnd({ id: "m_1", provider: own, status: "done", rounds: 3, usage: { input: 9000, output: 700 }, ms: 41234.6, trace, module: "chat", turnIndex: 2, consent: false,
+  runtime: "browser", corpus: "canon" });
+assert.deepEqual(end, { v: 1, kind: "turn", turn: "m_1", pass: "PASS", provider: "deepseek", model: "deepseek-chat", status: "done", rounds: 3, tool_count: 4,
+  tools: { "classics.search": 2, "study.formula": 1 }, retries: 1, input: 9000, output: 700, ms: 41235, runtime: "browser", corpus: "canon", module: "chat", turn_index: 2,
+  consent: false, lang: "zh" });
+for (const kept of ["病历", "桂枝", "sk-secret", "api.deepseek", "Not A Tool"]) assert.ok(!JSON.stringify(end).includes(kept), kept);
+// an endpoint and a model the visitor set by hand are their settings: neither is named
+const custom = t.turnEnd({ id: "m_2", provider: { id: "custom-l8x2", custom: true, model: "our-internal-model", examples: [] }, status: "error", rounds: 1 });
+assert.deepEqual([custom.provider, "model" in custom, custom.status], ["custom", false, "error"]);
+assert.equal("model" in t.turnEnd({ id: "m_3", provider: { id: "openai", model: "ft:private", examples: ["gpt-x"] }, status: "done" }), false);
+assert.deepEqual([t.turnEnd({ id: "m_4", provider: { id: "impf", relay: true, model: "Tao-R1" }, status: "done" }).model, t.turnEnd({ id: "m_5", provider: { id: "fixed", fixed: true } }).provider],
+  ["Tao-R1", "fixed"]);
+assert.equal("pass" in t.turnEnd({ id: "m_6", provider: own, status: "done", module: "diet", unnamed: true }), false);
+assert.equal(t.turnEnd({ id: "m_7", provider: own, status: "weird" }).status, undefined);
+sent.length = 0;
+t.report(end);
+assert.deepEqual(sent.map((x) => [x.url, x.method, x.type, x.body.turn]), [[`${RELAY}/v1/activity`, "POST", "text/plain;charset=UTF-8", "m_1"]]);
+
+// the visitor's switch: off — the site is told, and the page sends none of the three; on again — a new id
+sent.length = 0;
+assert.deepEqual(await t.setSending(false), { ledger: true, mode: "notice", on: false, declined: false, visitor: null, state: "off" });
+assert.deepEqual(sent.map((x) => [x.url, x.body]), [["api/activity/choice", { ids: "off" }]]);
+assert.deepEqual(t.turnHeaders("m_8"), { "X-Tao-Turn": "m_8" }); // the turn is still named: a question is counted once
+sent.length = 0;
+t.report(end);
+assert.equal(await t.hello(), null);
+assert.equal(sent.length, 0);
+assert.equal((await t.setSending(true)).on, true);
+assert.deepEqual(t.turnHeaders("m_9"), { "X-Tao-Turn": "m_9", "X-Tao-Visitor": "PASS" });
+// forgotten: asked of the site, and the switch is off
+assert.equal(await t.forget(), true);
+assert.deepEqual([t.sending(), t.status().visitor, kept.get("tc.stats")], [false, null, '"off"']);
+
+// a browser that asks not to be tracked is the switch already off; a site that asks first sends nothing until it is on
+kept.clear();
+browser.globalPrivacyControl = true;
+assert.deepEqual([t.sending(), t.declined(), t.turnHeaders("m_10")], [false, true, { "X-Tao-Turn": "m_10" }]);
+browser.globalPrivacyControl = false;
+browser.doNotTrack = "1";
+assert.equal(t.sending(), false);
+browser.doNotTrack = null;
+t.setRelay({ url: RELAY, ok: true, activity: { turn: true, beacon: true, ids: "optin" } });
+assert.equal(t.sending(), false);
+kept.set("tc.stats", '"on"');
+assert.equal(t.sending(), true);
+t.setRelay({ url: RELAY, ok: false, activity: { turn: true, beacon: true, ids: "notice" } }); // the relay down: nowhere to send it
+assert.equal(t.sending(), false);
+console.log("ok");
+"""
+
+
+def test_the_page_tells_its_own_use_in_counts_and_only_where_it_may_under_node(tmp_path):
+    """What the page sends for the site's activity ledger (web/js/telemetry.js): nothing where the site keeps none; with
+    one, a hello once a page, the turn's name and the visitor's pass on the relay's calls, and a turn's end in counts —
+    the tools by the site's own names, never their arguments, nor a provider or model the visitor set by hand, nor the
+    pass for a conversation that touches their own health or data; and none of it once the visitor switched the count
+    off, in a browser that asks not to be tracked, or — where the site asks first — before they switched it on."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_TELEMETRY, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""

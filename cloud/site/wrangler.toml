@@ -42,6 +42,22 @@ HONEYPOT = "block"
 # STATS_TOKEN, or by anyone when STATS_PUBLIC = "1"; a day runs on UTC+8 (STATS_UTC_OFFSET, in hours)
 STATS_PUBLIC = "0"
 STATS_UTC_OFFSET = "8"
+# the activity ledger (security/README.md, 活动账本; docs/adr/0035-the-activity-ledger.md): every request written down as
+# an event — a page opened, a question, a model call — whatever the sentinel scored it, for a visitor's id and never an
+# address.  On only with the secret ACTIVITY_KEY (32+ characters) and the D1 database the deployment then binds as
+# ACTIVITY_DB (security/bind-ledger.sh); "off" here switches it off whatever else is set
+ACTIVITY = "on"
+# who is given an id: notice — a browser that opens a page, unless it asks not to be tracked (GPC, DNT) or its user
+# switched the count off (设置 → 数据); optin — only once its user switched it on; off — nobody: everything is counted
+# without a visitor.  The same in both Workers' wrangler.toml (tests/test_security_activity.py checks it)
+ACTIVITY_IDS = "notice"
+# in days: an id's life from the day it was issued (never extended by a visit); how long the events themselves are kept
+# in the registry (then only their days' sums); a visitor's rows after their last visit; and what the relay remembers
+# of which turn a call belonged to
+VISITOR_DAYS = "390"
+ACTIVITY_EVENT_DAYS = "90"
+ACTIVITY_VISITOR_DAYS = "760"
+ACTIVITY_TURN_DAYS = "7"
 # the pages' Content-Security-Policy (empty: none is sent), written from what the page loads (security/README.md): its own
 # files, the inline script and the two inline styles by their hashes (cloud/test/site.test.js checks them against web/),
 # the Anthropic SDK from jsDelivr's npm files, Cloudflare's Web Analytics beacon (the edge adds it to every page; it is

@@ -329,7 +329,8 @@ def test_search_engines_pass_the_edge_and_crawlers_for_ai_training_do_not():
 
 
 def test_the_relays_take_nothing_another_zones_worker_forwards():
-    """R3: the relay (chat-api.impf.ai) takes a model call, a record or a feedback only from the page's origins; and neither relay
+    """R3: the relay (chat-api.impf.ai) takes a model call, a record, a feedback or a turn's end (the activity ledger's:
+    /v1/activity) only from the page's origins; and neither relay
     (chat-api.impf.ai, science.impf.ai's Tao-S1) takes anything a Worker of another zone forwards.  A Worker writes any
     Origin it likes, and every cross-zone subrequest comes from 2a06:98c0:3600::103, Cloudflare's own address (never on
     the block list): 2,225 model calls in the owner's report of 2026-10-21.  The page's calls (no upstream zone), our own
@@ -343,7 +344,8 @@ def test_the_relays_take_nothing_another_zones_worker_forwards():
         return {"http.host": host, "http.request.uri.path": path, "http.request.method": method,
                 "http.request.headers": {"origin": [origin]} if origin else {}, "cf.worker.upstream_zone": zone}
 
-    passes = [req("chat-api.impf.ai"), req("chat-api.impf.ai", "/v1/logs"), req("chat-api.impf.ai", "/v1/feedback"),
+    passes = [req("chat-api.impf.ai"), req("chat-api.impf.ai", "/v1/logs"), req("chat-api.impf.ai", "/v1/feedback"), req("chat-api.impf.ai", "/v1/activity"),
+              req("chat-api.impf.ai", "/v1/activity/health", "GET", origin=""),
               req("science.impf.ai", origin="https://science.impf.ai"),
               req("chat-api.impf.ai", zone="impf.ai"), req("chat-api.impf.ai", "/v1/health", "GET", origin=""),
               req("science.impf.ai", "/v1/health", "GET", origin=""), req("chat.impf.ai", "/", "GET", origin="", zone="someone.workers.dev"),
@@ -354,6 +356,7 @@ def test_the_relays_take_nothing_another_zones_worker_forwards():
               req("science.impf.ai", "/", "GET", origin="")]
     blocked = [req("chat-api.impf.ai", origin="https://example.com"), req("chat-api.impf.ai", origin=""),
                req("chat-api.impf.ai", "/v1/logs", origin="https://example.com"), req("chat-api.impf.ai", "/v1/feedback", origin=""),
+               req("chat-api.impf.ai", "/v1/activity", origin="https://example.com"), req("chat-api.impf.ai", "/v1/activity", origin=""),
                req("chat-api.impf.ai", zone="someone.workers.dev"),
                req("science.impf.ai", origin="https://science.impf.ai", zone="proxy.example.com"),
                req("science.impf.ai", "/v1/models", "GET", origin="", zone="someone.workers.dev"),

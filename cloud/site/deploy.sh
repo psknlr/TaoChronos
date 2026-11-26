@@ -6,7 +6,9 @@
 # store is uploaded into); SITE_URL; STORE_TOKEN_SHA256 (optional: the sha256 of a store upload token, in place of
 # wrangler.toml's); CORPUS_DEPLOYED=1 when the corpus's container has just been deployed (otherwise the KV namespace says
 # whether it is); ARCHIVE_BUCKET (optional: the private R2 bucket the sentinel's events are drained into instead of the
-# repository — security/bind-archive.sh).  The wrangler it runs is the one package-lock.json names, installed here.
+# repository — security/bind-archive.sh); ACTIVITY_KEY (optional, 32+ characters: the activity ledger's key — with it the
+# Worker is bound to the ledger's registry, a D1 database, and gives visitors their ids: security/bind-ledger.sh).  The
+# wrangler it runs is the one package-lock.json names, installed here.
 set -euo pipefail
 cd "$(dirname "$0")"
 # wrangler and every package under it exactly as package-lock.json has them (versions and integrity hashes), with no
@@ -82,6 +84,8 @@ fi
 
 # the archive's private bucket, when the owner named one and it is private (docs/adr/0023-workers-paid.md)
 UA="$UA" bash ../../security/bind-archive.sh wrangler.deploy.toml
+# the activity ledger's registry, when the owner switched the ledger on (security/README.md, 活动账本)
+UA="$UA" bash ../../security/bind-ledger.sh wrangler.deploy.toml
 
 # ---------------------------------------------------------------- deploy
 set +e
@@ -111,6 +115,11 @@ if [ "${#stats}" -ge 16 ]; then
   printf '%s' "$stats" | npx --no -- wrangler secret put STATS_TOKEN --config wrangler.deploy.toml
 elif [ -n "$stats" ]; then
   echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"
+fi
+# the activity ledger's key, once the Worker has its registry: the same key as the relay's, and one that must stay what
+# it is — with another, every browser is a new visitor (security/visitor.js)
+if grep -q 'binding = "ACTIVITY_DB"' wrangler.deploy.toml; then
+  printf '%s' "${ACTIVITY_KEY:-}" | tr -d '[:space:]' | npx --no -- wrangler secret put ACTIVITY_KEY --config wrangler.deploy.toml
 fi
 
 # ---------------------------------------------------------------- check the site over HTTPS

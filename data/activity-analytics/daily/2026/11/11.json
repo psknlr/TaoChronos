@@ -1,0 +1,61 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 19
+   },
+   "by_provider": {
+    "impf": 19
+   },
+   "by_status": {
+    "done": 19
+   },
+   "feedback": {
+    "up": 1
+   },
+   "model_calls": 218,
+   "questions": 19,
+   "tokens_in": 9835469,
+   "tokens_out": 348744,
+   "tool_calls": 547,
+   "tools": {
+    "analysis.formula_evolution": 1,
+    "audit.claim": 1,
+    "classics.canon": 2,
+    "classics.get_passage": 235,
+    "classics.list_books": 22,
+    "classics.search": 161,
+    "kg.claims": 3,
+    "kg.term": 6,
+    "modern.safety": 9,
+    "study.acupoints": 1,
+    "study.acupuncture_reason": 16,
+    "study.commentaries": 7,
+    "study.compare": 1,
+    "study.concordance": 1,
+    "study.family": 4,
+    "study.formula": 27,
+    "study.herb": 12,
+    "study.incompat": 2,
+    "study.network": 7,
+    "study.pairs": 2,
+    "study.properties": 1,
+    "study.term": 8,
+    "study.translate": 2,
+    "study.usage": 7,
+    "taochronos_catalog": 5,
+    "taochronos_research": 2,
+    "validation.verify_quote": 2
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-11",
+  "label": "2026-11-11",
+  "to": "2026-11-11"
+ },
+ "v": 1
+}

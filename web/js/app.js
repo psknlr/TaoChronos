@@ -14,6 +14,7 @@ import { activeProvider, allProviders, loadProviders, loadSettings, modelLabel, 
 import { ACCEPT, brief, cacheList, cachedList, DATA_NOTICE, isMine, MAX_BYTES, noticeSeen, personal, setNoticeSeen, sizeLabel }
   from "./mydata.js";
 import { consent, feedbackRecord, NOTICE, REASONS, setConsent, timings } from "./records.js";
+import * as telemetry from "./telemetry.js";
 import { callDiet, DIET_TOOLS, isDiet } from "./diet/tools.js";
 import { DIET_PROMPT } from "./diet/prompt.js";
 import { DIET_MODE, healthConv, healthText, isDietMode } from "./diet/privacy.js";
@@ -567,10 +568,14 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
   // the default service by its own model names only (Tao-R1, or the second model it offers by its public name)
   msg.model = provider.relay ? provider.model || ASSISTANT : provider.model;
   if (provider.relay && provider.model && provider.model !== ASSISTANT) msg.publicModel = true; // a name the service gave: kept (publicConversation)
-  if (provider.relay && Number(relayQuestions()[provider.model]) > 0) {
-    // a model limited in questions: each call of this turn names it, so the turn counts once however many rounds it
-    // takes (relay/src/relay.js, questionOf).  Only for such a model — a relay older than it would refuse the header
-    provider.headers = { ...(provider.headers || {}), "X-Tao-Turn": msg.id };
+  if (provider.relay) {
+    // each call of this turn names it, so the turn counts once however many rounds it takes: for a model limited in
+    // questions (relay/src/relay.js, questionOf) and for the site's counts (relay/src/gate.js).  Only where the relay
+    // says it takes the name, or limits the model in questions — a relay older than either would refuse the header.
+    // With the name, this browser's pass for the site's activity ledger, unless the conversation touches the visitor's
+    // own health or data (telemetry.js)
+    const named = Boolean(S.relay?.activity?.turn) || Number(relayQuestions()[provider.model]) > 0;
+    provider.headers = { ...(provider.headers || {}), ...telemetry.turnHeaders(msg.id, { named, unnamed: unnamed(conv) }) };
   }
   msg.provider = provider.id;
   const started = Date.now();
@@ -636,7 +641,29 @@ async function runAssistant(conv, msg, { resume = null } = {}) {
     }
     renderComposer();
     recordTurn(conv, msg, { started, trace, was, ...page });
+    reportTurn(conv, msg, provider, trace);
   }
+}
+
+/** A conversation whose turns are counted for no one: it touches the visitor's own data or their health. */
+const unnamed = (conv) => personal(conv) || healthConv(conv) || isDietMode(conv);
+
+/** A turn's end, in counts, for the site's activity ledger — where the site has one and the visitor has not switched
+ * the count off (telemetry.js).  Whatever the provider: a question asked of the visitor's own model is counted by this
+ * alone.  Nothing of what was asked or answered. */
+function reportTurn(conv, msg, provider, trace = null) {
+  try {
+    const idx = conv.messages.indexOf(msg);
+    const now = runtimeNow();
+    const collecting = Boolean(S.relay?.ok && S.relay.logs);
+    telemetry.report(telemetry.turnEnd({
+      id: msg.id, provider, status: msg.status, rounds: msg.rounds, usage: msg.usage, ms: msg.ms, trace,
+      module: isDietMode(conv) ? "diet" : personal(conv) ? "mydata" : "chat",
+      turnIndex: conv.messages.slice(0, idx).filter((m) => m.role === "user").length,
+      consent: collecting ? consent() === true && !personal(conv) && !healthConv(conv) : undefined,
+      runtime: now.runtime, corpus: now.corpus, unnamed: unnamed(conv),
+    }));
+  } catch { /* not the visitor's concern */ }
 }
 
 /** Two turns' tokens (or one's, the other none) added up. */
@@ -692,6 +719,7 @@ async function answerFixed(conv, msg, text) {
     renderSidebar();
   }
   recordTurn(conv, msg);
+  reportTurn(conv, msg, { id: FIXED_ID, fixed: true });
 }
 
 // the states of a call the turn still waits for (a research run left to go on by itself, "background", it does not)
@@ -1867,10 +1895,13 @@ async function checkRelay(timeouts) {
   }
   if (j?.ok) {
     Object.assign(S.relay, { ok: true, model: j.model, models: j.models, default: j.default, logs: Boolean(j.logs), feedback: Boolean(j.feedback),
-      sponsor: Boolean(j.sponsor), limits: j.limits, maxOutput: Number(j.max_output_tokens) || null });
+      sponsor: Boolean(j.sponsor), limits: j.limits, maxOutput: Number(j.max_output_tokens) || null,
+      activity: j.activity && typeof j.activity === "object" ? j.activity : null }); // what the page may send of its own use (telemetry.js)
   }
   delete S.relay.pending;
   setRelay(S.relay);
+  telemetry.setRelay(S.relay);
+  telemetry.hello(); // (asks nothing where the site keeps no ledger, or the visitor switched the count off)
   // a visitor without a model of their own asks through it; one who chose it falls back while it is down
   if (S.relay.ok && needsKey()) S.settings.provider = RELAY_ID;
   else if (!S.relay.ok && S.settings.provider === RELAY_ID) S.settings.provider = allProviders(S.settings).find((p) => !p.relay)?.id;
@@ -2147,6 +2178,17 @@ const settingsCtx = {
   },
   consent,
   setConsent(agreed) { setConsent(agreed); toast(agreed ? T("已同意记录") : T("已停止记录")); },
+  // the site's count of visits and questions (telemetry.js): what it is here, the visitor's switch, and their erasure
+  activity: {
+    status: telemetry.status,
+    held: telemetry.held,
+    async set(on) { const now = await telemetry.setSending(on); toast(on ? T("已开启访问统计") : T("已关闭访问统计：本浏览器不再有匿名编号")); return now; },
+    async forget() {
+      const done = await telemetry.forget();
+      toast(done === null ? T("暂时无法删除，请稍后再试") : done ? T("已删除本站关于此编号的全部记录，并关闭了访问统计") : T("本站没有关于此浏览器的记录；访问统计已关闭"));
+      return done;
+    },
+  },
   exportAll() {
     download(T`TaoChronos-对话-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "TaoChronos", version: 1, exported: new Date().toISOString(), conversations: S.list }, null, 1), "application/json");
   },

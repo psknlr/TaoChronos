@@ -1,0 +1,44 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 13
+   },
+   "by_provider": {
+    "impf": 13
+   },
+   "by_status": {
+    "done": 10,
+    "error": 2,
+    "stopped": 1
+   },
+   "model_calls": 86,
+   "questions": 13,
+   "tokens_in": 1822133,
+   "tokens_out": 48894,
+   "tool_calls": 221,
+   "tools": {
+    "classics.canon": 2,
+    "classics.get_passage": 69,
+    "classics.list_books": 4,
+    "classics.search": 125,
+    "kg.term": 4,
+    "study.concordance": 1,
+    "study.formula": 7,
+    "study.herb": 4,
+    "study.network": 1,
+    "study.term": 1,
+    "validation.verify_quote": 3
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-10-10",
+  "label": "2026-10-10",
+  "to": "2026-10-10"
+ },
+ "v": 1
+}

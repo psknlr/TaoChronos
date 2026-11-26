@@ -1,0 +1,58 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 7
+   },
+   "by_provider": {
+    "impf": 7
+   },
+   "by_status": {
+    "done": 5,
+    "error": 2
+   },
+   "model_calls": 79,
+   "questions": 7,
+   "tokens_in": 2972905,
+   "tokens_out": 134347,
+   "tool_calls": 163,
+   "tools": {
+    "bridge.map": 1,
+    "bridge.phenotype": 1,
+    "bridge.reverse": 4,
+    "classics.get_passage": 21,
+    "classics.list_books": 8,
+    "classics.search": 50,
+    "kg.term": 2,
+    "literature.modern_evidence": 4,
+    "modern.safety": 2,
+    "modern.search": 6,
+    "rwd.ask": 2,
+    "study.acupoints": 1,
+    "study.acupuncture_reason": 13,
+    "study.case": 3,
+    "study.casefind": 6,
+    "study.commentaries": 2,
+    "study.compare": 2,
+    "study.family": 2,
+    "study.formula": 4,
+    "study.herb": 1,
+    "study.network": 3,
+    "study.pairs": 2,
+    "study.properties": 2,
+    "study.term": 2,
+    "taochronos_call": 3,
+    "taochronos_catalog": 16
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-03",
+  "label": "2026-11-03",
+  "to": "2026-11-03"
+ },
+ "v": 1
+}

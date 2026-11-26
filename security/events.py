@@ -9,8 +9,15 @@
            browser is made of (/runtime/…: the package, its home, the corpus, what it starts with) are counted too,
            served or not: a day's totals by file, status and kind of agent, with the bytes sent — and no address,
            these being every reader's own downloads; an address is kept with them only when what fetched them is not a
-           browser, or fetched one ARTIFACT_VOLUME times in the day
+           browser, or fetched one ARTIFACT_VOLUME times in the day.  And, where the zone offers it, every request of
+           the day whatever became of it (kind: traffic): a total by host, country and status — what a Worker saw and
+           what it never did (a file served past it, a request the edge refused) — with no address, no path and no
+           agent: the measure the activity ledger's own counts are set against (security/activity.py)
   suspects the suspects, printed
+
+A group is counted over the whole day: the API is asked in windows of a few hours, and the same group in two of them is
+one line with their sum.  A day pulled again (it was pulled before it was over, or a window had filled its page) takes
+the larger count of each line, and adds what it did not have.
 
 Environment: CLOUDFLARE_ANALYTICS_TOKEN — a read-only token with Zone → Analytics: Read on impf.ai (never the deploy
 token); CLOUDFLARE_ZONE_ID.  The first query asks the zone what its plan exposes of each node (the fields, how far back,
@@ -42,6 +49,8 @@ FIREWALL_FIELDS = ["datetime", "action", "source", "kind", "ruleId", "descriptio
                    "originResponseStatus", "sampleInterval"]
 REQUEST_DIMENSIONS = ["clientIP", "userAgent", "clientRequestPath", "clientRequestHTTPHost", "clientRequestHTTPMethodName", "edgeResponseStatus",
                       "clientAsn", "clientASNDescription", "clientCountryName", "clientRequestHTTPProtocol", "securityAction", "securitySource"]
+# every request of a day, by what a total may be split by and still be nobody's: where it came from and how it was answered
+TRAFFIC_DIMENSIONS = ["clientCountryName", "edgeResponseStatus"]
 
 SCANNER_PATH = re.compile(r"wp-|wordpress|/\.git|/\.env|/\.aws|/\.svn|phpmyadmin|xmlrpc|/cgi-bin/|/actuator|/boaform|/hnap1|eval-stdin|phpinfo|"
                           r"/server-status|\.(?:php|phtml|asp|aspx|jsp|cgi|bak|sql|old|swp|rar|7z)$|/\.\./|%2e%2e|%00", re.I)
@@ -153,15 +162,17 @@ def firewall_events(token: str, zone: str, start: str, end: str, fields: list[st
 
 
 def request_groups(token: str, zone: str, windows: list[tuple[str, str]], host: str, dims: list[str], page: int,
-                   sampled: bool = True, eyeball: bool = True, summed: bool = False) -> tuple[list[dict], bool]:
+                   sampled: bool = True, eyeball: bool = True, summed: bool = False, visits: bool = False) -> tuple[list[dict], bool]:
     """The request groups of the windows (a group node cannot be paged, so they are narrow: four hours at most);
     (groups, complete) — not complete when a window filled its page.  sampled: ask for the sample interval (a group's
     count is of the sampled requests); eyeball: only what visitors asked, not the Workers' own fetches; summed: ask
-    for the bytes sent in answer."""
+    for the bytes sent in answer; visits: and for the visits Cloudflare counts among them (a page come to from
+    elsewhere)."""
     where = "datetime_geq: $start, datetime_lt: $end, " + ('requestSource: "eyeball", ' if eyeball else "") + "clientRequestHTTPHost: $host"
+    sums = " ".join(f for f, on in (("edgeResponseBytes", summed), ("visits", visits)) if on)
     q = ("query($zone: string, $start: Time, $end: Time, $host: string, $limit: Int) { viewer { zones(filter: {zoneTag: $zone}) { "
          f"httpRequestsAdaptiveGroups(filter: {{{where}}}, limit: $limit, orderBy: [count_DESC]) "
-         f"{{ count {'avg { sampleInterval } ' if sampled else ''}{'sum { edgeResponseBytes } ' if summed else ''}"
+         f"{{ count {'avg { sampleInterval } ' if sampled else ''}{f'sum {{ {sums} }} ' if sums else ''}"
          f"dimensions {{ {' '.join(dims)} }} }} }} }} }}")
     out: list[dict] = []
     complete = True
@@ -236,14 +247,30 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
 
     path = out / day.strftime("%Y") / day.strftime("%m") / f"{day.strftime('%d')}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    seen = set()
+    # what is kept of the day already, by its key and in its order: a line pulled again is replaced when the new count
+    # is the larger (the day was pulled before it was over), and what is new is added after
+    held: dict[str, dict] = {}
     if path.is_file():
         for line in path.read_text(encoding="utf-8").splitlines():
             try:
-                seen.add(json.loads(line).get("key"))
+                e = json.loads(line)
             except json.JSONDecodeError:
                 continue
-    lines = []
+            if isinstance(e, dict) and e.get("key"):
+                held[e["key"]] = e
+    seen = set(held)
+    changed = False
+
+    def keep(line: dict, counted: str) -> None:
+        """A counted line (its number under "requests") into the day: new, or over the one kept when it counts more."""
+        nonlocal changed
+        old = held.get(line["key"])
+        if old is not None and int(old.get("requests") or 0) >= int(line.get("requests") or 0):
+            return
+        held[line["key"]] = line
+        seen.add(line["key"])
+        changed = True
+        kept[counted] = kept.get(counted, 0) + 1
     fields = capped(offered(FIREWALL_FIELDS, fw), fw)
     begin = within(fw, "firewall events") if fw.get("enabled") and "datetime" in fields else None
     if not fw.get("enabled"):
@@ -265,7 +292,8 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
             seen.add(key)
             if ev.get("clientRequestPath"):
                 ev = {**ev, "clientRequestPath": kept_path(ev["clientRequestPath"])}
-            lines.append(json.dumps({"key": key, "kind": "firewall", "day": the_day, **ev}, ensure_ascii=False, sort_keys=True))
+            held[key] = {"key": key, "kind": "firewall", "day": the_day, **ev}
+            changed = True
             kept["events"] += 1
     sampled = bool(offered(["sampleInterval"], rq, "avg"))
     summed = bool((rq.get("availableFields") or []) and offered(["edgeResponseBytes"], rq, "sum"))  # asked only where listed
@@ -303,43 +331,73 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
                 t["bytes"] += int((row.get("sum") or {}).get("edgeResponseBytes") or 0)
                 t["addresses"].add(d.get("clientIP"))
             for (asked, status, method, agent), t in sorted(totals.items()):
-                key = f"art:{host}:{asked}:{status}:{method}:{agent}"
-                if key in seen:
-                    continue
-                seen.add(key)
-                line = {"key": key, "kind": "artifacts", "day": the_day, "host": host, "path": asked, "status": status, "method": method,
-                        "agent": agent, "requests": t["requests"], "addresses": len(t["addresses"] - {None}), "complete": complete}
+                line = {"key": f"art:{host}:{asked}:{status}:{method}:{agent}", "kind": "artifacts", "day": the_day, "host": host, "path": asked, "status": status,
+                        "method": method, "agent": agent, "requests": t["requests"], "addresses": len(t["addresses"] - {None}), "complete": complete}
                 if summed:
                     line["bytes"] = t["bytes"]
-                lines.append(json.dumps(line, ensure_ascii=False, sort_keys=True))
-                kept["artifacts"] = kept.get("artifacts", 0) + 1
+                keep(line, "artifacts")
+            # a group over the whole day: the same address, agent, path, status and method in several windows is one
+            # group, with their requests added up (it was kept as the first window's alone, and judged by it: an address
+            # asking two hundred times in each of three windows was under the day's three hundred)
+            whole: dict[tuple, dict] = {}
             for row in groups:
                 act = str(row["dimensions"].get("securityAction") or "")
                 actions[act] = actions.get(act, 0) + 1
                 d = row["dimensions"]
-                volume = volume_of(row)
+                g = whole.setdefault(tuple(str(d.get(k) or "") for k in dims), {"dimensions": d, "requests": 0, "bytes": 0})
+                g["requests"] += volume_of(row)
+                g["bytes"] += int((row.get("sum") or {}).get("edgeResponseBytes") or 0)
+            for g in whole.values():
+                d = g["dimensions"]
                 took = fetched.get((str(d.get("clientIP") or ""), d.get("clientRequestPath") or ""), 0)
-                why = worth(row, volume, took)
+                why = worth(g, g["requests"], took)
                 if not why:
                     continue
                 d = {**d, "clientRequestPath": kept_path(d.get("clientRequestPath") or "")}  # the key is kept too
                 key = "rq:" + ":".join(str(d.get(k) or "") for k in ("clientIP", "userAgent", "clientRequestPath", "edgeResponseStatus", "clientRequestHTTPMethodName")) + f":{host}"
-                if key in seen:
-                    continue
-                seen.add(key)
-                line = {"key": key, "kind": "requests", "day": the_day, "requests": volume, "why": why, **d}
+                line = {"key": key, "kind": "requests", "day": the_day, "requests": g["requests"], "why": why, **d}
                 if took:
-                    line["fetched"] = took  # the day's count for this address and file (requests: the first window's)
+                    line["fetched"] = took  # the day's count for this address and file
                 if summed:
-                    line["bytes"] = int((row.get("sum") or {}).get("edgeResponseBytes") or 0)
-                lines.append(json.dumps(line, ensure_ascii=False, sort_keys=True))
-                kept["requests"] += 1
+                    line["bytes"] = g["bytes"]
+                keep(line, "requests")
+            # every request of the day, whatever became of it: a total by country and status, with nothing of who
+            try:
+                traffic(token, zone, windows, host, rq, page, sampled, eyeball, the_day, keep, kept)
+            except SystemExit as err:  # the zone's plan may not take the question: the day is kept without it
+                kept["skipped"].append(f"traffic of {host}: not asked ({str(err)[:160]})")
         kept["security_actions_seen"] = actions  # what the zone reports as 'no action': checked once against what worth() ignores
-    if lines:
-        with path.open("a", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
+    if changed:
+        path.write_text("".join(json.dumps(e, ensure_ascii=False, sort_keys=True) + "\n" for e in held.values()), encoding="utf-8")
     kept["suspects"] = len(suspects(out, write=True))
     return kept
+
+
+def traffic(token: str, zone: str, windows: list[tuple[str, str]], host: str, rq: dict, page: int, sampled: bool, eyeball: bool, the_day: str, keep, kept: dict) -> None:
+    """A host's requests of the day by country and status (kind: traffic), where the zone offers both: the requests,
+    the bytes and Cloudflare's own count of visits where it lists them.  No address, no path, no agent."""
+    dims = offered(TRAFFIC_DIMENSIONS, rq, "dimensions")
+    if len(dims) != len(TRAFFIC_DIMENSIONS) or not (rq.get("availableFields") or []):
+        kept["skipped"].append(f"traffic of {host}: the zone does not list the country and the status of a request")
+        return
+    summed = bool(offered(["edgeResponseBytes"], rq, "sum"))
+    visits = bool(offered(["visits"], rq, "sum"))
+    groups, complete = request_groups(token, zone, windows, host, dims, page, sampled, eyeball, summed, visits)
+    whole: dict[tuple[str, int], dict] = {}
+    for row in groups:
+        d = row.get("dimensions") or {}
+        t = whole.setdefault((str(d.get("clientCountryName") or "XX"), int(d.get("edgeResponseStatus") or 0)), {"requests": 0, "bytes": 0, "visits": 0})
+        t["requests"] += int(round((row.get("count") or 0) * float((row.get("avg") or {}).get("sampleInterval") or 1)))
+        t["bytes"] += int((row.get("sum") or {}).get("edgeResponseBytes") or 0)
+        t["visits"] += int((row.get("sum") or {}).get("visits") or 0)
+    for (country, status), t in sorted(whole.items()):
+        line = {"key": f"tr:{host}:{country}:{status}", "kind": "traffic", "day": the_day, "host": host, "country": country, "status": status,
+                "requests": t["requests"], "complete": complete}
+        if summed:
+            line["bytes"] = t["bytes"]
+        if visits:
+            line["visits"] = t["visits"]
+        keep(line, "traffic")
 
 
 # ---------------------------------------------------------------- the suspects
@@ -442,7 +500,7 @@ def main(argv: list[str] | None = None) -> None:
         result = pull(token, zone, day, out, [h.strip() for h in args.hosts.split(",") if h.strip()])
         for note in result.pop("skipped"):
             print(f"::notice::{note}")
-        new += result["events"] + result["requests"] + result.get("artifacts", 0)
+        new += result["events"] + result["requests"] + result.get("artifacts", 0) + result.get("traffic", 0)
         print(json.dumps({"day": day.strftime("%Y-%m-%d"), **result}, ensure_ascii=False))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:

@@ -122,6 +122,7 @@ D1 · Edit；`r2/buckets`：缺 R2 权限（只有归档需要）。这些正是
 | `LOG_EXPORT_TOKEN` | 16 位以上随机串：`openssl rand -hex 32` | 需要 |
 | `SENTINEL_SALT` | `openssl rand -hex 32` | 建议 |
 | `STATS_TOKEN` | 16 位以上随机串 | 可选（「设置 → 统计」） |
+| `ACTIVITY_KEY` | 32 位以上随机串：`openssl rand -hex 32`——**设了就不要再改**。启用活动账本：不同的访客、访问、每一个提问、模型用量（[security/README.md](../security/README.md)「活动账本」；[ADR 0035](adr/0035-the-activity-ledger.md)）。部署令牌要能用 D1 | 可选 |
 | `CLOUDFLARE_SECURITY_TOKEN` | Zone WAF、Zone Settings、Bot Management：Edit；Zone：Read；Account Filter Lists：Edit（区域 `impf.ai`） | 边缘规则需要 |
 | `CLOUDFLARE_ANALYTICS_TOKEN` | Zone Analytics：Read（区域 `impf.ai`） | 每天取回边缘事件需要 |
 

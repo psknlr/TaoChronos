@@ -410,6 +410,7 @@ function dataPane(d, S, ctx) {
   const collecting = Boolean(S.relay?.ok && S.relay.logs);
   const agree = h("input", { type: "checkbox", checked: ctx.consent() === true });
   agree.addEventListener("change", () => ctx.setConsent(agree.checked));
+  const counted = ctx.activity?.status?.() || { ledger: false };
   return [
     h("h3", T("数据")),
     h("p.lead", T("对话保存在本浏览器（IndexedDB）。换设备或清理浏览器数据前，请先导出。"),
@@ -418,6 +419,7 @@ function dataPane(d, S, ctx) {
       collecting ? h("div.field", h("span.lb", T("对话记录（测试期间）")),
         h("label.check", agree, h("span", T("同意记录我的对话，用于测试和改进（立即生效）"))),
         h("div.help", ...NOTICE.map((t) => h("div", t)))) : null,
+      counted.ledger ? countField(ctx, counted) : null,
       h("div.chips",
         h("button.btn.secondary", { type: "button", on: { click: ctx.exportAll } }, icon("download", "sm"), T("导出全部对话（JSON）")),
         h("button.btn.secondary", { type: "button", on: { click: () => file.click() } }, icon("upload", "sm"), T("导入对话")), file,
@@ -426,6 +428,36 @@ function dataPane(d, S, ctx) {
         h("button.btn.secondary", { type: "button", on: { click: () => { d.keys = {}; ctx.toast(T("已清除表单中的全部密钥，保存后生效")); } } }, icon("key", "sm"), T("清除所有 API Key")),
         h("button.btn.danger", { type: "button", on: { click: ctx.clearAll } }, icon("trash", "sm"), T("删除全部对话")))),
   ];
+}
+
+/**
+ * 访问统计: what the site counts of this browser (telemetry.js; security/ledger.js on the site), and the visitor's own
+ * switches — the count off or on, and everything held under this browser's id deleted.  Shown where the site keeps an
+ * activity ledger.
+ */
+function countField(ctx, counted) {
+  const on = h("input", { type: "checkbox", checked: counted.on, disabled: counted.declined });
+  const id = h("div.help");
+  const said = (now) => {
+    on.checked = now.on;
+    id.replaceChildren(now.visitor ? T`本浏览器的匿名编号：${now.visitor}` : "");
+  };
+  said(counted);
+  on.addEventListener("change", async () => { on.disabled = true; try { said(await ctx.activity.set(on.checked)); } finally { on.disabled = counted.declined; } });
+  const forget = h("button.btn.secondary", { type: "button" }, icon("trash", "sm"), T("删除本站关于此编号的全部记录"));
+  forget.addEventListener("click", async () => {
+    if (!confirm(T("删除本站关于这个匿名编号的全部记录，并关闭访问统计？此操作不可撤销。"))) return;
+    forget.disabled = true;
+    try { await ctx.activity.forget(); said(ctx.activity.status()); } finally { forget.disabled = false; }
+  });
+  return h("div.field", h("span.lb", T("访问统计")),
+    h("label.check", on, h("span", T("用一个匿名编号统计我的访问与提问次数（立即生效）"))),
+    h("div.help",
+      h("div", T("本站统计网页打开、提问与模型调用的次数，以及国家/省份、浏览器种类等概况，用于了解使用情况。不保存网络地址，不含问题和回答，也无法得知哪位访客问了什么。")),
+      h("div", T("匿名编号保存在本站的一个 Cookie 里，13 个月后失效，不用于其他网站。关闭后本浏览器不再有编号，使用自己的模型时也不再上报提问次数。")),
+      counted.declined ? h("div", T("你的浏览器已要求不被跟踪（GPC / DNT）：本站不为它分配编号。")) : null),
+    id,
+    h("div.chips", forget));
 }
 
 // ------------------------------------------------------------------ about
@@ -442,7 +474,8 @@ function aboutPane(d, S) {
         h("div", h("b", T("非医疗建议：")), T("本系统不提供诊断、处方或剂量建议；历代度量衡换算只是历史读法。计算得到的关联与假说须经专家核验。")),
         h("div", h("b", T("隐私：")), T("对话与密钥保存在本浏览器。使用道乃久默认服务时，你的问题经"), PUBLISHER, T("的服务交由大语言模型处理，该服务不保存请求内容；"),
           T("只有在你同意后，每轮问答才另记录一份到"), PUBLISHER, T("的服务器，用于测试（设置 → 数据）。使用自己的 API Key 时，请求直接发往你选择的服务，或经你本机的服务转发。"),
-          S.relay?.ok && S.relay.feedback ? T("你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。") : null))),
+          S.relay?.ok && S.relay.feedback ? T("你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。") : null,
+          S.relay?.ok && S.relay.activity?.beacon ? T("本站另以匿名编号统计访问与提问的次数（不含问题和回答，不保存网络地址），可在“设置 → 数据”里关闭或删除。") : null))),
       h("div.muted", { style: { fontSize: "13px", lineHeight: "1.8" } },
         T`${AGENT} · ${ASSISTANT} · ${AGENT_EN} ${info?.version || "?"} · ${PUBLISHED_BY} · 运行环境 ${info?.runtime === "server" ? S.runtime?.label || T("服务") : T("内置")}`)),
   ];

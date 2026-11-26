@@ -199,6 +199,19 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 停用：删除仓库变量 `ARCHIVE_BUCKET`，重新部署两个 Worker；chat-logs 工作流从上次的游标继续收进仓库（编号不会重复），存储桶里已有的不动。
 已提交在 `data/chat-logs/`、`data/security-logs/` 里的旧记录仍在仓库历史中，要清除须另行决定、另行操作。
 
+## 可选：活动账本（访客、访问、全部提问与模型用量的统计）
+
+中转与网站可以把每个请求记成一条**不含地址**的事件，用来数不同的访客、回访、每一个提问（包括访客没同意记录的、用自己模型问的）、
+模型调用与 token（[ADR 0035](../docs/adr/0035-the-activity-ledger.md)；做什么、不做什么、怎么关，见
+[security/README.md](../security/README.md)「活动账本」）。启用只要一步：
+
+1. 仓库 Secret **`ACTIVITY_KEY`**（`openssl rand -hex 32`；**设了就不要再改**）。
+2. 重新运行 relay 与 site 工作流：它们各自找到或创建 D1 数据库 `taochronos-activity` 并绑定（令牌要有 Account · D1 · Edit）。
+3. Actions → security → Run workflow（`plan`，再 `apply`）：让边缘也只放行网页来源的 `POST /v1/activity`。
+
+没有这个 Secret，中转不记任何账本事件。不论有没有账本，中转现在都按**轮**数提问：网页给每一轮起名字（`X-Tao-Turn`），
+一轮里的工具轮、自查重写、接着写与重试都不再各算一次提问——此前「设置 → 统计」里的提问数因此偏多。
+
 ## 可选：第二个模型 GPT-6 Luna（OpenAI）
 
 1. 在 [platform.openai.com](https://platform.openai.com) → **API keys** → **Create new secret key**，名称填 `taochronos-relay`，

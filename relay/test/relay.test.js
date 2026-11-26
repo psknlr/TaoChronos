@@ -1478,8 +1478,8 @@ test("the relay says what the page may send: a turn's name always; a visitor's p
   const bare = await (await relay().call("/v1/health")).json();
   assert.deepEqual(bare.activity, { turn: true });
   const r = withLedger();
-  assert.deepEqual((await (await r.call("/v1/health")).json()).activity, { turn: true, visitor: true, beacon: true });
-  assert.deepEqual((await (await withLedger({ env: { ACTIVITY_IDS: "off" } }).call("/v1/health")).json()).activity, { turn: true, visitor: false, beacon: true });
+  assert.deepEqual((await (await r.call("/v1/health")).json()).activity, { turn: true, beacon: true, ids: "notice" });
+  assert.deepEqual((await (await withLedger({ env: { ACTIVITY_IDS: "off" } }).call("/v1/health")).json()).activity, { turn: true, beacon: true, ids: "off" });
   assert.deepEqual((await (await relay({ env: { ACTIVITY_KEY } }).call("/v1/health")).json()).activity, { turn: true }); // the key without the registry: no ledger
   const preflight = await r.call("/v1/chat/completions", { method: "OPTIONS", headers: { Origin: PAGE, "Access-Control-Request-Headers": "x-tao-turn,x-tao-visitor" } });
   assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /X-Tao-Turn, X-Tao-Visitor/);
@@ -1654,4 +1654,13 @@ test("a request the relay only noted — a path that is not there, a caller that
   const events = r.events();
   assert.deepEqual(events.map((e) => [e.event_type, e.route, e.status, e.traffic_class, e.visitor_id, e.n]),
     [["request", "other", 404, "automation", null, 1], ["request", "/v1/chat/completions", 403, "automation", null, 1]]);
+}));
+
+test("the ledger does not depend on the sentinel: with the sentinel off a question is still written down, with where it came from", () => quiet(async () => {
+  const r = withLedger({ env: { SENTINEL: "off" }, upstream: () => usageStream() });
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": "m_quiet", "X-Tao-Visitor": await passFor(visitorOf(9), ACTIVITY_KEY, T1) }))).text();
+  await r.settle();
+  const [q] = r.events();
+  assert.deepEqual([q.event_type, q.visitor_id, q.country, q.region, q.browser_family, q.traffic_class, q.risk_score], ["question_submitted", visitorOf(9), "CN", "GD", "Chrome", "human", 0]);
+  assert.equal(r.watch.summary(T1).visitors, 0); // the sentinel kept nothing
 }));

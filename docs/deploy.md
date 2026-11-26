@@ -130,6 +130,7 @@ variables in the **Variables** tab.
 | `LOG_EXPORT_TOKEN` | 16+ random characters: `openssl rand -hex 32` | yes |
 | `SENTINEL_SALT` | `openssl rand -hex 32` | recommended |
 | `STATS_TOKEN` | 16+ random characters | optional (**设置 → 统计**) |
+| `ACTIVITY_KEY` | 32+ random characters: `openssl rand -hex 32` — **never change it once set**. Switches on the activity ledger: different visitors, visits, every question, model use ([security/README.md](../security/README.md), 活动账本; [ADR 0035](adr/0035-the-activity-ledger.md)). Needs D1 on the deploy token | optional |
 | `CLOUDFLARE_SECURITY_TOKEN` | Zone WAF, Zone Settings, Bot Management: Edit; Zone: Read; Account Filter Lists: Edit (zone `impf.ai`) | for the edge rules |
 | `CLOUDFLARE_ANALYTICS_TOKEN` | Zone Analytics: Read (zone `impf.ai`) | for the edge's daily events |
 

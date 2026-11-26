@@ -7,6 +7,9 @@ name: relay
 # tokens become secrets of the Worker; none is ever printed or written into the repository or the site.  Until they are set, this workflow
 # tests the relay and deploys nothing.  Optional repository variable: ARCHIVE_BUCKET, the private R2 bucket the records
 # and the sentinel's events are drained into instead of the repository (security/bind-archive.sh; relay/SETUP.md, 归档).
+# Optional repository secret: ACTIVITY_KEY (32+ characters), which switches the activity ledger on — the Worker is then
+# bound to its registry, the D1 database taochronos-activity (security/bind-ledger.sh; security/README.md, 活动账本; the
+# token needs Account → D1 → Edit).  Without it the relay keeps no ledger.
 on:
   push:
     branches: [main]
@@ -37,7 +40,7 @@ jobs:
         with:
           node-version: "22"
       - name: Test the relay and the sentinel
-        run: node --test relay/test/relay.test.js security/test/sentinel.test.js security/test/archive.test.js
+        run: node --test relay/test/relay.test.js security/test/sentinel.test.js security/test/archive.test.js security/test/visitor.test.js security/test/ledger.test.js
       - name: Are its secrets set?
         id: secrets
         env:
@@ -80,12 +83,16 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPONSOR_SECRET: ${{ secrets.SPONSOR_SECRET }}
           ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
+          ACTIVITY_KEY: ${{ secrets.ACTIVITY_KEY }}
+          ACTIVITY_DB_NAME: ${{ vars.ACTIVITY_DB_NAME }}
           WRANGLER_SEND_METRICS: "false"
         # a space or line break pasted with a secret is not part of it (no value has any)
         run: |
           # the archive's private bucket, when the owner named one and it is private (security/bind-archive.sh)
           cp wrangler.toml wrangler.deploy.toml
           bash ../security/bind-archive.sh wrangler.deploy.toml
+          # the activity ledger's registry, when the owner switched the ledger on (security/bind-ledger.sh)
+          bash ../security/bind-ledger.sh wrangler.deploy.toml
           npx --no -- wrangler deploy --config wrangler.deploy.toml
           printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --no -- wrangler secret put MINIMAX_API_KEY --config wrangler.deploy.toml
           printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --no -- wrangler secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
@@ -102,6 +109,11 @@ jobs:
           sponsor="$(printf '%s' "$SPONSOR_SECRET" | tr -d '[:space:]')"
           if [ "${#sponsor}" -ge 32 ]; then printf '%s' "$sponsor" | npx --no -- wrangler secret put SPONSOR_SECRET --config wrangler.deploy.toml
           elif [ -n "$sponsor" ]; then echo "::warning::SPONSOR_SECRET is shorter than 32 characters: not set, sponsorship stays off (relay/SETUP.md)"; fi
+          # the activity ledger's key, once the Worker has its registry: visitors' ids are made with it, and the page's
+          # passes read with it — the same key as the site's (security/visitor.js), and one that must stay what it is
+          if grep -q 'binding = "ACTIVITY_DB"' wrangler.deploy.toml; then
+            printf '%s' "$ACTIVITY_KEY" | tr -d '[:space:]' | npx --no -- wrangler secret put ACTIVITY_KEY --config wrangler.deploy.toml
+          fi
       - name: Check it answers, and that MiniMax takes its key (one tiny call)
         if: steps.secrets.outputs.ready == '1'
         env:

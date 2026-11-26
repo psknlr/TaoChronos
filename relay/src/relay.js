@@ -380,7 +380,7 @@ async function activityOf(request, A, { who, messages, model }) {
   const out = { ...t, turnMs: A.lcfg.turnDays * 86400000 };
   if (!A.L) return out;
   const visitor = A.lcfg.ids === "off" ? null : await readPass(request.headers.get("X-Tao-Visitor") || "", A.lcfg.key, A.now);
-  return { ...out, ...written(A, { visitor, more: { provider: RELAY_PROVIDER, model } }) };
+  return { ...out, ...written(A, { fp: A.fp, visitor, more: { provider: RELAY_PROVIDER, model } }) };
 }
 
 /** How a call ended, for the ledger: told once the reply has gone (or could not), after the answer. */
@@ -428,8 +428,9 @@ function health(env, cfg, cors, now, A) {
     default: defaultModel(models, cfg, now), // what the page chooses for a visitor who has chosen none
     logs: cfg.logs, feedback: cfg.feedback, sponsor: cfg.sponsor && sponsorReady(env), max_output_tokens: cfg.maxTokens,
     // what the page may send besides its calls: its name for each turn (a question is then counted once however many
-    // calls it takes) and, with the ledger, its visitor's pass and a turn's end in counts (POST /v1/activity)
-    activity: { turn: true, ...(A?.L ? { visitor: A.lcfg.ids !== "off", beacon: true } : {}) },
+    // calls it takes) and, with the ledger, a turn's end in counts (POST /v1/activity) and its visitor's pass — ids:
+    // whether visitors have ids at all (notice: unless they switch it off; optin: once they switch it on; off: none)
+    activity: { turn: true, ...(A?.L ? { beacon: true, ids: A.lcfg.ids } : {}) },
     limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay,
       // a model counted in questions, not calls: questions per visitor per day
       ...(second ? { questions: { [second.publicModel]: second.questions.perDay } } : {}) },

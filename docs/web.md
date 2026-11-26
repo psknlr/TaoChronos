@@ -449,13 +449,39 @@ tools, the screening, the regions, the data and their sources, and the limits: [
 ## 设置 → 统计 — how much the site is used, and from where
 
 The site's owner reads the site's usage under **设置 → 统计**, over the last 7, 30 or 90 days: pages opened and their
-visitors (the site's Worker counts a page a browser opens — crawlers and scripts are not counted), questions asked of
-道乃久默认服务, the model calls they took and who asked (the relay counts each call it lets through; a tool round of a
-question is a call, not a question).  Four stat tiles with the change against the days before, a day-by-day line for
+visitors (the site's Worker counts a page a browser opens, one it already holds and asks about too — crawlers and
+scripts are not counted), questions asked of 道乃久默认服务, the model calls they took and who asked (the relay counts
+each call it lets through; a question is a turn: its tool rounds, the self-check's rewrite, an answer written on and a
+call made again are calls of it, not questions — `relay/src/gate.js`).  Four stat tiles with the change against the days before, a day-by-day line for
 pages and one for questions, and the countries and China's provinces by pages opened — every chart switches to a table.
 A day runs on Beijing time.  Visitors are counted once a day by the sentinel's hashed key (dropped after two days); a
 place is the country and first-level region Cloudflare puts the request in (ISO 3166-2; the page names China's
 provinces); no address is kept (`security/usage.js`, `/api/stats` on the site, `/v1/stats` on the relay).
+
+Where the site keeps an **activity ledger** (`security/ledger.js`, [ADR 0035](adr/0035-the-activity-ledger.md); the
+owner switches it on with the repository secret `ACTIVITY_KEY`: [security/README.md](../security/README.md), 活动账本),
+the pane leads with the ledger's counts and gains two ranges — **全部** and any stretch between two dates.  Nine tiles:
+visitors (the *different* visitors of the whole stretch, never the days' counts added up), visits, pages opened,
+questions, unrecorded questions, model calls, tokens, returning visitors, countries.  Then: active visitors by the day,
+over seven days and over thirty (one line, chosen in the card); who came back, by the week they first came, each cell
+shaded by its share; countries and China's provinces by visitors; what is used — tools, models, sections, runtimes — and
+by whom — devices, browsers, systems, languages, the sites they came from; how long a visit lasts; and what the
+requests were (visitors' browsers, crawlers, scripts, what the sentinel flagged or refused) with how complete the data is
+(pages the page itself confirmed, ids never brought back, where each question is known from).  The daily counts stay
+below it, as before: they reach further back than the ledger, and count a visitor anew each day.  A site without a
+ledger shows the pane as it was, with 全部 meaning the year the daily counts keep.
+
+**What the page sends for the ledger** (`web/js/telemetry.js`), and nothing a visitor wrote: once loaded on the site's
+own host it asks who this browser is to the ledger (`POST /api/activity/hello` — an id made from a cookie no script
+reads, and a day's pass for the relay); every call the relay makes for a turn carries the turn's name (`X-Tao-Turn`, so
+that a question is counted once however many calls it takes) and the pass (`X-Tao-Visitor`), unless the conversation
+touches the visitor's own health or data; and each turn's end is told to the relay in counts (`POST /v1/activity`: how it
+ended, its rounds, its tools by name, its tokens) — the only word of a question asked of a visitor's own model, which
+never passes the relay.  Never the question, the answer, a tool's arguments, a key, or the name of an endpoint or model
+the visitor set by hand.  **设置 → 数据 → 访问统计** is the visitor's switch: it shows their id, turns the count off (no
+hello, no pass, no end: the page then sends what it sent before there was a ledger) and deletes everything held under the
+id.  A browser that asks not to be tracked (Global Privacy Control, Do Not Track) is the switch already off.  The field
+appears only where the site has a ledger.
 
 The counts are read with a token: create the repository secret **`STATS_TOKEN`** (16 characters or more, e.g.
 `openssl rand -hex 24`), let the site and relay workflows deploy (a push, or Run workflow), then enter the same value in

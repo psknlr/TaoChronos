@@ -29,7 +29,11 @@ export class Watch extends DurableObject {
    * and the archive: one alarm for both, each asking for the next when it needs one. */
   async alarm() {
     await this.drainer.run();
-    await this.ledgerDrain.run();
+    try {
+      await this.ledgerDrain.run();
+    } catch (err) {
+      console.error("ledger", "alarm", err?.name || "Error");
+    }
   }
 
   /** Events of the activity ledger, from an instance of the Worker (site.js: record); lost: how many it could not bring

@@ -11,7 +11,7 @@ import { drain, EVENTS } from "../../security/archive.js";
 import { LedgerCore } from "../../security/ledger.js";
 import { apply, ensure, rollup } from "../../security/ledger-d1.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { d1 } from "../../security/test/fakes.js";
+import { bucket, d1 } from "../../security/test/fakes.js";
 import { UsageCore } from "../../security/usage.js";
 import { COOKIE, isVisitor, readPass } from "../../security/visitor.js";
 import { DEFAULTS, handle } from "../site/src/site.js";
@@ -828,6 +828,14 @@ test("the ledger's counts are read with the stats token; its pipeline and its ar
   assert.deepEqual([health.site.source, health.site.appended, health.site.dropped, health.site.lost, health.archive, health.ids, health.registry.visitors, health.registry.first_day],
     ["site", 6, 0, 0, false, "notice", 2, "2026-10-05"]);
   assert.equal((await call(`${PAGE}/api/activity/archive?day=2026-10-05`, { headers: { Authorization: `Bearer ${EXPORT}` } })).status, 404); // no bucket
+  // with the archive's bucket: a day of both Workers' archives against their manifests
+  const archived = site({ watch: true, ledger: true, cf: CF, env: { LOG_EXPORT_TOKEN: EXPORT, ARCHIVE: bucket() } });
+  const check = (q, token = EXPORT) => archived.call(`${PAGE}/api/activity/archive${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal((await check("?day=2026-10-05", "not-the-token-0123456789")).status, 401);
+  assert.equal((await check("?day=yesterday")).status, 400);
+  const day = await (await check("?day=2026-10-05")).json();
+  assert.deepEqual([day.day, Object.keys(day.sources), day.sources.site.ok, day.sources.relay.objects], ["2026-10-05", ["site", "relay"], null, 0]); // nothing written that day
+  assert.deepEqual(Object.keys((await (await check("?day=2026-10-05&source=relay")).json()).sources), ["relay"]);
 });
 
 test("a ledger that cannot be reached is never in a visitor's way, and what it missed is counted", async () => {

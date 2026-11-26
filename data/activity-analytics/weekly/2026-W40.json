@@ -1,0 +1,64 @@
+{
+ "backfill": {
+  "days": 7,
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 107
+   },
+   "by_provider": {
+    "custom": 5,
+    "fixed": 1,
+    "impf": 107,
+    "openai": 2
+   },
+   "by_status": {
+    "done": 97,
+    "error": 15,
+    "stopped": 3
+   },
+   "model_calls": 589,
+   "questions": 115,
+   "tokens_in": 17147041,
+   "tokens_out": 461140,
+   "tool_calls": 1523,
+   "tools": {
+    "audit.claim": 1,
+    "classics.canon": 29,
+    "classics.get_passage": 400,
+    "classics.list_books": 39,
+    "classics.search": 827,
+    "kg.claims": 7,
+    "kg.neighbors": 1,
+    "kg.term": 28,
+    "modern.safety": 4,
+    "modern.search": 2,
+    "search": 1,
+    "study.commentaries": 6,
+    "study.concordance": 4,
+    "study.formula": 52,
+    "study.get_passage": 1,
+    "study.herb": 20,
+    "study.network": 7,
+    "study.places": 1,
+    "study.reading": 1,
+    "study.senses": 1,
+    "study.term": 42,
+    "study.translate": 5,
+    "taochronos_ask": 1,
+    "taochronos_catalog": 5,
+    "taochronos_research": 9,
+    "taochronos_session": 24,
+    "validation.verify_quote": 5
+   }
+  }
+ },
+ "complete": true,
+ "kind": "weekly",
+ "ledger": null,
+ "period": {
+  "from": "2026-09-28",
+  "label": "2026-W40",
+  "to": "2026-10-04"
+ },
+ "v": 1
+}

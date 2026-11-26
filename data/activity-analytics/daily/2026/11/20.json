@@ -1,0 +1,53 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 24
+   },
+   "by_provider": {
+    "impf": 24
+   },
+   "by_status": {
+    "done": 24
+   },
+   "model_calls": 164,
+   "questions": 24,
+   "tokens_in": 5168308,
+   "tokens_out": 163646,
+   "tool_calls": 329,
+   "tools": {
+    "analysis.temporal_profile": 1,
+    "classics.canon": 4,
+    "classics.get_passage": 107,
+    "classics.list_books": 49,
+    "classics.search": 108,
+    "kg.term": 1,
+    "literature.modern_evidence": 2,
+    "modern.search": 4,
+    "philology.inspect_page": 2,
+    "study.acupoints": 5,
+    "study.commentaries": 1,
+    "study.compare": 1,
+    "study.concordance": 4,
+    "study.formula": 4,
+    "study.point": 6,
+    "study.taboo": 1,
+    "study.term": 2,
+    "study.variants": 1,
+    "study.witnesses": 5,
+    "study.wuxing": 2,
+    "taochronos_catalog": 15,
+    "validation.verify_quote": 4
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-20",
+  "label": "2026-11-20",
+  "to": "2026-11-20"
+ },
+ "v": 1
+}

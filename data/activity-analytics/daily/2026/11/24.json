@@ -1,0 +1,46 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 7
+   },
+   "by_provider": {
+    "impf": 7
+   },
+   "by_status": {
+    "done": 6,
+    "error": 1
+   },
+   "model_calls": 77,
+   "questions": 7,
+   "tokens_in": 3604552,
+   "tokens_out": 91826,
+   "tool_calls": 199,
+   "tools": {
+    "classics.get_passage": 124,
+    "classics.list_books": 2,
+    "classics.search": 43,
+    "kg.term": 5,
+    "study.acupoints": 4,
+    "study.acupuncture_audit": 2,
+    "study.formula": 8,
+    "study.herb": 1,
+    "study.network": 1,
+    "study.term": 2,
+    "study.usage": 1,
+    "taochronos_catalog": 4,
+    "taochronos_research": 1,
+    "validation.verify_quote": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-24",
+  "label": "2026-11-24",
+  "to": "2026-11-24"
+ },
+ "v": 1
+}

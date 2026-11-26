@@ -1,0 +1,47 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 3,
+    "gpt-6-luna": 20
+   },
+   "by_provider": {
+    "deepseek": 1,
+    "gemini": 1,
+    "impf": 23
+   },
+   "by_status": {
+    "done": 5,
+    "error": 19,
+    "stopped": 1
+   },
+   "model_calls": 71,
+   "questions": 25,
+   "tokens_in": 1159180,
+   "tokens_out": 9824,
+   "tool_calls": 60,
+   "tools": {
+    "classics.get_passage": 21,
+    "classics.search": 28,
+    "modern.safety": 1,
+    "study.compare": 1,
+    "study.formula": 2,
+    "study.herb": 2,
+    "study.names": 1,
+    "study.network": 1,
+    "study.pairs": 1,
+    "study.protocol": 1,
+    "study.usage": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-08",
+  "label": "2026-11-08",
+  "to": "2026-11-08"
+ },
+ "v": 1
+}

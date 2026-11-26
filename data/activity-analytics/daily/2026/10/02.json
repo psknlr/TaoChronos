@@ -1,0 +1,47 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 22
+   },
+   "by_provider": {
+    "impf": 22,
+    "openai": 2
+   },
+   "by_status": {
+    "done": 16,
+    "error": 6,
+    "stopped": 2
+   },
+   "model_calls": 130,
+   "questions": 24,
+   "tokens_in": 3293822,
+   "tokens_out": 100895,
+   "tool_calls": 342,
+   "tools": {
+    "classics.canon": 9,
+    "classics.get_passage": 106,
+    "classics.list_books": 7,
+    "classics.search": 186,
+    "kg.term": 5,
+    "modern.safety": 2,
+    "study.commentaries": 2,
+    "study.concordance": 1,
+    "study.formula": 10,
+    "study.herb": 5,
+    "study.term": 7,
+    "taochronos_research": 1,
+    "validation.verify_quote": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-10-02",
+  "label": "2026-10-02",
+  "to": "2026-10-02"
+ },
+ "v": 1
+}

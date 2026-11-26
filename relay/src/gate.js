@@ -40,12 +40,13 @@ export const eventOf = (act, w, now, extra = {}) => envelope({ type: act.type ||
 export async function gateCall(stores, { who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage, question, activity }, now = Date.now()) {
   const { core, watch: sentinel, usage: counts, ledger } = stores;
   const w = fp && a ? await sentinel.observe(fp, a, { shape, status }, cfg, now) : null;
-  const act = activity || null;
+  // (the request as the Worker read it: the sentinel's own reading, or — the sentinel off — the ledger's)
+  const act = activity ? { ...activity, fp: fp || activity.fp, a } : null;
   const written = Boolean(act?.ledger && ledger);
   const refused = (out) => {
     // a call refused is an event too: by what (the day's limit, the minute's, the sentinel), and for whom
     if (written && ANSWERS.has(kind)) {
-      ledger.append([eventOf({ ...act, fp, a, type: "model_refused", status: out.reason === "blocked" || out.reason === "not_served" ? 403 : 429 }, w, now, { detail: out.reason })], now, act.keep);
+      ledger.append([eventOf({ ...act, type: "model_refused", status: out.reason === "blocked" || out.reason === "not_served" ? 403 : 429 }, w, now, { detail: out.reason })], now, act.keep);
     }
     return { ...out, watch: w };
   };
@@ -63,7 +64,7 @@ export async function gateCall(stores, { who, kind, limits, fp, a, shape, status
   let turn = { question: Boolean(usage?.turn) };
   if (act?.key && ledger) {
     try {
-      turn = written ? ledger.call(eventOf({ ...act, fp, a }, w, now), act, now, { turnMs: act.turnMs, keep: act.keep }) : ledger.asks(act, now, act.turnMs);
+      turn = written ? ledger.call(eventOf(act, w, now), act, now, { turnMs: act.turnMs, keep: act.keep }) : ledger.asks(act, now, act.turnMs);
     } catch (err) {
       console.error("ledger", err?.name || "Error"); // never in a call's way
     }
