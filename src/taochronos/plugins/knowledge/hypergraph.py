@@ -9,7 +9,7 @@ hyperedge stays the unit of record.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from ...protocol.claims import Claim, ClaimRelation, Role
 
@@ -18,24 +18,43 @@ CONTENT_ROLES = (
     Role.ETIOLOGY, Role.TREATMENT_PRINCIPLE, Role.TREATMENT_METHOD, Role.FORMULA, Role.HERB, Role.ORGAN,
     Role.CONDITION, Role.CONCEPT,
 )
+_INDEXES = ("by_term", "by_relation", "by_book", "by_passage")
 
 
 class ClaimHypergraph:
+    # claim ids by member term, relation, book and passage: built when first read (__getattr__)
+    by_term: dict[str, set[str]]
+    by_relation: dict[str, set[str]]
+    by_book: dict[str, set[str]]
+    by_passage: dict[str, set[str]]
+
     def __init__(self, claims: Iterable[Claim] = (), year_fn: Callable[[Claim], float | None] | None = None) -> None:
         self.claims: dict[str, Claim] = {}
-        self.by_term: dict[str, set[str]] = defaultdict(set)
-        self.by_relation: dict[str, set[str]] = defaultdict(set)
-        self.by_book: dict[str, set[str]] = defaultdict(set)
-        self.by_passage: dict[str, set[str]] = defaultdict(set)
         self.year_fn = year_fn or (lambda c: c.year())
         for claim in claims:
             self.add(claim)
+
+    def __getattr__(self, name: str) -> Any:
+        """The indexes, built from the claims in the order they were added when one is first read: the graph route
+        builds a hypergraph for every search and reads only ``claims`` and ``members``.  From then on ``add`` keeps
+        them."""
+        if name not in _INDEXES:
+            raise AttributeError(name)
+        for index in _INDEXES:
+            setattr(self, index, defaultdict(set))
+        for claim in self.claims.values():
+            self._index(claim)
+        return self.__dict__[name]
 
     # ------------------------------------------------------------ mutation
     def add(self, claim: Claim) -> None:
         if claim.id in self.claims:
             return
         self.claims[claim.id] = claim
+        if "by_term" in self.__dict__:
+            self._index(claim)
+
+    def _index(self, claim: Claim) -> None:
         for term in self.members(claim, include_negated=True):
             self.by_term[term].add(claim.id)
         self.by_relation[claim.relation.value].add(claim.id)
