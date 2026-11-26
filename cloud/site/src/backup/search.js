@@ -56,7 +56,7 @@ const SIDE_ROWS_EDGE = 4;
 const share = (total, n, least) => Math.max(least, Math.ceil(total / Math.max(1, n)));
 const K1 = 1.4;
 const B = 0.75;
-const HAN = /[㐀-鿿豈-﫿]/u; // index._KEEP
+const HAN = /[\u3400-\ud7ff\ue000-\ufaff]/u; // index._KEEP, by number as there (tests/test_d1.py checks)
 
 // how a question asks a name as a drug (hybrid.py): the thresholds, the drug words, the question words a name nobody
 // knows never runs over, what follows a period's name

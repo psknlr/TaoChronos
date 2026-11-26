@@ -8,7 +8,9 @@ from __future__ import annotations
 import gzip
 import json
 import re
+import shutil
 import sqlite3
+import subprocess
 import threading
 import urllib.parse
 import uuid
@@ -570,8 +572,6 @@ def test_the_workers_tables_carry_the_alias_layer_the_full_corpus_reads():
 def test_the_workers_tables_refuse_a_local_layer_and_a_source_that_may_not_ship(tmp_path):
     """Nothing local reaches the Worker: a full-corpus profile that reads a local layer, or a layer crediting a source
     sources.yaml does not ship, is refused."""
-    import shutil
-
     from taochronos.chat.d1tables import _aliases
 
     domain = tmp_path / "domains" / "classics" / "aliases"
@@ -634,6 +634,33 @@ def test_the_full_corpus_searches_with_the_alias_layer_and_the_backup_alike():
     assert any(args.get("k", 10) * 3 // 10 == 0 for args in searches) and any(args.get("k", 10) < 1 for args in searches)
     assert "人参汤即理中汤" in asked
     assert any(args.get("books") for args in searches) and any("最早" in args["query"] for args in searches)
+
+
+def test_the_workers_search_ranks_with_the_servers_constants():
+    """search.js copies what route_bm25 and the fusion are made of: BM25's k1 and b, the characters a token is made of
+    (index._KEEP, by number), the query's tokens, the routes' weights and the fusion's 60.  The hits are not compared (the
+    candidates differ by design, ADR 0017); these are, so that a change on the server's side cannot leave the Worker's
+    behind unnoticed."""
+    from taochronos.plugins.retrieval import hybrid, index
+
+    text = SEARCH.read_text(encoding="utf-8")
+
+    def const(name: str) -> str:
+        return re.search(rf"^(?:export )?const {name} = (.+?);(?: *//[^\n]*)?$", text, re.MULTILINE).group(1)
+
+    assert float(const("K1")) == index.K1 and float(const("B")) == index.B
+    assert const("HAN") == f"/{index._KEEP.pattern}/u"
+    weights = {k: float(v) for k, v in re.findall(r"(\w+): ([\d.]+)", const("WEIGHTS"))}
+    assert weights == hybrid.DEFAULT_WEIGHTS
+    assert "hit.score += w / (60 + rank + 1);" in text  # hybrid.py's reciprocal-rank fusion
+    assert "hit.score += w / (60 + rank + 1)" in (ROOT / "src/taochronos/plugins/retrieval/hybrid.py").read_text(encoding="utf-8")
+    node = shutil.which("node")
+    if node:  # queryTokens itself, on what tries the edges
+        samples = ["桂", "桂枝汤", "abc", "", "桂 枝,汤", "豈更車", "\ue3e7缺字", "한글桂枝", "𠀀桂𪚥枝", "汤汤汤", "\u3400\ufaff\ufb00"]
+        script = (f"import {{ queryTokens }} from {json.dumps(SEARCH.as_uri())};"
+                  f"console.log(JSON.stringify({json.dumps(samples)}.map(queryTokens)));")
+        got = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, check=True).stdout
+        assert json.loads(got) == [index.query_tokens(s) for s in samples]
 
 
 def test_the_workers_search_reads_a_question_with_the_servers_rules():
