@@ -336,6 +336,9 @@ class Lexicon:
     def __init__(self, files: Iterable[Path], normalize: Any = None, extra_files: Iterable[Path] = ()) -> None:
         self.entries: dict[str, LexEntry] = {}
         self._by_surface: dict[str, list[tuple[LexEntry, str | None]]] = {}
+        # what match reads (_scan_index): built on first use, dropped by _add; 0.45 MB for web-canon's lexicon, 1.5 MB
+        # for the whole harvested one
+        self._scan: tuple[dict[str, tuple[int, ...]], dict[str, tuple[LexEntry, str | None]]] | None = None
         self._normalize = normalize
         self.harvested = 0
         self.skipped_extra = 0
@@ -417,6 +420,7 @@ class Lexicon:
                 bucket = self._by_surface.setdefault(form, [])
                 if all(e.term_id != entry.term_id for e, _ in bucket):
                     bucket.append((entry, kind))
+        self._scan = None  # derived from the buckets: built again on the next match
 
     # ---------------------------------------------------------------- lookup
     def entry(self, term_id: str) -> LexEntry | None:
@@ -461,18 +465,40 @@ class Lexicon:
                                                       t[1].term))
         return [e for _, e in ranked[:n]]
 
+    def _scan_index(self) -> tuple[dict[str, tuple[int, ...]], dict[str, tuple[LexEntry, str | None]]]:
+        """What ``match`` reads, derived once from the buckets, ``max_len`` and the category rank (only construction
+        sets them; ``_add`` drops it).  The lengths to try where a text goes on with given characters, longest first:
+        under the first two characters of the surfaces of two or more, their lengths (then 1, when the first character
+        is a surface itself); under each surface of one character, 1.  And the entry each surface is read as: the first
+        of its bucket in category rank, as ``lookup`` sorts it (``min`` keeps the first of equal rank, as the stable
+        sort does)."""
+        rank = self._rank
+        reading = {surface: min(bucket, key=lambda t: rank.get(t[0].category, 99))
+                   for surface, bucket in self._by_surface.items() if surface and bucket and len(surface) <= self.max_len}
+        lengths: dict[str, set[int]] = {}
+        for surface in reading:
+            lengths.setdefault(surface[:2], set()).add(len(surface))
+        starts = {head: tuple(sorted(ls, reverse=True)) + ((1,) if len(head) == 2 and head[0] in reading else ())
+                  for head, ls in lengths.items()}
+        self._scan = starts, reading
+        return self._scan
+
     def match(self, text: str, *, include_weak: bool = True) -> list[Mention]:
-        """Longest-first, left-to-right matching on (already normalised) text."""
+        """Longest-first, left-to-right matching on (already normalised) text.  At each position only the lengths of
+        the surfaces that begin with its next two characters, or with its one, are tried: most positions begin none
+        (82–91 % of the 要籍语料's, by lexicon), and cost two looks."""
+        starts, reading = self._scan or self._scan_index()
         mentions: list[Mention] = []
         i, n = 0, len(text)
         while i < n:
             found = None
-            for length in range(min(self.max_len, n - i), 0, -1):
-                cands = self._by_surface.get(text[i: i + length])
-                if cands:
-                    entry, kind = sorted(cands, key=lambda t: self._rank.get(t[0].category, 99))[0]
-                    found = Mention(entry, text[i: i + length], i, i + length, kind)
-                    break
+            for length in starts.get(text[i: i + 2]) or starts.get(text[i], ()):
+                if length <= n - i:
+                    surface = text[i: i + length]
+                    hit = reading.get(surface)
+                    if hit is not None:
+                        found = Mention(hit[0], surface, i, i + length, hit[1])
+                        break
             if found is None:
                 i += 1
                 continue
