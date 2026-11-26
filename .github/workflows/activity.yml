@@ -10,11 +10,13 @@ name: activity
 #
 # The rows the sums are of — a visitor's id, an event — stay in the registry (D1) and the archive (R2) and never come
 # here.  A place with fewer than MIN_CELL visitors (the repository variable ACTIVITY_MIN_CELL, default 3) is folded
-# into "other".  Needs the LOG_EXPORT_TOKEN secret (the collector's); until the Workers have a ledger (ACTIVITY_KEY: see
-# security/README.md) the run says so and does nothing.
+# into "other".  Needs the LOG_EXPORT_TOKEN secret (the collector's).  Until the Workers have a ledger (ACTIVITY_KEY: see
+# security/README.md), or until its first day is over, SUMMARY.md is the Workers' daily counts — what the site counted
+# before the ledger: pages, visitors a day, questions and calls of the default service, places — and each night keeps
+# those days here (backfill), with the conversation records and edge records committed here, before the Workers drop
+# them after a year.
 #
-# By hand (Run workflow): `backfill` also writes the days before the ledger from what was kept of them — the Workers'
-# daily counts and the conversation records and edge records committed here.
+# By hand (Run workflow): `backfill` writes the days before the ledger again, once it is on.
 #
 # The counts are the owner's: no page of the site shows them.  They are read here, with the collector's token, and kept
 # in this private repository — data/activity-analytics/SUMMARY.md and each run's summary are the readable view — and in
@@ -76,11 +78,11 @@ jobs:
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           DAY: ${{ inputs.day }}
         run: |
-          if [ -n "$DAY" ]; then python3 security/activity.py report --site "$SITE_URL" --min-cell "$MIN_CELL" --day "$DAY"
-          else python3 security/activity.py report --site "$SITE_URL" --min-cell "$MIN_CELL"; fi
-      - name: The days before the ledger, from what was kept of them
+          if [ -n "$DAY" ]; then python3 security/activity.py report --site "$SITE_URL" --relay "$RELAY_URL" --min-cell "$MIN_CELL" --day "$DAY"
+          else python3 security/activity.py report --site "$SITE_URL" --relay "$RELAY_URL" --min-cell "$MIN_CELL"; fi
+      - name: The days before the ledger, from what was kept of them (each night while there is no ledger)
         id: backfill
-        if: steps.ready.outputs.go == '1' && inputs.backfill
+        if: steps.ready.outputs.go == '1' && (inputs.backfill || steps.report.outputs.ledger != '1')
         env:
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
         run: python3 security/activity.py backfill --site "$SITE_URL" --relay "$RELAY_URL"

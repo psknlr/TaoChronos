@@ -74,10 +74,13 @@ class Site:
             return 200, {"v": 1, "day": q["day"], "sources": self.archive}
         if u.path in ("/api/stats", "/v1/stats"):
             if not self.usage:
-                return 401, {"error": "统计令牌不对"}
+                return 401, {"error": "需要收集令牌"}
             days = ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]
             kinds = {"view": [30, 40, 50, 60], "visitor": [10, 25, 20, 30]} if u.path == "/api/stats" else {"question": [8, 9, 0, 11], "call": [40, 45, 0, 50], "asker": [4, 5, 0, 6]}
-            return 200, {"v": 1, "days": days, "daily": kinds}
+            # each Worker its own kinds, by place over the days asked (a visitor one day in Iceland; two who asked in Singapore)
+            places = ([{"country": "CN", "region": "GD", "view": 150, "visitor": 70}, {"country": "IS", "region": "", "view": 2, "visitor": 1}] if u.path == "/api/stats"
+                      else [{"country": "CN", "region": "GD", "question": 25, "call": 120, "asker": 12}, {"country": "SG", "region": "", "question": 3, "call": 9, "asker": 2}])
+            return 200, {"v": 1, "asOf": self.today, "offset": 8, "days": days, "daily": kinds, "places": places}
         raise AssertionError(f"not asked for: {url}")
 
 
@@ -147,12 +150,17 @@ def test_a_run_that_did_not_happen_is_caught_up_and_a_site_without_a_ledger_is_p
     out = activity.report(SITE, tmp_path)
     assert (out["days"], out["through"]) == (31, "2027-01-31")  # no further back than a month
     assert not (tmp_path / "daily" / "2026").exists()
+    # without a ledger (or before its first day is over) the summary is the Workers' daily counts, and nothing else is written
     monkeypatch.setattr(activity, "_request", Site(ledger=False))
-    assert activity.report(SITE, tmp_path / "none") == {"new": 0, "ledger": 0}
+    assert activity.report(SITE, tmp_path / "none") == {"new": 1, "ledger": 0}
     assert "::notice::the site has no activity ledger" in capsys.readouterr().out
-    assert not (tmp_path / "none").exists()
+    assert [f.name for f in (tmp_path / "none").iterdir()] == ["SUMMARY.md"]
+    monkeypatch.setattr(activity, "_request", Site(ledger=False, usage=False))  # nor any daily counts: nothing at all
+    assert activity.report(SITE, tmp_path / "nothing") == {"new": 0, "ledger": 0}
+    assert not (tmp_path / "nothing").exists()
     monkeypatch.setattr(activity, "_request", Site(today="2026-11-20"))  # its first day is not over
-    assert activity.report(SITE, tmp_path / "early") == {"new": 0, "ledger": 1}
+    assert activity.report(SITE, tmp_path / "early") == {"new": 1, "ledger": 1}
+    assert [f.name for f in (tmp_path / "early").iterdir()] == ["SUMMARY.md"]
     monkeypatch.delenv("LOG_EXPORT_TOKEN")
     with pytest.raises(SystemExit, match="LOG_EXPORT_TOKEN"):
         activity.report(SITE, tmp_path)
@@ -262,6 +270,47 @@ def test_the_days_before_the_ledger_are_told_from_what_was_kept_of_them(monkeypa
     monkeypatch.delenv("LOG_EXPORT_TOKEN")
     alone = activity.backfill(SITE, RELAY, tmp_path / "alone", tmp_path / "chat-logs", tmp_path / "edge")
     assert alone["sources"] == ["edge", "records"] and alone["days"] == 2
+
+
+def test_before_the_ledger_the_owners_summary_is_the_workers_daily_counts(monkeypatch, tmp_path, env):
+    """No ledger yet: what the 统计 pane once showed, in the repository — the two Workers' daily counts, read with the
+    collector's token, yesterday to all they keep; a visitor counted anew each day, and said so; a small place folded."""
+    site = Site(ledger=False)
+    monkeypatch.setattr(activity, "_request", site)
+    step = tmp_path / "step.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(step))
+    assert activity.report(SITE, tmp_path / "out", relay=RELAY) == {"new": 1, "ledger": 0}
+    text = (tmp_path / "out" / "SUMMARY.md").read_text(encoding="utf-8")
+    assert step.read_text(encoding="utf-8") == text
+    assert {(host, path) for host, path, _, _ in site.asked} == {("chat.impf.ai", "/api/activity/stats"), ("chat.impf.ai", "/api/stats"), ("chat-api.impf.ai", "/v1/stats")}
+    assert all(token == TOKEN for *_, token in site.asked)  # the collector's token: the counts are the owner's
+    # through the 24th (today, the 25th, is not over): the counts reach the 20th, so yesterday has none
+    assert "截至 2026-11-24" in text and "自 2026-11-17 起" in text
+    for line in ("| 页面访问 | 0 | 150 | 180 | 180 |", "| 访客（逐日相加） | 0 | 75 | 85 | 85 |", "| 默认服务的提问 | 0 | 20 | 28 | 28 |",
+                 "| 默认服务的模型调用 | 0 | 95 | 135 | 135 |", "| 提问的访客（逐日相加） | 0 | 11 | 15 | 15 |"):
+        assert line in text, line
+    assert "逐日相加的人次，不是不同的人" in text
+    # the places of the last 30 days: both Workers' by place, the two small ones as "other"
+    assert "| CN·GD | 150 | 70 | 25 |" in text and "| 其他 2 处 | 2 | 1 | 3 |" in text
+    assert "IS" not in text and "SG" not in text
+    # the same again: nothing changes
+    assert activity.report(SITE, tmp_path / "out", relay=RELAY)["new"] == 0
+
+
+def test_the_nightly_backfill_keeps_what_was_kept_and_closes_the_weeks_that_are_over(monkeypatch, tmp_path, env):
+    monkeypatch.setattr(activity, "_request", Site(ledger=False))
+    out = tmp_path / "analytics"
+    activity.backfill(SITE, RELAY, out, records(tmp_path), tmp_path / "edge")
+    kept = read(out / "daily" / "2026" / "11" / "17.json")["backfill"]["usage"]
+    # a run that reads no daily counts (no token; or a year on, when the Workers no longer keep the day) loses none of them
+    monkeypatch.delenv("LOG_EXPORT_TOKEN")
+    assert activity.backfill(SITE, RELAY, out, tmp_path / "chat-logs", tmp_path / "edge")["new"] == 0
+    assert read(out / "daily" / "2026" / "11" / "17.json")["backfill"]["usage"] == kept
+    # a week kept while it ran is whole once it is over
+    week = out / "weekly" / "2026-W47.json"
+    week.write_text(json.dumps({**read(week), "complete": False}), encoding="utf-8")
+    activity.backfill(SITE, RELAY, out, tmp_path / "chat-logs", tmp_path / "edge")
+    assert read(week)["complete"] is True
 
 
 def test_the_reports_are_written_only_when_they_change(tmp_path):

@@ -121,7 +121,9 @@ what the site says of itself:
     `Authorization` header from a page.  The owner reads them where only the owner's accounts reach: the reports below,
     with [`data/activity-analytics/SUMMARY.md`](../../data/activity-analytics/SUMMARY.md) and each run's summary page
     as their readable face, in this private repository; and the registry itself in Cloudflare's D1 console, for any
-    question the reports do not answer ([security/README.md](../../security/README.md), 活动账本 → 日常).  An earlier
+    question the reports do not answer ([security/README.md](../../security/README.md), 活动账本 → 日常).  Until the
+    ledger is switched on, the summary is the Workers' daily counts, and each night keeps those days in the repository —
+    the owner never goes without a view of the site's use.  An earlier
     draft of this decision had a 统计 pane opened with `STATS_TOKEN`, or with `STATS_PUBLIC` to everyone: a key
     typed into a page lives in that browser, and a page that can show the counts can be made to show them to someone
     else.

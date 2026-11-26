@@ -411,7 +411,8 @@ data/security-logs/
   - **GitHub**：[`data/activity-analytics/SUMMARY.md`](../data/activity-analytics/SUMMARY.md)——昨天、近 7 天、近 30 天与全部并排（访客、新访客、回访的、访问、
     页面、提问与其中未存档的、模型调用、token、国家/地区、有过的访客），回来的访客，近 30 天的地区、模型、工具、设备与浏览器、来源与请求类别；
     每天、每周、每月、每年的报表与 `lifetime.json` 在同一目录；activity 工作流每次运行的摘要页（Actions → activity → 那次运行）是同一张表。
-    仓库是私有的：能读这个仓库的人才看得到，加协作者之前想到这一点。
+    账本启用之前（或它的第一天还没过完），`SUMMARY.md` 是两个 Worker 的按日计数——页面、按日去重的访客、默认服务的提问与调用、地区——
+    每晚的运行也把这些日子存进 `daily/`。仓库是私有的：能读这个仓库的人才看得到，加协作者之前想到这一点。
   - **Cloudflare**：控制台里 D1 → `taochronos-activity` → Console，或在本地 `npx wrangler d1 execute taochronos-activity --remote --command "…"`。
     不同访客只能在一段时间上数，不能把每天的人数相加；逐条的访客与每日活跃留 25 个月，再早的只在仓库的报表里。常用的几句：
 

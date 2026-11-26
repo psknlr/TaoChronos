@@ -7,7 +7,9 @@
             each asked for as a whole — a month's visitors are the different visitors of the month, which no sum of its
             days gives — and lifetime.json, since the ledger's first day; and SUMMARY.md, the owner's view of it all
             (yesterday, the last 7 and 30 days, all time, who came back, where from, what was used), also written to
-            the run's own summary page
+            the run's own summary page.  Before the ledger is switched on (or before its first day is over), SUMMARY.md
+            is the two Workers' daily counts instead — pages, visitors a day, questions and calls of the default
+            service, places — which the nightly run also keeps here day by day (backfill)
   validate  the pipeline: what waits in each Worker's outbox and for how long, what was dropped or lost or failed to
             be written since the last look, yesterday's archive against its manifest, the day's counts against
             themselves, and the count of visitors there ever were against the last one kept (it never falls).  What is
@@ -165,18 +167,18 @@ def ask(site: str, token: str, first: date | None, last: date) -> dict:
     return body
 
 
-def report(site: str, out: Path, *, least: int = 3, day: str | None = None, today: date | None = None) -> dict:
+def report(site: str, out: Path, *, least: int = 3, day: str | None = None, today: date | None = None, relay: str = "") -> dict:
     token = _token()
     try:
         probe = ask(site, token, None, today or date.max)  # as the site knows today, and since when it has a ledger
     except LookupError as err:
-        print(f"::notice::{err}")
-        return {"new": 0, "ledger": 0}
+        print(f"::notice::{err}: the summary is the Workers' daily counts")
+        return {"new": before_ledger(site, relay, token, out, least), "ledger": 0}
     yesterday = day_of(probe["asOf"]) - timedelta(days=1)
     first = day_of(probe["first_day"]) if probe.get("first_day") else None
     if first is None or first > yesterday:
-        print("::notice::the ledger has no finished day yet: nothing to report")
-        return {"new": 0, "ledger": 1}
+        print("::notice::the ledger has no finished day yet: the summary is the Workers' daily counts")
+        return {"new": before_ledger(site, relay, token, out, least), "ledger": 1}
     if day:
         days = [day_of(day)]
     else:
@@ -207,13 +209,90 @@ def report(site: str, out: Path, *, least: int = 3, day: str | None = None, toda
         # the owner's view: yesterday, the last 7 and 30 days and all time, each a stretch asked for as a whole
         windows = {"yesterday": ask(site, token, yesterday, yesterday), "7": ask(site, token, max(first, yesterday - timedelta(days=6)), yesterday),
                    "30": ask(site, token, max(first, yesterday - timedelta(days=29)), yesterday), "all": stats}
-        text = summary({k: anonymous(v, least, series=False) for k, v in windows.items()}, yesterday, least, _read(out / "pipeline.json"))
-        changed += _write_text(out / "SUMMARY.md", text)
-        step = os.environ.get("GITHUB_STEP_SUMMARY")
-        if step:
-            with open(step, "a", encoding="utf-8") as f:
-                f.write(text)
+        changed += summarize(out, summary({k: anonymous(v, least, series=False) for k, v in windows.items()}, yesterday, least, _read(out / "pipeline.json")))
     return {"new": changed, "ledger": 1, "days": len(days), "through": yesterday.isoformat()}
+
+
+def summarize(out: Path, text: str) -> int:
+    """SUMMARY.md, and the run's own summary page (GITHUB_STEP_SUMMARY): whether the file changed."""
+    step = os.environ.get("GITHUB_STEP_SUMMARY")
+    if step:
+        with open(step, "a", encoding="utf-8") as f:
+            f.write(text)
+    return int(_write_text(out / "SUMMARY.md", text))
+
+
+def before_ledger(site: str, relay: str, token: str, out: Path, least: int) -> int:
+    """No ledger yet, or no day of it over: the owner's view is the two Workers' daily counts."""
+    counts = daily_counts(site, relay, token)
+    return summarize(out, counts_summary(counts, least)) if counts else 0
+
+
+def daily_counts(site: str, relay: str, token: str) -> dict | None:
+    """The two Workers' daily counts (security/usage.js), read with the collector's token: {asOf, days: {day: {kind:
+    n}}, places: [{country, region, view, visitor, question, call, asker}]} — the days the Workers keep (a year), the
+    places of the last 30 of them (to today).  Each Worker counts its own kinds: the site pages and visitors, the relay
+    questions, calls and who asked."""
+    days: dict[str, dict] = {}
+    places: dict[tuple[str, str], dict] = {}
+    as_of = ""
+    for base, path in ((site, "/api/stats"), (relay, "/v1/stats")):
+        if not base:
+            continue
+        status, body = _request(f"{base}{path}?days=366", token=token)
+        if status != 200 or not isinstance(body, dict) or not isinstance(body.get("days"), list):
+            print(f"::notice::{base}{path} gave no daily counts (HTTP {status})")
+            continue
+        as_of = max(as_of, str(body.get("asOf") or ""))
+        for kind, ns in (body.get("daily") or {}).items():
+            for d, n in zip(body["days"], ns or [], strict=False):
+                if n:
+                    slot = days.setdefault(d, {})
+                    slot[kind] = slot.get(kind, 0) + int(n)
+        status, recent = _request(f"{base}{path}?days=30", token=token)
+        for p in (recent.get("places") or []) if status == 200 and isinstance(recent, dict) else []:
+            key = (str(p.get("country") or ""), str(p.get("region") or ""))
+            slot = places.setdefault(key, {"country": key[0], "region": key[1]})
+            for kind in ("view", "visitor", "question", "call", "asker"):
+                slot[kind] = slot.get(kind, 0) + int(p.get(kind) or 0)
+    if not DAY.match(as_of):
+        return None
+    return {"asOf": as_of, "days": days, "places": sorted(places.values(), key=lambda p: (-p.get("view", 0), -p.get("question", 0)))}
+
+
+def counts_summary(c: dict, least: int) -> str:
+    """The owner's view before the ledger, in Markdown: the Workers' daily counts over yesterday, the last 7 and 30
+    days and all they keep.  A visitor is counted once a day, so a stretch's visitors are visitor-days, not different
+    people; a place with fewer than `least` visitor-days (and askers) is folded into "other"."""
+    y = day_of(c["asOf"]) - timedelta(days=1)
+    kept = sorted(day_of(d) for d in c["days"] if DAY.match(d) and day_of(d) <= y)
+    first = kept[0] if kept else y
+    spans = {"yesterday": (y, y), "7": (y - timedelta(days=6), y), "30": (y - timedelta(days=29), y), "all": (first, y)}
+    total = lambda kind, a, b: sum(int(v.get(kind) or 0) for d, v in c["days"].items() if DAY.match(d) and a <= day_of(d) <= b)  # noqa: E731
+    row = lambda name, kind: f"| {name} | " + " | ".join(_n(total(kind, *spans[k])) for k in ("yesterday", "7", "30", "all")) + " |"  # noqa: E731
+    lines = [
+        "# 使用统计摘要", "",
+        (f"截至 {y.isoformat()}（北京时间，含当天）· 两个 Worker 的按日计数（`security/usage.js`），自 {first.isoformat()} 起（Worker 只留一年；"
+         "更早的日子在 `daily/` 里）· 活动账本尚未启用或还没有过完的一天（`ACTIVITY_KEY`：security/README.md「活动账本」），启用后这里换成账本的计数。"
+         "访客按日去重：同一位访客来了几天就算几次，所以一段时间的“访客”是逐日相加的人次，不是不同的人。"
+         f"访客不足 {least} 的地方合并为“其他”。网站的页面上不显示这些统计。"), "",
+        "| | 昨天 | 近 7 天 | 近 30 天 | 全部 |", "|---|---:|---:|---:|---:|",
+        row("页面访问", "view"),
+        row("访客（逐日相加）", "visitor"),
+        row("默认服务的提问", "question"),
+        row("默认服务的模型调用", "call"),
+        row("提问的访客（逐日相加）", "asker"),
+    ]
+    big = lambda p: max(int(p.get("visitor") or 0), int(p.get("asker") or 0)) >= least  # noqa: E731
+    shown = [p for p in c["places"] if big(p)][:30]
+    rest = [p for p in c["places"] if p not in shown]
+    cell = lambda ps, k: _n(sum(int(p.get(k) or 0) for p in ps))  # noqa: E731
+    rows = [f"| {p['country']}·{p['region']} | " if p["region"] else f"| {p['country'] or '—'} | " for p in shown]
+    rows = [r + f"{cell([p], 'view')} | {cell([p], 'visitor')} | {cell([p], 'question')} |" for r, p in zip(rows, shown, strict=True)]
+    if rest:
+        rows.append(f"| 其他 {len(rest)} 处 | {cell(rest, 'view')} | {cell(rest, 'visitor')} | {cell(rest, 'question')} |")
+    lines += ["", "## 近 30 天（至今天）的地区", "", "| 国家/地区 | 页面访问 | 访客（逐日相加） | 默认服务的提问 |", "|---|---:|---:|---:|", *(rows or ["| — | — | — | — |"]), ""]
+    return "\n".join(lines) + "\n"
 
 
 def _write_text(path: Path, text: str) -> bool:
@@ -451,7 +530,10 @@ def backfill(site: str, relay: str, out: Path, logs: Path, edge: Path, *, before
     for d in days:
         path = daily_path(out, day_of(d))
         data = {"v": 1, "kind": "daily", "period": {"label": d, "from": d, "to": d}, "complete": True, "ledger": None, **(_read(path) or {})}
-        data["backfill"] = {k: v for k, v in (("usage", usage.get(d)), ("records", records.get(d)), ("edge", traffic.get(d))) if v}
+        # what a source no longer has (the Workers keep a year of counts; a run without the token reads none) stays as kept
+        was = data.get("backfill") or {}
+        data["backfill"] = {k: v for k, v in (("usage", usage.get(d) or was.get("usage")), ("records", records.get(d) or was.get("records")),
+                                              ("edge", traffic.get(d) or was.get("edge"))) if v}
         changed += _write(path, data)
         for kind, (label, a, b) in periods(day_of(d)).items():
             touched[(kind, label)] = (a, b)
@@ -459,12 +541,17 @@ def backfill(site: str, relay: str, out: Path, logs: Path, edge: Path, *, before
         path = out / kind / f"{label}.json"
         data = {"v": 1, "kind": kind, "period": {"label": label, "from": a.isoformat(), "to": b.isoformat()}, "ledger": None, **(_read(path) or {})}
         data["backfill"] = summed(out, a, b)
-        data.setdefault("complete", b.isoformat() < today)
+        data["complete"] = b.isoformat() < today  # a week kept while it ran is whole once it is over
         changed += _write(path, data)
-    if days:
+    # the lifetime: every day kept from before the ledger, not only the ones this run read (its span, until the ledger
+    # has one of its own)
+    kept = [d for d in kept_days(out, "backfill") if d.isoformat() < limit]
+    if days and kept:
         path = out / "lifetime.json"
-        data = {"v": 1, "kind": "lifetime", "period": {"label": "lifetime", "from": days[0], "to": days[-1]}, "ledger": None, **(_read(path) or {})}
-        data["backfill"] = summed(out, day_of(days[0]), day_of(days[-1]))
+        data = {"v": 1, "kind": "lifetime", "ledger": None, **(_read(path) or {})}
+        if not data.get("ledger"):
+            data["period"] = {"label": "lifetime", "from": kept[0].isoformat(), "to": kept[-1].isoformat()}
+        data["backfill"] = summed(out, kept[0], kept[-1])
         changed += _write(path, data)
     return {"new": changed, "days": len(days), "first": days[0] if days else None, "last": days[-1] if days else None,
             "sources": sorted(k for k, v in (("usage", usage), ("records", records), ("edge", traffic)) if v)}
@@ -561,7 +648,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.day and not DAY.match(args.day):
         raise SystemExit("--day YYYY-MM-DD")
     if args.action == "report":
-        _output(**report(site, out, least=max(1, args.min_cell), day=args.day))
+        _output(**report(site, out, least=max(1, args.min_cell), day=args.day, relay=relay))
     elif args.action == "backfill":
         _output(**backfill(site, relay, out, Path(args.logs), Path(args.edge), before=args.before))
     else:

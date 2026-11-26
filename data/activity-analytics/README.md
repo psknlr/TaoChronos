@@ -10,7 +10,8 @@
 
 ```
 data/activity-analytics/
-  SUMMARY.md              给人看的一页：昨天、近 7 天、近 30 天与全部并排，回来的访客，近 30 天的地区、模型、工具、设备、来源（每次运行重写）
+  SUMMARY.md              给人看的一页：昨天、近 7 天、近 30 天与全部并排，回来的访客，近 30 天的地区、模型、工具、设备、来源（每次运行重写；
+                          账本启用之前是两个 Worker 的按日计数：页面、按日去重的访客、默认服务的提问与调用、地区）
   daily/年/月/日.json     一天
   weekly/年-W周.json      一周（周一至周日，ISO 周）
   monthly/年-月.json      一个月
@@ -75,6 +76,7 @@ data/activity-analytics/
 
 ## 日常
 
-- 重新生成某一天：Actions → activity → Run workflow，填 `day`。补启用之前的日子：勾选 `backfill`（设了 `LOG_EXPORT_TOKEN` 才有按日计数那一块）。
+- 重新生成某一天：Actions → activity → Run workflow，填 `day`。启用账本之前，每晚的运行自己补上前一天（`backfill`：按日计数、对话记录、边缘的记录），
+  赶在 Worker 一年后删掉按日计数之前存进仓库；启用之后要重写启用前的日子：勾选 `backfill`。已存的数不会因为某个来源不再有那一天而丢掉。
 - 本机：`LOG_EXPORT_TOKEN=… python3 security/activity.py report`；`python3 security/activity.py backfill`（没有令牌时只用仓库里的记录）。
 - 检查管道：`LOG_EXPORT_TOKEN=… python3 security/activity.py validate`——丢弃或丢失了事件、发件箱几小时没清空、归档与清单对不上，都会报错并让当次运行失败。

@@ -470,7 +470,9 @@ the data is.
   `data/activity-analytics/`: [`SUMMARY.md`](../data/activity-analytics/SUMMARY.md) — yesterday, seven days, thirty
   days and all of it side by side, who came back, and the last thirty days' places, models, tools, devices and the sites
   visitors came from — beside the day, week, month and year reports and `lifetime.json`; each run's summary page shows the
-  same.  The repository is private: whoever can read it reads them.  Sums only: no visitor's id leaves Cloudflare, and a
+  same.  Until the ledger is switched on, `SUMMARY.md` is the Workers' daily counts instead — pages, visitors a day,
+  questions and calls of the default service, places: what the old pane showed — and each night keeps those days in
+  `daily/`, before the Workers drop them after a year.  The repository is private: whoever can read it reads them.  Sums only: no visitor's id leaves Cloudflare, and a
   place with fewer visitors than `ACTIVITY_MIN_CELL` (3) is folded into "other".
 - **Cloudflare** — the ledger's rows are in the D1 database `taochronos-activity`, which the dashboard's D1 console (or
   `wrangler d1 execute`) queries; the queries for the usual questions are in
