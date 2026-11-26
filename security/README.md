@@ -310,10 +310,13 @@ data/security-logs/
 
 ```
 两个 Worker ──▶ 事件（envelope）──▶ Durable Object 里的发件箱（LedgerCore：网站的 Watch、中转的 Limiter）
-                                      ├─▶ D1「登记册」（ledger-d1.js）：访客、每日活跃、访问、事件、提问、模型调用、每日合计 —— 统计页与日报读这里
+                                      ├─▶ D1「登记册」（ledger-d1.js）：访客、每日活跃、访问、事件、提问、模型调用、每日合计 —— 日报与站长读这里
                                       └─▶ R2「归档」（archive.js，绑定了 ARCHIVE 时）：一小时一个 gzip 对象 + 每天一份清单
 仓库 ◀── activity 工作流每天取回汇总（activity.py → data/activity-analytics/），只有计数
 ```
+
+**这些数只给站长看**：网站上没有哪一页显示它们，读它们的接口只认收集令牌（`LOG_EXPORT_TOKEN`）、不带 CORS 头（任何网页——本站的或别人的——都读不到），
+令牌不在任何网页里。站长在自己的 GitHub（这个私有仓库的 `data/activity-analytics/`）和 Cloudflare（D1 `taochronos-activity`）里看，见下文「日常」。
 
 **没有密钥就没有账本**：仓库 Secret `ACTIVITY_KEY` 未设时，两个 Worker 与从前完全一样——不发 Cookie、不记事件、没有这些接口。
 
@@ -393,17 +396,48 @@ data/security-logs/
 | 接口 | 谁能用 | 作用 |
 |---|---|---|
 | 网站 `POST /api/activity/hello` | 本站网页（浏览器、同源） | 网页加载后：返回模式、这个浏览器的状态与编号、给中转的通行证；记一次 `page_ready` |
-| 网站 `POST /api/activity/choice` `{ids: "on" \| "off"}`、`POST /api/activity/forget`、`GET /api/activity/me` | 同上 | 访客自己的开关、删除、查看本站关于此编号留了什么（首末日期、天数、页面与提问次数） |
-| 网站 `GET /api/activity/stats?days=N` \| `from=&to=` \| `range=all` | `STATS_TOKEN`（或收集令牌；`STATS_PUBLIC = "1"` 时任何人，此时访客不足 5 的地方合并） | 账本的计数：统计页与日报都读它 |
-| 网站 `GET /api/activity/health`、中转 `GET /v1/activity/health` | `LOG_EXPORT_TOKEN` | 发件箱里等着多少、最老的等了多久、丢弃（`dropped`）、丢失（`lost`）、重复（`duplicates`）、写入失败次数；登记册各表的行数 |
-| 网站 `GET /api/activity/archive?day=YYYY-MM-DD` | `LOG_EXPORT_TOKEN` | 拿这一天（UTC）的归档对清单：缺了哪个对象、哪个对象变了、多了哪个 |
+| 网站 `POST /api/activity/choice` `{ids: "on" \| "off"}`、`POST /api/activity/forget` | 同上 | 访客自己的开关与删除。本站关于一个编号留了什么，不读给任何网页——访客自己的也不读 |
+| 网站 `GET /api/activity/stats?days=N` \| `from=&to=` \| `range=all` | 只有 `LOG_EXPORT_TOKEN` | 账本的计数：activity 工作流读它写日报 |
+| 网站 `GET /api/stats?days=N`、中转 `GET /v1/stats?days=N` | 只有 `LOG_EXPORT_TOKEN` | 两个 Worker 的按日计数（`usage.js`）：比账本早，工作流补启用之前的日子时读它 |
+| 网站 `GET /api/activity/health`、中转 `GET /v1/activity/health` | 只有 `LOG_EXPORT_TOKEN` | 发件箱里等着多少、最老的等了多久、丢弃（`dropped`）、丢失（`lost`）、重复（`duplicates`）、写入失败次数；登记册各表的行数 |
+| 网站 `GET /api/activity/archive?day=YYYY-MM-DD` | 只有 `LOG_EXPORT_TOKEN` | 拿这一天（UTC）的归档对清单：缺了哪个对象、哪个对象变了、多了哪个 |
 | 中转 `POST /v1/activity` | 本站网页的来源 | 一轮的结局（计数），见上 |
+
+要收集令牌的接口都不带 CORS 头、不看 Cookie：没设令牌时谁也读不到，没有账本时也只对令牌的持有人说「这里没有」。
 
 ### 日常与出了问题
 
-- **看数**：设置 → 统计（全部 / 任意起止日期；九个数字、活跃访客、留存、地区、功能使用、访问时长、请求类别与完整度）；仓库里 `data/activity-analytics/`。
-- **直接查库**：`npx wrangler d1 execute taochronos-activity --remote --command "SELECT day, value FROM daily_metrics WHERE metric = 'active' ORDER BY day DESC LIMIT 14"`。
-  表：`visitors`、`visitor_daily_activity`、`sessions`、`activity_events`、`question_events`、`model_invocations`、`daily_metrics`、`archive_manifest`、`deletion_log`。
+- **看数（只有站长）**：
+  - **GitHub**：[`data/activity-analytics/SUMMARY.md`](../data/activity-analytics/SUMMARY.md)——昨天、近 7 天、近 30 天与全部并排（访客、新访客、回访的、访问、
+    页面、提问与其中未存档的、模型调用、token、国家/地区、有过的访客），回来的访客，近 30 天的地区、模型、工具、设备与浏览器、来源与请求类别；
+    每天、每周、每月、每年的报表与 `lifetime.json` 在同一目录；activity 工作流每次运行的摘要页（Actions → activity → 那次运行）是同一张表。
+    仓库是私有的：能读这个仓库的人才看得到，加协作者之前想到这一点。
+  - **Cloudflare**：控制台里 D1 → `taochronos-activity` → Console，或在本地 `npx wrangler d1 execute taochronos-activity --remote --command "…"`。
+    不同访客只能在一段时间上数，不能把每天的人数相加；逐条的访客与每日活跃留 25 个月，再早的只在仓库的报表里。常用的几句：
+
+```sql
+-- 每天的访客、页面与提问（近 14 天；日子按北京时间）
+SELECT day, SUM(CASE WHEN metric = 'active' THEN value ELSE 0 END) AS visitors, SUM(CASE WHEN metric = 'page_views' THEN value ELSE 0 END) AS page_views,
+  SUM(CASE WHEN metric = 'questions' THEN value ELSE 0 END) AS questions FROM daily_metrics WHERE day >= date('now', '-14 days') GROUP BY day ORDER BY day DESC;
+-- 一段时间里的不同访客
+SELECT COUNT(DISTINCT a.visitor_id) AS visitors FROM visitor_daily_activity a JOIN visitors v ON v.visitor_id = a.visitor_id AND v.confirmed = 1
+  WHERE a.day BETWEEN '2026-11-01' AND '2026-11-30';
+-- 同一段时间里，按国家与省份的不同访客
+SELECT a.country, a.region, COUNT(DISTINCT a.visitor_id) AS visitors FROM visitor_daily_activity a JOIN visitors v ON v.visitor_id = a.visitor_id AND v.confirmed = 1
+  WHERE a.day BETWEEN '2026-11-01' AND '2026-11-30' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30;
+-- 提问与其中未存档的（每日合计永久保留；逐条的提问留 25 个月）
+SELECT SUM(value) AS questions, SUM(CASE WHEN k2 <> 'archived' THEN value ELSE 0 END) AS unarchived FROM daily_metrics
+  WHERE metric = 'questions' AND day BETWEEN '2026-11-01' AND '2026-11-30';
+-- 默认服务的模型调用（按模型）与 token
+SELECT k1 AS model, SUM(value) AS calls FROM daily_metrics WHERE metric = 'model_calls' AND day BETWEEN '2026-11-01' AND '2026-11-30' GROUP BY 1 ORDER BY 2 DESC;
+SELECT SUM(CASE WHEN metric = 'tokens_in' THEN value ELSE 0 END) AS tokens_in, SUM(CASE WHEN metric = 'tokens_out' THEN value ELSE 0 END) AS tokens_out
+  FROM daily_metrics WHERE day BETWEEN '2026-11-01' AND '2026-11-30';
+-- 有过的访客（含已删除的）
+SELECT (SELECT COUNT(*) FROM visitors WHERE confirmed = 1) + COALESCE((SELECT v FROM ledger_state WHERE k = 'visitors_removed'), 0) AS visitors_ever;
+```
+
+  表：`visitors`、`visitor_daily_activity`、`sessions`、`activity_events`、`question_events`、`model_invocations`、`daily_metrics`（`metric` 的名字见
+  `ledger-d1.js` 的 `METRICS`）、`archive_manifest`、`deletion_log`。
 - **activity 工作流失败了**：看「The pipeline」一步。「outbox is not being drained」——Worker 的对象写不进 D1（令牌、数据库被删、配额），事件留在发件箱里等着，修好后自己补上；
   「dropped / lost」——发件箱满了（20 万条）或 Worker 够不着对象，这些事件没有了，计数缺多少就是报的那个数；「does not match its manifest」——归档里某天的对象与清单不符。
 - **写入是可重复的**：发件箱至少送达一次，同一批写两遍、两个 Worker 的批次先后颠倒，登记册都是同一个结果（`security/test/ledger.test.js` 里就是这样验的）。

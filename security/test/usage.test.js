@@ -57,8 +57,8 @@ test("the readers' day: UTC+8 by default; a place as Cloudflare names it, cleane
   assert.equal(usageDay(Date.UTC(2026, 9, 6, 16, 30), 8), "2026-10-07"); // 00:30 in Beijing
   assert.equal(usageDay(Date.UTC(2026, 9, 6, 15, 59), 8), "2026-10-06");
   assert.equal(usageDay(Date.UTC(2026, 9, 6, 16, 30), 0), "2026-10-06");
-  assert.deepEqual(usageConfig({}), { token: "", public: false, offset: 8 });
-  assert.deepEqual(usageConfig({ STATS_TOKEN: " t ", STATS_PUBLIC: "1", STATS_UTC_OFFSET: "-5" }), { token: "t", public: true, offset: -5 });
+  assert.deepEqual(usageConfig({}), { offset: 8 });
+  assert.deepEqual(usageConfig({ STATS_TOKEN: " t ", STATS_PUBLIC: "1", STATS_UTC_OFFSET: "-5" }), { offset: -5 }); // no token of its own, no public mode
   assert.equal(usageConfig({ STATS_UTC_OFFSET: "99" }).offset, 8);
   assert.deepEqual(place({ country: "cn", region: "Guang|dong\n" }), { country: "CN", region: "Guangdong" });
   assert.deepEqual(place({ country: "T1" }), { country: "XX", region: "" }); // Tor
@@ -75,28 +75,23 @@ test("old counts and the visitors' keys are pruned", () => {
   assert.deepEqual(store.db.prepare("SELECT who FROM usage_seen").all().map((r) => r.who), ["kept"]); // a key is kept for a day after its own
 });
 
-test("the counts are read with the token, or by anyone when public", async () => {
+test("the counts are the owner's: read with the collector's token alone, by no page", async () => {
   const u = new UsageCore(sqlStore());
   u.add([{ day: "2026-10-07", kind: "call", ...at("CN", "Zhejiang"), n: 4 }]);
   const ask = (token, days = "7") => new Request(`https://chat-api.impf.ai/v1/stats?days=${days}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  const serve = (request, cfg) => serveStats(request, new URL(request.url), { cfg, stats: (d) => u.stats(d, "2026-10-07"), cors: { Vary: "Origin" }, today: "2026-10-07" });
-  const off = await serve(ask(TOKEN), usageConfig({}));
-  assert.equal(off.status, 401);
-  // a refusal anyone may read: nothing of how the counts are opened (the secret's name, the docs)
-  assert.deepEqual(await off.json(), { error: "统计尚未开放", token_required: true, configured: false });
-  const wrong = await serve(ask("not-the-token-at-all"), usageConfig({ STATS_TOKEN: TOKEN }));
-  assert.equal(wrong.status, 401);
-  assert.equal((await wrong.json()).configured, true);
-  const ok = await serve(ask(TOKEN), usageConfig({ STATS_TOKEN: TOKEN }));
+  const serve = (request, token) => serveStats(request, new URL(request.url), { token, stats: (d) => u.stats(d, "2026-10-07"), today: "2026-10-07", offset: 8 });
+  // without the token set on the Worker, nobody; with it, its holder alone — a refusal says nothing of how
+  for (const [given, set] of [[TOKEN, ""], [null, TOKEN], ["not-the-token-at-all", TOKEN]]) {
+    const res = await serve(ask(given), set);
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { error: "需要收集令牌" });
+  }
+  const ok = await serve(ask(TOKEN), TOKEN);
   assert.equal(ok.status, 200);
   const body = await ok.json();
-  assert.equal(body.v, 1);
-  assert.equal(body.totals.call, 4);
-  assert.equal(body.days.length, 7);
+  assert.deepEqual([body.v, body.asOf, body.offset, body.totals.call, body.days.length], [1, "2026-10-07", 8, 4, 7]);
   assert.equal(ok.headers.get("Cache-Control"), "no-store");
-  const open = await serve(ask(null, "1"), usageConfig({ STATS_PUBLIC: "1" }));
-  assert.equal(open.status, 200);
-  assert.equal((await open.json()).days.length, 1);
-  const post = await serveStats(new Request("https://x/v1/stats", { method: "POST" }), new URL("https://x/v1/stats"), { cfg: usageConfig({ STATS_PUBLIC: "1" }), stats: () => ({}) });
+  assert.equal(ok.headers.get("Access-Control-Allow-Origin"), null); // no page reads them, ours or another's
+  const post = await serveStats(new Request("https://x/v1/stats", { method: "POST" }), new URL("https://x/v1/stats"), { token: TOKEN, stats: () => ({}) });
   assert.equal(post.status, 405);
 });

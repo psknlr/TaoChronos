@@ -114,12 +114,17 @@ what the site says of itself:
 
 ### What is read of it
 
-12. **The 统计 pane** ([`web/js/view/stats.js`](../../web/js/view/stats.js)): 全部 and a stretch between two dates
-    beside 7, 30 and 90 days; nine tiles — visitors, visits, pages, questions, unrecorded questions, model calls,
-    tokens, returning visitors, countries; who came back, by the week they first came; active visitors by the day, the
-    week and the month; what is used (tools, models, runtimes), by whom (devices, browsers, languages, where from); how
-    long a visit lasts; and what the requests were and how complete the data is.  Public (`STATS_PUBLIC`), a place needs
-    five visitors to be named.
+12. **The counts are the owner's alone.**  No page of the site shows them — not a pane under 设置, not a visitor their
+    own visits.  Every endpoint that answers with counts (`/api/activity/stats`, `/api/stats`, `/v1/stats`, and the
+    pipeline's `health` and `archive`) answers the collector's token alone (`LOG_EXPORT_TOKEN`), with no CORS headers,
+    and says even that there is nothing to count only to the token's holder; the relay's CORS no longer allows an
+    `Authorization` header from a page.  The owner reads them where only the owner's accounts reach: the reports below,
+    with [`data/activity-analytics/SUMMARY.md`](../../data/activity-analytics/SUMMARY.md) and each run's summary page
+    as their readable face, in this private repository; and the registry itself in Cloudflare's D1 console, for any
+    question the reports do not answer ([security/README.md](../../security/README.md), 活动账本 → 日常).  An earlier
+    draft of this decision had a 统计 pane opened with `STATS_TOKEN`, or with `STATS_PUBLIC` to everyone: a key
+    typed into a page lives in that browser, and a page that can show the counts can be made to show them to someone
+    else.
 13. **The reports** ([`security/activity.py`](../../security/activity.py), `.github/workflows/activity.yml`,
     [`data/activity-analytics/`](../../data/activity-analytics/README.md)): a file a day, a week, a month, a year, and
     the lifetime — sums only, a place or a referring site with fewer than three visitors folded into the rest; the
@@ -185,7 +190,7 @@ what the site says of itself:
 * **The counts of 提问 fall** to what they should have been, and those of 页面访问 rise by the pages returning readers
   opened.  The older numbers stay as they were written.
 * A visitor finds a new field under 设置 → 数据 (访问统计: the switch, their id, the deletion) and a sentence more in 关于
-  — once the site has a ledger, and not before.
+  — once the site has a ledger, and not before — and no count of anyone's, their own included.
 * Cost, on Workers Paid: one object request for the events of two seconds of an instance and one a drain; D1 rows
   written per event and read per sum (thousands a day at this site's size, against 25 billion read and 50 million
   written a month included); with the archive, an object an hour a Worker.
@@ -196,8 +201,9 @@ what the site says of itself:
      workflows: each makes or finds the database `taochronos-activity`, binds it, and gives its Worker the key.
   3. Run **security → Run workflow** (`plan`, then `apply`): rule 3 now also holds `POST /v1/activity` to the page's
      origins.
-  4. `STATS_TOKEN`, as before, opens the pane.  The **activity** workflow reports each night; run it once by hand with
-     `backfill` ticked to write the days before from the Workers' daily counts.
+  4. The **activity** workflow reports each night with the collector's token; run it once by hand with `backfill`
+     ticked to write the days before from the Workers' daily counts.  Read `data/activity-analytics/SUMMARY.md`; delete
+     the secret `STATS_TOKEN` if it is still set, from the repository and from both Workers: nothing reads it now.
   5. Optional: `ARCHIVE_BUCKET` ([ADR 0023](0023-workers-paid.md)) also archives the ledger's events.  It is the same
      switch that moves the conversation records and the sentinel's events from the repository to the bucket.
 * Rollback, each one line: `ACTIVITY = "off"` in both `wrangler.toml` stops the ledger and the cookie (a browser's

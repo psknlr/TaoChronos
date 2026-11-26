@@ -100,7 +100,6 @@ jobs:
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
-          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
           ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
           ACTIVITY_KEY: ${{ secrets.ACTIVITY_KEY }}
           ACTIVITY_DB_NAME: ${{ vars.ACTIVITY_DB_NAME }}
@@ -250,7 +249,6 @@ jobs:
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
-          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
           ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
           ACTIVITY_KEY: ${{ secrets.ACTIVITY_KEY }}
           ACTIVITY_DB_NAME: ${{ vars.ACTIVITY_DB_NAME }}

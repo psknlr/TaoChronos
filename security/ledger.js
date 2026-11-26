@@ -15,7 +15,7 @@
 //   the outbox      a Durable Object's SQLite (LedgerCore): an event is in it before anything else happens to it, under
 //                   an id that makes a second writing of it a no-op
 //   the registry    Cloudflare D1 (ledger-d1.js): the visitors, their days and visits, the questions, the model calls and
-//                   the days' sums — what the 统计 pane and the daily reports read.  The only place that knows two days'
+//                   the days' sums — what the owner's daily reports read.  The only place that knows two days'
 //                   visitors to be the same one
 //   the archive     the private R2 bucket (archive.js), when a Worker has one: an hour of events an object, gzip, a
 //                   manifest a day saying what each must hash to.  A visitor is named there by the day (visitor.js:

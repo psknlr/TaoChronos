@@ -109,13 +109,6 @@ fi
 if [ -n "${SENTINEL_SALT:-}" ]; then
   printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --no -- wrangler secret put SENTINEL_SALT --config wrangler.deploy.toml
 fi
-# the token that reads the counts in the page's settings (统计; docs/web.md): optional, 16 characters or more
-stats="$(printf '%s' "${STATS_TOKEN:-}" | tr -d '[:space:]')"
-if [ "${#stats}" -ge 16 ]; then
-  printf '%s' "$stats" | npx --no -- wrangler secret put STATS_TOKEN --config wrangler.deploy.toml
-elif [ -n "$stats" ]; then
-  echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"
-fi
 # the activity ledger's key, once the Worker has its registry: the same key as the relay's, and one that must stay what
 # it is — with another, every browser is a new visitor (security/visitor.js)
 if grep -q 'binding = "ACTIVITY_DB"' wrangler.deploy.toml; then

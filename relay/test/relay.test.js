@@ -1139,27 +1139,28 @@ test("a page that names no turn: a call that ends with what was asked is a quest
   assert.deepEqual(r.usage.stats(1, "2026-09-28").today, { view: 0, visitor: 0, question: 3, call: 5, asker: 2 });
 }));
 
-test("the counts are read with the stats token, from the page's origin", () => quiet(async () => {
+test("the counts are the owner's: read with the collector's token alone, never by a page", () => quiet(async () => {
   const t = Date.UTC(2026, 9, 7, 4, 0, 0);
-  const r = relay({ now: () => t, cf: { country: "CN", regionCode: "BJ" }, env: { STATS_TOKEN: STATS } });
+  const r = relay({ now: () => t, cf: { country: "CN", regionCode: "BJ" }, env: { STATS_TOKEN: STATS, STATS_PUBLIC: "1" } }); // (neither means anything now)
   await r.call("/v1/chat/completions", post(PAGE_ASK));
+  // the page can neither send a bearer to the relay nor read its counts
   const preflight = await r.call("/v1/stats", { method: "OPTIONS", headers: { Origin: PAGE, "Access-Control-Request-Headers": "authorization" } });
-  assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/);
-  const none = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE } });
-  assert.equal(none.status, 401);
-  assert.equal(none.headers.get("Access-Control-Allow-Origin"), PAGE); // the page reads why
-  const ok = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE, Authorization: `Bearer ${STATS}` } });
+  assert.doesNotMatch(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/i);
+  for (const auth of [null, STATS, "not-the-token-0123456789"]) {
+    const res = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE, ...(auth ? { Authorization: `Bearer ${auth}` } : {}) } });
+    assert.equal(res.status, 401);
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+    assert.deepEqual(await res.json(), { error: "需要收集令牌" });
+  }
+  const ok = await r.call("/v1/stats?days=7", { headers: { Authorization: `Bearer ${TOKEN}` } }); // the collector's, as the repository's workflow sends it
   assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("Access-Control-Allow-Origin"), null);
   const body = await ok.json();
   assert.equal(body.asOf, "2026-10-07");
   assert.deepEqual(body.today, { view: 0, visitor: 0, question: 1, call: 1, asker: 1 });
   assert.equal(body.days.length, 7);
   assert.deepEqual([body.totals.question, body.totals.call], [1, 1]);
   assert.equal(body.places[0].region, "BJ");
-  const unset = relay({ cf: { country: "CN" } });
-  assert.equal((await (await unset.call("/v1/stats", { headers: { Origin: PAGE, Authorization: `Bearer ${STATS}` } })).json()).configured, false);
-  const open = relay({ env: { STATS_PUBLIC: "1" } });
-  assert.equal((await open.call("/v1/stats", { headers: { Origin: PAGE } })).status, 200);
 }));
 
 // ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)

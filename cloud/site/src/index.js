@@ -50,7 +50,7 @@ export class Watch extends DurableObject {
     return this.ledger.health();
   }
 
-  /** The pages opened, by day and place, for the settings' 统计 pane (security/usage.js). */
+  /** The pages opened, by day and place: the owner's daily counts (security/usage.js). */
   usage(counts, seen, today) {
     return this.counts.add(counts, seen, today);
   }

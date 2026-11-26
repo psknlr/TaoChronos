@@ -1,6 +1,6 @@
 # 道乃久默认服务 — the relay between chat.impf.ai and MiniMax (relay/README.md), and OpenAI for the second model.
 # Deployed by .github/workflows/relay.yml.  Its secrets — MINIMAX_API_KEY and LOG_EXPORT_TOKEN; OPENAI_API_KEY,
-# SPONSOR_SECRET, SENTINEL_SALT and STATS_TOKEN when the repository has them — are set from the repository's Actions
+# SPONSOR_SECRET, SENTINEL_SALT and ACTIVITY_KEY when the repository has them — are set from the repository's Actions
 # secrets at each deployment; they are never written here or anywhere in the repository.
 name = "taochronos-relay"
 main = "src/index.js"
@@ -68,9 +68,8 @@ TOTAL_TOKENS_PER_DAY = "200000000"
 SENTINEL = "enforce"
 # a scanner path (/wp-config.php, /.git/HEAD, /xmlrpc.php, …) refuses its address for a day, in observe mode too: block | observe
 HONEYPOT = "block"
-# the counts behind the page's 统计 pane in the settings (security/usage.js, docs/web.md): read with the secret
-# STATS_TOKEN, or by anyone when STATS_PUBLIC = "1"; a day runs on UTC+8 (STATS_UTC_OFFSET, in hours)
-STATS_PUBLIC = "0"
+# the daily counts by place (security/usage.js): the owner's, shown on no page — read with the collector's token alone
+# (LOG_EXPORT_TOKEN), by the repository's workflows.  A day runs on UTC+8 (STATS_UTC_OFFSET, in hours)
 STATS_UTC_OFFSET = "8"
 # the activity ledger (security/README.md, 活动账本; docs/adr/0035-the-activity-ledger.md): every request written down as
 # an event — a page opened, a question, a model call — whatever the sentinel scored it, for a visitor's id and never an

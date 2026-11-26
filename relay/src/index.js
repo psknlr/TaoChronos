@@ -95,7 +95,7 @@ export class Limiter extends DurableObject {
     return this.ledger.health();
   }
 
-  /** The counts for the settings' 统计 pane (security/usage.js). */
+  /** The owner's daily counts (security/usage.js): read with the collector's token alone (relay.js: stats). */
   stats(days, today) {
     return this.usage.stats(days, today);
   }

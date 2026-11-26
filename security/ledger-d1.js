@@ -1,5 +1,5 @@
 // 登记册 — the activity ledger's registry in Cloudflare D1: what the outboxes (ledger.js) are drained into, and what the
-// 统计 pane and the daily reports read.  Both Workers bind the same database (ACTIVITY_DB); tested under Node on
+// owner's daily reports read.  Both Workers bind the same database (ACTIVITY_DB); tested under Node on
 // node:sqlite (security/test/ledger.test.js).
 //
 //   visitors                 a visitor's first and last day, where they first came from, their browser's four words.
@@ -448,7 +448,7 @@ export async function known(db, visitor) {
   return { first_day: v.first_day, last_day: v.last_day, days: Number(a?.days || 0), page_views: Number(a?.page_views || 0), questions: Number(a?.questions || 0) };
 }
 
-// ------------------------------------------------------------------ what the 统计 pane and the reports read
+// ------------------------------------------------------------------ what the owner's reports read
 const MAX_SERIES = 800;
 const SERIES = ["active", "active_7", "active_30", "page_views", "sessions", "questions", "new_visitors", "model_calls", "tokens_in", "tokens_out", "returning"];
 const monday = (col) => `date(${col}, 'weekday 0', '-6 days')`;
@@ -565,17 +565,15 @@ export async function stats(db, { from = null, to, today = to, minCell = 1 }) {
 }
 
 /**
- * GET …/activity/stats?days=N | from=YYYY-MM-DD&to=YYYY-MM-DD | range=all — for the holder of the stats token (or the
- * collector's), or anyone when the counts are public; then a place needs five visitors to be named.  The days that
- * changed are summed first, so what is read is what has been written.  cfg: usageConfig; ledger: ledgerConfig.
+ * GET …/activity/stats?days=N | from=YYYY-MM-DD&to=YYYY-MM-DD | range=all — the ledger's counts, for the holder of the
+ * collector's token (`token`) alone: the owner, through the repository's workflows (security/activity.py).  No page
+ * shows them, and no CORS header lets a browser read them.  The days that changed are summed first, so what is read is
+ * what has been written.  ledger: ledgerConfig.
  */
-export async function serveLedgerStats(request, url, { db, cfg, ledger, today, cors = {}, collector = "" }) {
-  if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "method not allowed" }, 405, cors);
-  if (!db || !ledger?.on) return json({ error: "这里没有活动账本", ledger: false }, 404, cors);
-  let open = cfg.public;
-  if (!(await bearerOk(request, cfg.token)) && !(await bearerOk(request, collector))) {
-    if (!cfg.public) return json({ error: cfg.token ? "统计令牌不对" : "统计尚未开放", token_required: true, configured: Boolean(cfg.token) }, 401, cors);
-  } else open = false;
+export async function serveLedgerStats(request, url, { db, token, ledger, today }) {
+  if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "method not allowed" }, 405);
+  if (!(await bearerOk(request, token))) return json({ error: "需要收集令牌" }, 401);
+  if (!db || !ledger?.on) return json({ error: "这里没有活动账本", ledger: false }, 404);
   const p = url.searchParams;
   const to = DAY.test(p.get("to") || "") && p.get("to") <= today ? p.get("to") : today;
   let from = null;
@@ -584,9 +582,9 @@ export async function serveLedgerStats(request, url, { db, cfg, ledger, today, c
   try {
     await ensure(db);
     await rollup(db, { limit: 5 });
-    return json(await stats(db, { from, to, today, minCell: open ? Math.max(5, ledger.minCell) : ledger.minCell }), 200, cors);
+    return json(await stats(db, { from, to, today, minCell: ledger.minCell }), 200);
   } catch (err) {
     console.error("ledger", "stats", err?.name || "Error", String(err?.message || "").slice(0, 200));
-    return json({ error: "活动账本暂时读不到，请稍后再试" }, 503, { ...cors, "Retry-After": "30" });
+    return json({ error: "活动账本暂时读不到，请稍后再试" }, 503, { "Retry-After": "30" });
   }
 }

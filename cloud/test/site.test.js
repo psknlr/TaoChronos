@@ -589,8 +589,8 @@ test("the policies deployed name the pages' inline scripts and styles by their h
   assert.doesNotMatch(headers, /Content-Security-Policy-Report-Only:.*report-to/); // a worker's response may not have its Reporting-Endpoints processed: report-uri alone
 });
 
-// ------------------------------------------------------------------ the counts for the settings' 统计 pane
-const STATS = "stats-token-0123456789abcdef";
+// ------------------------------------------------------------------ the daily counts by place (security/usage.js): the owner's
+const STATS = "stats-token-0123456789abcdef"; // STATS_TOKEN: once a second key to the counts, now none
 const visit = (call, ip, { ua = CHROME, path = "/", method = "GET" } = {}) =>
   call(`${PAGE}${path}`, { method, headers: { "User-Agent": ua, "Accept-Language": "zh-CN", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document",
     "CF-Connecting-IP": ip } });
@@ -615,20 +615,35 @@ test("a page a browser opens is counted by day and place, its visitor once a day
   assert.deepEqual(counts.stats(1, "2026-10-05").today, { view: 5, visitor: 3, question: 0, call: 0, asker: 0 }); // the same visitor, the same day
 });
 
-test("the counts are read with the stats token; without the sentinel's object there are none", async () => {
-  const { call } = site({ watch: true, env: { STATS_TOKEN: STATS }, cf: { country: "CN", regionCode: "SH" } });
+test("the daily counts are the owner's: read with the collector's token alone, and by no page", async () => {
+  const { call, settle } = site({ watch: true, env: { LOG_EXPORT_TOKEN: EXPORT, STATS_TOKEN: STATS, STATS_PUBLIC: "1" }, cf: { country: "CN", regionCode: "SH" } });
   await visit(call, "203.0.113.9");
-  assert.equal((await call(`${PAGE}/api/stats?days=7`)).status, 401);
-  const ok = await call(`${PAGE}/api/stats?days=7`, { headers: { Authorization: `Bearer ${STATS}` } });
+  await settle();
+  // no token, the old stats token, a wrong one, the site's own page: none of them reads a count (nor is "public" anything now)
+  for (const headers of [{}, { Authorization: `Bearer ${STATS}` }, { Authorization: "Bearer not-the-token-0123456789" }, { ...BROWSER, Origin: PAGE }]) {
+    const res = await call(`${PAGE}/api/stats?days=7`, { headers });
+    assert.deepEqual([res.status, await res.json(), res.headers.get("Access-Control-Allow-Origin")], [401, { error: "需要收集令牌" }, null]);
+  }
+  const ok = await call(`${PAGE}/api/stats?days=7`, { headers: { Authorization: `Bearer ${EXPORT}` } });
   assert.equal(ok.status, 200);
   const body = await ok.json();
   assert.equal(body.days.length, 7);
   assert.equal(body.offset, 8);
+  assert.deepEqual(body.today, { view: 1, visitor: 1, question: 0, call: 0, asker: 0 });
   assert.equal(ok.headers.get("Cache-Control"), "no-store");
-  const foreign = await call(`${PAGE}/api/stats`, { headers: { Authorization: `Bearer ${STATS}`, Origin: "https://evil.example" } });
-  assert.equal(foreign.status, 403);
-  const bare = site({ env: { STATS_PUBLIC: "1" } });
-  assert.equal((await bare.call(`${PAGE}/api/stats`)).status, 404);
+  // the token itself, sent from a page: answered with nothing a page may read; from another site's page, refused
+  const ours = await call(`${PAGE}/api/stats?days=7`, { headers: { ...BROWSER, Origin: PAGE, Authorization: `Bearer ${EXPORT}` } });
+  assert.deepEqual([ours.status, ours.headers.get("Access-Control-Allow-Origin")], [200, null]);
+  const foreign = await call(`${PAGE}/api/stats`, { headers: { Authorization: `Bearer ${EXPORT}`, Origin: "https://evil.example" } });
+  assert.deepEqual([foreign.status, foreign.headers.get("Access-Control-Allow-Origin")], [403, null]);
+  assert.equal((await call(`${PAGE}/api/stats`, { method: "POST", headers: { Authorization: `Bearer ${EXPORT}` } })).status, 405);
+  // without the collector's token on the Worker nobody reads them; without the sentinel's object there are none — said
+  // to the token's holder alone
+  const unset = site({ watch: true, env: { STATS_TOKEN: STATS } });
+  assert.equal((await unset.call(`${PAGE}/api/stats`, { headers: { Authorization: `Bearer ${STATS}` } })).status, 401);
+  const bare = site({ env: { STATS_PUBLIC: "1", LOG_EXPORT_TOKEN: EXPORT } });
+  assert.equal((await bare.call(`${PAGE}/api/stats`)).status, 401);
+  assert.equal((await bare.call(`${PAGE}/api/stats`, { headers: { Authorization: `Bearer ${EXPORT}` } })).status, 404);
 });
 
 // ------------------------------------------------------------------ the activity ledger (security/ledger.js)
@@ -755,9 +770,15 @@ test("the visitor's own switches: the count off, on again, and everything held o
   const hello = await (await post(call, "/api/activity/hello", {}, { Cookie: cookie })).json();
   await settle();
   const db = await registry();
-  assert.deepEqual(db.rows("SELECT visitor_id, confirmed FROM visitors"), [{ visitor_id: hello.visitor, confirmed: 1 }]);
-  const me = await (await call(`${PAGE}/api/activity/me`, { headers: { ...BROWSER, Cookie: cookie } })).json();
-  assert.deepEqual(me, { v: 1, ids: "notice", state: "valid", visitor: hello.visitor, held: { first_day: "2026-10-05", last_day: "2026-10-05", days: 1, page_views: 1, questions: 0 } });
+  assert.deepEqual(db.rows("SELECT visitor_id, confirmed, first_day, last_day FROM visitors"), [{ visitor_id: hello.visitor, confirmed: 1, first_day: "2026-10-05",
+    last_day: "2026-10-05" }]);
+  assert.deepEqual(db.rows("SELECT day, page_views, questions FROM visitor_daily_activity WHERE visitor_id = ?", hello.visitor),
+    [{ day: "2026-10-05", page_views: 1, questions: 0 }]);
+  // what is held of them is read out to no page, not even their own: the counts are the owner's
+  for (const method of ["GET", "POST"]) {
+    const me = await call(`${PAGE}/api/activity/me`, { method, headers: { ...BROWSER, Origin: PAGE, Cookie: cookie } });
+    assert.deepEqual([me.status, JSON.stringify(await me.json()).includes(hello.visitor)], [404, false]);
+  }
   // off: the cookie says so and nothing more; a page opened after it makes no new id
   const off = await post(call, "/api/activity/choice", { ids: "off" }, { Cookie: cookie });
   assert.equal(off.headers.get("Set-Cookie"), "__Host-tcv=off; Path=/; Max-Age=33696000; Secure; HttpOnly; SameSite=Lax");
@@ -804,7 +825,7 @@ test("the API is written down whatever its score: a reader's reads of a minute o
   assert.ok(seen.every((e) => e.latency_ms >= 0));
 });
 
-test("the ledger's counts are read with the stats token; its pipeline and its archive with the collector's", async () => {
+test("the ledger's counts, its pipeline and its archive are the owner's: the collector's token alone, and no page", async () => {
   const { call, settle, registry, advance } = site({ watch: true, ledger: true, cf: CF, env: { STATS_TOKEN: STATS, LOG_EXPORT_TOKEN: EXPORT } });
   const a = cookieOf(await open(call));
   await post(call, "/api/activity/hello", {}, { Cookie: a });
@@ -815,15 +836,22 @@ test("the ledger's counts are read with the stats token; its pipeline and its ar
   await open(call, { "CF-Connecting-IP": "203.0.113.11", "Sec-GPC": "1" });
   await settle();
   await registry();
-  assert.equal((await call(`${PAGE}/api/activity/stats?range=all`)).status, 401);
-  const res = await call(`${PAGE}/api/activity/stats?range=all`, { headers: { Authorization: `Bearer ${STATS}` } });
-  assert.equal(res.status, 200);
+  // no token, the old stats token, the site's own page with a visitor's cookie: nothing — and nothing a page may read
+  for (const where of ["stats?range=all", "health", "archive?day=2026-10-05"]) {
+    for (const headers of [{}, { Authorization: `Bearer ${STATS}` }, { ...BROWSER, Origin: PAGE, Cookie: a }]) {
+      const res = await call(`${PAGE}/api/activity/${where}`, { headers });
+      assert.deepEqual([where, res.status, res.headers.get("Access-Control-Allow-Origin")], [where, 401, null]);
+    }
+  }
+  const res = await call(`${PAGE}/api/activity/stats?range=all`, { headers: { Authorization: `Bearer ${EXPORT}` } });
+  assert.deepEqual([res.status, res.headers.get("Access-Control-Allow-Origin")], [200, null]);
+  const ours = await call(`${PAGE}/api/activity/health`, { headers: { ...BROWSER, Origin: PAGE, Authorization: `Bearer ${EXPORT}` } });
+  assert.deepEqual([ours.status, ours.headers.get("Access-Control-Allow-Origin")], [200, null]); // the token itself, from a page: unreadable there
   const s = await res.json();
   assert.deepEqual([s.from, s.to, s.totals.visitors, s.totals.visits, s.totals.page_views, s.coverage.page_views_identified, s.coverage.page_ready], ["2026-10-05", "2026-10-05", 2, 3, 4, 3, 2]);
   assert.deepEqual(s.places, [{ country: "CN", region: "GD", visitors: 2, page_views: 4, questions: 0 }]);
   assert.deepEqual(s.sessions.lengths.find(([k]) => k === "0-10s"), ["0-10s", 3]);
-  // the pipeline, for the owner
-  assert.equal((await call(`${PAGE}/api/activity/health`, { headers: { Authorization: `Bearer ${STATS}` } })).status, 401);
+  // the pipeline
   const health = await (await call(`${PAGE}/api/activity/health`, { headers: { Authorization: `Bearer ${EXPORT}` } })).json();
   assert.deepEqual([health.site.source, health.site.appended, health.site.dropped, health.site.lost, health.archive, health.ids, health.registry.visitors, health.registry.first_day],
     ["site", 6, 0, 0, false, "notice", 2, "2026-10-05"]);
@@ -857,12 +885,11 @@ test("a ledger that cannot be reached is never in a visitor's way, and what it m
   assert.equal(ledger.get("lost"), 2);
 });
 
-test("a visitor may ask what is held of them, and be forgotten, before the registry has been written to at all", async () => {
+test("a visitor may be forgotten before the registry has been written to at all", async () => {
   const { call } = site({ watch: true, ledger: true, cf: CF });
   const cookie = cookieOf(await open(call)); // nothing drained yet: the registry has no tables
-  const me = await (await call(`${PAGE}/api/activity/me`, { headers: { ...BROWSER, Cookie: cookie } })).json();
-  assert.deepEqual([me.state, isVisitor(me.visitor), me.held], ["valid", true, null]);
   const gone = await post(call, "/api/activity/forget", {}, { Cookie: cookie });
   assert.equal(gone.status, 200);
   assert.equal((await gone.json()).forgotten, false);
+  assert.match(gone.headers.get("Set-Cookie"), /^__Host-tcv=off;/);
 });

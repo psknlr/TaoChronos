@@ -2181,7 +2181,6 @@ const settingsCtx = {
   // the site's count of visits and questions (telemetry.js): what it is here, the visitor's switch, and their erasure
   activity: {
     status: telemetry.status,
-    held: telemetry.held,
     async set(on) { const now = await telemetry.setSending(on); toast(on ? T("已开启访问统计") : T("已关闭访问统计：本浏览器不再有匿名编号")); return now; },
     async forget() {
       const done = await telemetry.forget();

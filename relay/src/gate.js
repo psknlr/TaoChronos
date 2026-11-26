@@ -3,7 +3,7 @@
 //
 //   gateCall    a call the relay may let through: the sentinel sees the request (and may refuse it), then the counters;
 //               a call that answers a visitor is told which turn it belongs to, and the turn's first call is its
-//               question — counted once for the 统计 pane (security/usage.js) and, where the Worker has the activity
+//               question — counted once in the owner's daily counts (security/usage.js) and, where the Worker has the activity
 //               ledger (security/ledger.js), written down with the model call it is
 //   logged      anything else worth an event of the ledger: a request noted, a feedback, a sponsorship
 //

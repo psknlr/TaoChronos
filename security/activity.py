@@ -5,7 +5,9 @@
             up, no further back than CATCH_UP_DAYS), each asked of the site (GET /api/activity/stats) and written to
             data/activity-analytics/daily/YYYY/MM/DD.json; then the week, the month and the year those days fall in,
             each asked for as a whole — a month's visitors are the different visitors of the month, which no sum of its
-            days gives — and lifetime.json, since the ledger's first day
+            days gives — and lifetime.json, since the ledger's first day; and SUMMARY.md, the owner's view of it all
+            (yesterday, the last 7 and 30 days, all time, who came back, where from, what was used), also written to
+            the run's own summary page
   validate  the pipeline: what waits in each Worker's outbox and for how long, what was dropped or lost or failed to
             be written since the last look, yesterday's archive against its manifest, the day's counts against
             themselves, and the count of visitors there ever were against the last one kept (it never falls).  What is
@@ -16,12 +18,13 @@
             cannot be made now: those days say how many visitor-days there were, and between which two numbers the
             visitors lie
 
+The counts are the owner's: no page of the site shows them, and the Workers give them to the collector's token alone.
 What is written here is sums: no visitor's id, no event, no address.  A place with fewer visitors than --min-cell
 (default 3) is folded into "other", and so is a site few came from: the reports are read by whoever reads the
-repository.  The rows the sums are of stay in the registry (D1) and the archive (R2).
+repository.  The rows the sums are of stay in the registry (D1) and the archive (R2), in the owner's Cloudflare account.
 
-Environment: LOG_EXPORT_TOKEN, the collector's token — it reads the ledger's counts and its pipeline; STATS_TOKEN (for
-backfill: the Workers' daily counts open to no other).
+Environment: LOG_EXPORT_TOKEN, the collector's token — it reads the ledger's counts, the Workers' daily counts and the
+pipeline.
 """
 
 from __future__ import annotations
@@ -201,7 +204,85 @@ def report(site: str, out: Path, *, least: int = 3, day: str | None = None, toda
                 "min_cell": least, "ledger": anonymous(stats, least, series=False)}
         data.setdefault("backfill", None)
         changed += _write(path, data)
+        # the owner's view: yesterday, the last 7 and 30 days and all time, each a stretch asked for as a whole
+        windows = {"yesterday": ask(site, token, yesterday, yesterday), "7": ask(site, token, max(first, yesterday - timedelta(days=6)), yesterday),
+                   "30": ask(site, token, max(first, yesterday - timedelta(days=29)), yesterday), "all": stats}
+        text = summary({k: anonymous(v, least, series=False) for k, v in windows.items()}, yesterday, least, _read(out / "pipeline.json"))
+        changed += _write_text(out / "SUMMARY.md", text)
+        step = os.environ.get("GITHUB_STEP_SUMMARY")
+        if step:
+            with open(step, "a", encoding="utf-8") as f:
+                f.write(text)
     return {"new": changed, "ledger": 1, "days": len(days), "through": yesterday.isoformat()}
+
+
+def _write_text(path: Path, text: str) -> bool:
+    if path.is_file() and path.read_text(encoding="utf-8") == text:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return True
+
+
+def _n(v) -> str:
+    return "—" if v is None else f"{int(v):,}"
+
+
+def _share(part, whole) -> str:
+    return f"{round(100 * part / whole)}%" if whole else "—"
+
+
+def summary(w: dict[str, dict], through: date, least: int, pipeline: dict | None = None) -> str:
+    """The owner's view of the ledger, in Markdown (sums only, the small places folded): w — "yesterday", "7", "30",
+    "all", each the ledger's counts over that stretch as a report keeps them."""
+    cols = ["yesterday", "7", "30", "all"]
+    t = {k: (w[k] or {}).get("totals") or {} for k in cols}
+    row = lambda name, f: f"| {name} | " + " | ".join(f(t[k], w[k] or {}) for k in cols) + " |"  # noqa: E731
+    first = (w["all"] or {}).get("from") or (w["all"] or {}).get("first_day") or "—"
+    lines = [
+        "# 使用统计摘要", "",
+        (f"截至 {through.isoformat()}（北京时间，含当天）· 活动账本自 {first} 起 · `security/activity.py` 每天写入，只有计数；"
+         f"访客不足 {least} 的地方与来源网站合并为“其他”。网站的页面上不显示这些统计。"), "",
+        "| | 昨天 | 近 7 天 | 近 30 天 | 全部 |", "|---|---:|---:|---:|---:|",
+        row("访客（整段时间去重）", lambda x, _: _n(x.get("visitors"))),
+        row("　新访客", lambda x, _: _n(x.get("new_visitors"))),
+        row("　回访的访客", lambda x, _: _n(x.get("returning_visitors"))),
+        row("访问次数", lambda x, _: _n(x.get("visits"))),
+        row("页面访问", lambda x, _: _n(x.get("page_views"))),
+        row("提问", lambda x, _: _n(x.get("questions"))),
+        row("　其中未存档", lambda x, _: f"{_n(x.get('questions_unarchived'))}（{_share(x.get('questions_unarchived') or 0, x.get('questions') or 0)}）"),
+        row("模型调用", lambda x, _: _n(x.get("model_calls"))),
+        row("Token（输入 / 输出）", lambda x, _: f"{_n(x.get('tokens_in'))} / {_n(x.get('tokens_out'))}"),
+        row("国家/地区", lambda x, _: _n(x.get("countries"))),
+        # (a count of all time, whatever the stretch: under 全部 alone)
+        f"| 有过的访客（含已删除） | — | — | — | {_n(((w['all'] or {}).get('lifetime') or {}).get('visitors'))} |",
+    ]
+    ret = (w["all"] or {}).get("retention") or {}
+    back = [f"第 {n} 天 {_share((ret.get(f'd{n}') or {}).get('back') or 0, (ret.get(f'd{n}') or {}).get('cohort') or 0)}"
+            f"（{_n((ret.get(f'd{n}') or {}).get('back'))}/{_n((ret.get(f'd{n}') or {}).get('cohort'))}）" for n in (1, 7, 30)]
+    lines += ["", "## 回来的访客", "", "首次来访后再来：" + "，".join(back) + "。", ""]
+    m = w["30"] or {}
+    top = lambda rows, k=8: "，".join(f"{r[0] or '其他'} {_n(r[-1])}" for r in (rows or [])[:k]) or "—"  # noqa: E731
+    place = lambda p: (f"{p['country']}·{p['region']}" if p.get("region") else p.get("country")) or f"其他 {p.get('folded', '')} 处".strip()  # noqa: E731
+    places = "，".join(f"{place(p)} {_n(p.get('visitors'))}" for p in (m.get("places") or [])[:10]) or "—"
+    q = m.get("questions") or {}
+    lines += ["## 近 30 天", "",
+              f"- 地区（按访客）：{places}",
+              f"- 提问的模型：{'，'.join(f'{r[1] or r[0] or chr(8212)} {_n(r[-1])}' for r in (q.get('by_model') or [])[:6]) or '—'}",
+              f"- 提问从哪里得知：{top(q.get('by_basis'))}（relay 默认服务亲眼所见 · client 网页自报 · record 只有对话记录）",
+              f"- 工具：{top((m.get('features') or {}).get('tools'))}",
+              f"- 设备：{top((m.get('audience') or {}).get('devices'))}；浏览器：{top((m.get('audience') or {}).get('browsers'), 6)}",
+              f"- 来源网站：{top((m.get('audience') or {}).get('referrers'), 6)}",
+              f"- 请求的类别：{top((m.get('security') or {}).get('classes'))}", ""]
+    if pipeline and pipeline.get("sources"):
+        src = pipeline["sources"]
+        lines += ["## 管道（上次检查）", "", "| | 等待 | 丢弃 | 丢失 | 写入失败（D1 / R2） |", "|---|---:|---:|---:|---:|"]
+        for name in ("site", "relay"):
+            if name in src:
+                x = src[name]
+                lines.append(f"| {name} | {_n(x.get('waiting'))} | {_n(x.get('dropped'))} | {_n(x.get('lost'))} | {_n(x.get('d1_failures'))} / {_n(x.get('r2_failures'))} |")
+        lines.append("")
+    return "\n".join(lines) + "\n"
 
 
 def period_file(site: str, token: str, out: Path, kind: str, label: str, a: date, b: date, first: date, yesterday: date, least: int) -> int:
@@ -354,10 +435,10 @@ def from_edge(edge: Path) -> dict[str, dict]:
 
 def backfill(site: str, relay: str, out: Path, logs: Path, edge: Path, *, before: str | None = None) -> dict:
     """The days before the ledger's first (or before `before`), from every source that kept something of them."""
-    stats = _token("STATS_TOKEN", needed=False)
-    usage = from_usage(site, relay, stats) if stats else {}
-    if not stats:
-        print("::notice::STATS_TOKEN is not set: the days before the ledger are told from the records alone")
+    token = _token(needed=False)
+    usage = from_usage(site, relay, token) if token else {}
+    if not token:
+        print("::notice::LOG_EXPORT_TOKEN is not set: the days before the ledger are told from the records alone")
     records = from_records(logs) if logs.is_dir() else {}
     traffic = from_edge(edge) if edge.is_dir() else {}
     ledger = kept_days(out, "ledger")

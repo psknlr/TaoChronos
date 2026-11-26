@@ -14,7 +14,11 @@ name: activity
 # security/README.md) the run says so and does nothing.
 #
 # By hand (Run workflow): `backfill` also writes the days before the ledger from what was kept of them — the Workers'
-# daily counts (with the STATS_TOKEN secret) and the conversation records and edge records committed here.
+# daily counts and the conversation records and edge records committed here.
+#
+# The counts are the owner's: no page of the site shows them.  They are read here, with the collector's token, and kept
+# in this private repository — data/activity-analytics/SUMMARY.md and each run's summary are the readable view — and in
+# Cloudflare (the D1 database taochronos-activity: security/README.md, 活动账本).
 on:
   schedule:
     - cron: "37 16 * * *"
@@ -78,7 +82,7 @@ jobs:
         id: backfill
         if: steps.ready.outputs.go == '1' && inputs.backfill
         env:
-          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
         run: python3 security/activity.py backfill --site "$SITE_URL" --relay "$RELAY_URL"
       - name: The pipeline — outboxes, losses, yesterday's archive, the counts against themselves
         id: validate

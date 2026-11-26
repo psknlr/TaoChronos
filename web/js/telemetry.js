@@ -147,11 +147,3 @@ export async function forget() {
   state.told = null;
   return told ? Boolean(told.forgotten) : null;
 }
-
-/** What the ledger holds of this visitor: {visitor, held: {first_day, last_day, days, page_views, questions}} or null. */
-export async function held() {
-  try {
-    const r = await fetch("api/activity/me", { cache: "no-store" });
-    return r.ok ? await r.json() : null;
-  } catch { return null; }
-}

@@ -1,13 +1,14 @@
 // Settings: the model (provider, key, model name, thinking, route), where TaoChronos runs, standing instructions,
-// the conversations' data, the site's usage (统计: stats.js), sponsoring the default service with a key of one's own
-// (赞助, when the site's relay takes them), and what this page is.
+// the conversations' data (and, where the site counts its use, the visitor's own switch for it), sponsoring the default
+// service with a key of one's own (赞助, when the site's relay takes them), and what this page is.  The site's usage
+// statistics are not shown here or anywhere on the page: they are the owner's, read through the repository and
+// Cloudflare (security/README.md, 活动账本).
 
 import { AGENT, AGENT_EN, MODEL as ASSISTANT, PUBLISHED_BY, PUBLISHER, PUBLISHER_EN } from "../brand.js";
 import { contextBudget } from "../context.js";
 import { allProviders, customPreset, DEFAULTS, newCustomProvider, outputLimit, providerById, relayQuestions } from "../providers.js";
 import { NOTICE } from "../records.js";
 import { h, icon, replace } from "../util.js";
-import { statsPane } from "./stats.js";
 import { T } from "../i18n.js";
 
 const SECTIONS = [
@@ -15,7 +16,6 @@ const SECTIONS = [
   ["runtime", T("运行环境"), "server"],
   ["instructions", T("指令"), "edit"],
   ["data", T("数据"), "download"],
-  ["stats", T("统计"), "chart"],
   ["sponsor", T("赞助"), "key"],
   ["about", T("关于"), "info"],
 ];
@@ -36,7 +36,7 @@ export function openSettings(S, ctx, section = "model") {
     foot.textContent = current === "sponsor" ? T("赞助的密钥只在提交时发送一次，不保存在本浏览器。")
       : T("密钥只保存在本浏览器，只发送给所选服务（或你的本地服务）。");
     nav.replaceChildren(...shown().map(([id, label, ic]) => h("button", { type: "button", class: id === current ? "on" : "", on: { click: () => go(id) } }, icon(ic, "sm"), label)));
-    replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, stats: statsPane, sponsor: sponsorPane,
+    replace(pane, ({ model: modelPane, runtime: runtimePane, instructions: instructionsPane, data: dataPane, sponsor: sponsorPane,
       about: aboutPane }[current])(draft, S, ctx, draw, go));
     pane.scrollTop = 0;
   };

@@ -3,7 +3,7 @@ name: relay
 # 道乃久默认服务: relay/ deployed to Cloudflare as chat-api.impf.ai (relay/README.md).
 # Repository secrets it needs (Settings → Secrets and variables → Actions): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID,
 # MINIMAX_API_KEY, LOG_EXPORT_TOKEN; optional: OPENAI_API_KEY (the second model, GPT-6 Luna), SPONSOR_SECRET (visitors'
-# sponsored keys, encrypted under it; 32+ characters), SENTINEL_SALT (security/README.md), STATS_TOKEN.  The keys and the
+# sponsored keys, encrypted under it; 32+ characters), SENTINEL_SALT (security/README.md).  The keys and the
 # tokens become secrets of the Worker; none is ever printed or written into the repository or the site.  Until they are set, this workflow
 # tests the relay and deploys nothing.  Optional repository variable: ARCHIVE_BUCKET, the private R2 bucket the records
 # and the sentinel's events are drained into instead of the repository (security/bind-archive.sh; relay/SETUP.md, 归档).
@@ -79,7 +79,6 @@ jobs:
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
-          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPONSOR_SECRET: ${{ secrets.SPONSOR_SECRET }}
           ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
@@ -97,10 +96,6 @@ jobs:
           printf '%s' "$MINIMAX_API_KEY" | tr -d '[:space:]' | npx --no -- wrangler secret put MINIMAX_API_KEY --config wrangler.deploy.toml
           printf '%s' "$LOG_EXPORT_TOKEN" | tr -d '[:space:]' | npx --no -- wrangler secret put LOG_EXPORT_TOKEN --config wrangler.deploy.toml
           if [ -n "$SENTINEL_SALT" ]; then printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --no -- wrangler secret put SENTINEL_SALT --config wrangler.deploy.toml; fi
-          # the token that reads the counts in the page's settings (统计; docs/web.md): optional, 16 characters or more
-          stats="$(printf '%s' "$STATS_TOKEN" | tr -d '[:space:]')"
-          if [ "${#stats}" -ge 16 ]; then printf '%s' "$stats" | npx --no -- wrangler secret put STATS_TOKEN --config wrangler.deploy.toml
-          elif [ -n "$stats" ]; then echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"; fi
           # the second model's key (GPT-6 Luna, through OpenAI): optional; without it the page offers Tao-R1 only
           openai="$(printf '%s' "$OPENAI_API_KEY" | tr -d '[:space:]')"
           if [ -n "$openai" ]; then printf '%s' "$openai" | npx --no -- wrangler secret put OPENAI_API_KEY --config wrangler.deploy.toml

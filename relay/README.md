@@ -23,7 +23,7 @@
 | `POST /v1/activity` | **活动账本**（`security/ledger.js`，有 `ACTIVITY_KEY` 时才有；[security/README.md](../security/README.md)「活动账本」）：网页在一轮结束时报来的一组**计数**——怎么结束、几轮、用了哪些工具各几次、token——只保留已知字段，不含问题、回答、工具参数、密钥，也不含访客自设接口的地址与模型名。访客用自己的模型提问时请求不经过中转，这是唯一的凭据。每个地址每分钟 30 条、每天 1000 条 |
 | `GET /v1/activity/health` | 账本在中转这边的发件箱：等着多少条、丢弃与丢失的计数（需 `LOG_EXPORT_TOKEN`） |
 | `GET /v1/sponsors`、`POST /v1/sponsors/delete` | 发布方查看赞助（密钥只显示首尾几位）、`?reveal=编号` 解密一把、删除一条；需 `Authorization: Bearer SPONSOR_SECRET`（`python3 relay/collect.py sponsors`） |
-| `GET /v1/stats?days=N` | 网页「设置 → 统计」读取的提问与模型调用次数（按天、国家与省份；需 `STATS_TOKEN`，`STATS_PUBLIC = "1"` 时公开；docs/web.md） |
+| `GET /v1/stats?days=N` | 提问与模型调用次数（按天、国家与省份）：只给站长——只认收集令牌 `LOG_EXPORT_TOKEN`、不带 CORS 头，任何网页都读不到；activity 工作流读它（docs/web.md「使用统计」） |
 
 访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。模型回复末尾报告的
 用量（输入 + 输出 token）也计入该访客当天与全体当天的额度（`TOKENS_PER_DAY`、`TOTAL_TOKENS_PER_DAY`）：用完即拒绝下一次调用。

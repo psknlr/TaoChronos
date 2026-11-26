@@ -18,10 +18,11 @@
 //                                       events go there, not to the repository: security/archive.js)
 //   POST /api/activity/hello            the page, once it has loaded: who its visitor is to the activity ledger (a pass
 //   POST /api/activity/choice, forget   for the relay; security/visitor.js), and the visitor's own switches — the count
-//   GET  /api/activity/me               off or on, everything of theirs forgotten, what is held of them
-//   GET  /api/activity/stats            the ledger's counts for the 统计 pane and the daily reports (the stats token);
-//   GET  /api/activity/health, archive  how its pipeline stands and whether a day of its archive is whole (Bearer
-//                                       LOG_EXPORT_TOKEN) — security/ledger.js, security/ledger-d1.js
+//                                       off or on, everything of theirs forgotten.  No statistics: the page shows none
+//   GET  /api/activity/stats            the ledger's counts, how its pipeline stands, whether a day of its archive is
+//   GET  /api/activity/health, archive  whole — the owner's, for the repository's workflows (Bearer LOG_EXPORT_TOKEN):
+//                                       security/ledger.js, security/ledger-d1.js
+//   GET  /api/stats                     the daily counts by place (security/usage.js), the owner's likewise
 //
 // Nothing else reaches the corpus: not the model proxy of `taochronos serve` (the page talks to its models itself, or to
 // the relay), not its static files.  API calls are limited per visitor (the rate-limit bindings).  The sentinel
@@ -43,7 +44,7 @@
 
 import { EVENTS, serveArchive } from "../../../security/archive.js";
 import { envelope, verifyArchive } from "../../../security/ledger.js";
-import { ensure, forget, known, serveLedgerStats } from "../../../security/ledger-d1.js";
+import { ensure, forget, serveLedgerStats } from "../../../security/ledger-d1.js";
 import { assess, bearerOk, fingerprint, ipKey, isHoneypot, keptPath, ledFrom, logLine, readText, sentinelConfig, serveSecurity, WatchCore } from "../../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../../security/usage.js";
 import { clearCookie, identify, ledgerConfig, OFF, passFor, setCookie } from "../../../security/visitor.js";
@@ -252,7 +253,7 @@ async function site(request, env, s, L, url, cfg) {
     else if (assess(s.fp, { route: "page", ownPrefix: s.cfg.ownPrefix }).score >= 1) note(s, "page", res.status);
   }
   if (!s && !L) return res;
-  // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the 统计 pane —
+  // a page a browser opened (only the pages come through this Worker: run_worker_first) is counted for the owner —
   // one a visitor came to by a link too, not one another site's page loaded as its image or its frame; and one the
   // browser already holds and asks about (304: it is shown from the browser's copy) as much as one sent anew
   const fp = s?.fp || L.fp;
@@ -276,7 +277,7 @@ async function site(request, env, s, L, url, cfg) {
   return res;
 }
 
-// ------------------------------------------------------------------ the counts for the settings' 统计 pane
+// ------------------------------------------------------------------ the owner's daily counts
 const BATCH_MS = 15000;
 
 /**
@@ -367,12 +368,12 @@ async function api(request, env, cfg, deps, url, s, from = null, L = null) {
     if (deps.limit && !(await deps.limit("call", who))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { "Retry-After": "60" });
     return storePart(request, env, cfg, store[1]);
   }
-  if (url.pathname === "/api/stats") { // the counts for the settings' 统计 pane: the stats token's holder (security/usage.js)
-    if (deps.limit && !(await deps.limit("read", who))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
-    if (!deps.watch?.stats) return json({ error: "这里没有统计" }, 404, cors);
+  if (url.pathname === "/api/stats") { // the daily counts, the owner's: the collector's token alone, no page (security/usage.js)
+    if (deps.limit && !(await deps.limit("read", who))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { "Retry-After": "60" });
     const ucfg = usageConfig(env);
     const today = usageDay(deps.now ? deps.now() : Date.now(), ucfg.offset);
-    return serveStats(request, url, { cfg: ucfg, stats: (days) => deps.watch.stats(days, today), cors, today });
+    return serveStats(request, url, { token: env.LOG_EXPORT_TOKEN || "", stats: deps.watch?.stats ? (days) => deps.watch.stats(days, today) : null, today,
+      offset: ucfg.offset });
   }
   const isGet = request.method === "GET" || request.method === "HEAD";
   if (!(isGet && GETS.test(url.pathname)) && !(request.method === "POST" && POSTS.test(url.pathname))) {
@@ -466,43 +467,41 @@ const TABLES = ["visitors", "visitor_daily_activity", "sessions", "activity_even
  *                       for it to be forgotten) and a pass for the relay.  Counted as a page that loaded
  *   POST choice {ids}   "off": no id from now on (the cookie says so, and nothing more); "on": one is made
  *   POST forget         everything held of this visitor is deleted (ledger-d1.js: forget), and the count is off
- *   GET  me             what is held of this visitor: their first and last day, the days and questions counted
- *   GET  stats          the counts (the stats token, or public: ledger-d1.js)
- *   GET  health         the outbox, the registry's rows, what was dropped or lost (Bearer LOG_EXPORT_TOKEN)
- *   GET  archive?day=   that day of the archive against its manifest, both Workers' (Bearer LOG_EXPORT_TOKEN)
+ *   GET  stats          the counts (ledger-d1.js)
+ *   GET  health         the outbox, the registry's rows, what was dropped or lost
+ *   GET  archive?day=   that day of the archive against its manifest, both Workers'
+ *                       — these three the owner's alone (Bearer LOG_EXPORT_TOKEN), read by the repository's workflows and
+ *                       answered with no CORS headers: no page, ours or another's, reads them.  What is held of a visitor
+ *                       is read out to no one here, not even to their own page
  */
 async function activity(request, env, deps, url, L, cors, address) {
   const what = url.pathname.slice("/api/activity/".length);
   if (!L) return json({ error: "这里没有活动账本", ledger: false }, 404, cors);
   if (deps.limit && !(await deps.limit("read", address))) return json({ error: "请求太频繁，请稍候再试", rate_limited: true }, 429, { ...cors, "Retry-After": "60" });
   const ucfg = usageConfig(env);
-  L.mark = { type: "request", route: `/api/activity/${["hello", "choice", "forget", "me", "stats", "health", "archive"].includes(what) ? what : "…"}` };
+  L.mark = { type: "request", route: `/api/activity/${["hello", "choice", "forget", "stats", "health", "archive"].includes(what) ? what : "…"}` };
   const get = request.method === "GET" || request.method === "HEAD";
-  if (what === "stats") return serveLedgerStats(request, url, { db: L.db, cfg: ucfg, ledger: L.cfg, today: usageDay(L.now, ucfg.offset), cors, collector: env.LOG_EXPORT_TOKEN || "" });
-  if (what === "health" || what === "archive") {
-    if (!get) return json({ error: "GET" }, 405, { ...cors, Allow: "GET" });
-    if (!(await bearerOk(request, env.LOG_EXPORT_TOKEN || ""))) return json({ error: "需要收集令牌" }, 401, cors);
+  if (what === "stats") return serveLedgerStats(request, url, { db: L.db, token: env.LOG_EXPORT_TOKEN || "", ledger: L.cfg, today: usageDay(L.now, ucfg.offset) });
+  if (what === "health" || what === "archive") { // the owner's, like the counts: no CORS headers, no page reads them
+    if (!get) return json({ error: "GET" }, 405, { Allow: "GET" });
+    if (!(await bearerOk(request, env.LOG_EXPORT_TOKEN || ""))) return json({ error: "需要收集令牌" }, 401);
     if (what === "archive") {
       const day = url.searchParams.get("day") || "";
-      if (!env.ARCHIVE) return json({ error: "没有归档", archive: false }, 404, cors);
-      if (!DAY.test(day)) return json({ error: "day=YYYY-MM-DD" }, 400, cors);
+      if (!env.ARCHIVE) return json({ error: "没有归档", archive: false }, 404);
+      if (!DAY.test(day)) return json({ error: "day=YYYY-MM-DD" }, 400);
       const sources = ["site", "relay"].filter((x) => !url.searchParams.get("source") || url.searchParams.get("source") === x);
-      return json({ v: 1, day, sources: Object.fromEntries(await Promise.all(sources.map(async (x) => [x, await verifyArchive(env.ARCHIVE, x, day)]))) }, 200, cors);
+      return json({ v: 1, day, sources: Object.fromEntries(await Promise.all(sources.map(async (x) => [x, await verifyArchive(env.ARCHIVE, x, day)]))) }, 200);
     }
     await ensure(L.db);
     const counts = await L.db.batch(TABLES.map((t) => L.db.prepare(`SELECT COUNT(*) AS n FROM ${t}`)));
     const days = await L.db.prepare("SELECT MIN(day) AS first, MAX(day) AS last FROM daily_metrics").first();
     return json({ v: 1, site: await deps.watch.ledgerHealth(), archive: Boolean(env.ARCHIVE), ids: L.cfg.ids,
-      registry: { ...Object.fromEntries(TABLES.map((t, i) => [t, Number(counts[i].results?.[0]?.n || 0)])), first_day: days?.first || null, last_day: days?.last || null } }, 200, cors);
+      registry: { ...Object.fromEntries(TABLES.map((t, i) => [t, Number(counts[i].results?.[0]?.n || 0)])), first_day: days?.first || null, last_day: days?.last || null } }, 200);
   }
+  // nothing else is read here: what is held of a visitor is read out to no one, not even to their own page
+  if (!["hello", "choice", "forget"].includes(what)) return json({ error: `no such endpoint ${request.method} ${url.pathname}` }, 404, cors);
   // the page's own, from a browser: its visitor is whoever the cookie names
   if (L.fp.uaClass !== "browser" || (L.fp.sfSite && L.fp.sfSite !== "same-origin")) return json({ error: "这个接口只供本站的网页调用" }, 403, cors);
-  if (what === "me") {
-    if (!get) return json({ error: "GET" }, 405, { ...cors, Allow: "GET" });
-    const who = await L.identify();
-    const held = who.visitor ? await ensure(L.db).then(() => known(L.db, who.visitor)).catch(() => null) : null;
-    return json({ v: 1, ids: L.cfg.ids, state: who.state, visitor: who.visitor, held }, 200, cors);
-  }
   if (request.method !== "POST") return json({ error: "POST" }, 405, { ...cors, Allow: "POST" });
   const text = await readText(request, 1024);
   if (text === null) return json({ error: "请求太大" }, 413, cors);

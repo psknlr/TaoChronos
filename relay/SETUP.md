@@ -31,7 +31,6 @@ MiniMax 控制台 → 复制密钥 → GitHub 仓库 Secrets → relay 工作流
 | `LOG_EXPORT_TOKEN` | 仓库取回对话记录用的口令，自己生成 | 第 4 步 |
 | `OPENAI_API_KEY`（可选） | 第二个模型 GPT-6 Luna 用的 OpenAI 密钥（每人每天 3 个问题） | 见下文「可选：第二个模型」 |
 | `SPONSOR_SECRET`（可选） | 访客赞助的密钥用它加密，你也用它读取，32 位以上随机串（如 `openssl rand -hex 32`） | 见下文「可选：赞助」 |
-| `STATS_TOKEN`（可选） | 在网页「设置 → 统计」里查看使用次数与地区的令牌，16 位以上随机串（如 `openssl rand -hex 24`）；网站与默认服务共用 | 自己生成（见 docs/web.md） |
 
 取得的值先暂存在密码管理器或本机的临时记事里，存进 GitHub 后就删掉。**不要**把它们发到聊天、Issue、PR 里，也不要提交进仓库。
 
@@ -210,7 +209,11 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 3. Actions → security → Run workflow（`plan`，再 `apply`）：让边缘也只放行网页来源的 `POST /v1/activity`。
 
 没有这个 Secret，中转不记任何账本事件。不论有没有账本，中转现在都按**轮**数提问：网页给每一轮起名字（`X-Tao-Turn`），
-一轮里的工具轮、自查重写、接着写与重试都不再各算一次提问——此前「设置 → 统计」里的提问数因此偏多。
+一轮里的工具轮、自查重写、接着写与重试都不再各算一次提问——此前的按日计数里提问数因此偏多。
+
+使用统计只给站长看：网站上没有哪一页显示它们，`/v1/stats` 与 `/v1/activity/health` 只认收集令牌 `LOG_EXPORT_TOKEN`；
+站长在仓库的 `data/activity-analytics/SUMMARY.md` 与 Cloudflare 的 D1 控制台里看（docs/web.md「使用统计」）。
+以前用来在网页上看统计的 `STATS_TOKEN` 已不再使用，可以从仓库 Secret 与两个 Worker 里删去。
 
 ## 可选：第二个模型 GPT-6 Luna（OpenAI）
 

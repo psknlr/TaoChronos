@@ -232,7 +232,8 @@ export async function handle(request, env, deps) {
     }
     return new Response(null, {
       status: 204,
-      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-Tao-Turn, X-Tao-Visitor",
+      // (no Authorization: the page sends the relay no key, and reads nothing of it that needs one)
+      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, X-Tao-Turn, X-Tao-Visitor",
         "Access-Control-Max-Age": "86400" },
     });
   }
@@ -250,7 +251,7 @@ export async function handle(request, env, deps) {
     }
     switch (`${request.method} ${url.pathname}`) {
       case "GET /v1/health": return health(env, cfg, cors, deps.now(), A);
-      case "GET /v1/stats": return await stats(request, env, url, cors, deps);
+      case "GET /v1/stats": return await stats(request, env, url, deps);
       case "GET /v1/egress": return await egress(request, env, cfg, cors, deps);
       case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s, A);
       case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s, A);
@@ -509,7 +510,7 @@ async function chat(request, env, cfg, cors, allowed, deps, s, A) {
   const reserve = Math.ceil(raw.length / 3);
   let gate;
   try {
-    // the call is counted with the gate's round trip for the settings' 统计 pane (security/usage.js): its day, its place,
+    // the call is counted with the gate's round trip for the owner's daily counts (security/usage.js): its day, its place,
     // and whether it is a question or a tool round of one
     const usage = s ? { day: usageDay(deps.now(), usageConfig(env).offset), ...place(s.fp), turn: Boolean(shape?.turn) } : null;
     gate = await deps.gate({ who, kind: "chat", limits: cfg.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve, usage,
@@ -1549,12 +1550,13 @@ async function unsponsor(request, env, deps, s) {
   return json(await deps.sponsors.remove(id));
 }
 
-// ------------------------------------------------------------------ the counts for the settings' 统计 pane
-async function stats(request, env, url, cors, deps) {
-  if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { ...cors, "Retry-After": "10" });
+// ------------------------------------------------------------------ the daily counts: the owner's
+/** GET /v1/stats: for the holder of the collector's token alone (security/usage.js), and for no page: no CORS headers. */
+async function stats(request, env, url, deps) {
+  if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { "Retry-After": "10" });
   const ucfg = usageConfig(env);
   const today = usageDay(deps.now(), ucfg.offset);
-  return serveStats(request, url, { cfg: ucfg, stats: (days) => deps.stats(days, today), cors, today });
+  return serveStats(request, url, { token: env.LOG_EXPORT_TOKEN || "", stats: (days) => deps.stats(days, today), today, offset: ucfg.offset });
 }
 
 async function records(request, env, url, deps) {

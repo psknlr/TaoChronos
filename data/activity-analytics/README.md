@@ -5,8 +5,12 @@
 这里是这些事件的**汇总**：只有计数，没有任何一条事件、任何一个访客编号、任何网络地址。由
 `.github/workflows/activity.yml` 每天（北京时间零点过后）运行 `security/activity.py` 写入。
 
+**这些数只给站长看**：网站上没有哪一页显示它们，读它们的接口只认收集令牌（`LOG_EXPORT_TOKEN`），这个仓库是私有的。
+先看 [`SUMMARY.md`](SUMMARY.md)；要查别的，在 Cloudflare 的 D1 控制台里查（[`security/README.md`](../../security/README.md)「活动账本 → 日常」里有常用的几句）。
+
 ```
 data/activity-analytics/
+  SUMMARY.md              给人看的一页：昨天、近 7 天、近 30 天与全部并排，回来的访客，近 30 天的地区、模型、工具、设备、来源（每次运行重写）
   daily/年/月/日.json     一天
   weekly/年-W周.json      一周（周一至周日，ISO 周）
   monthly/年-月.json      一个月
@@ -53,7 +57,7 @@ data/activity-analytics/
 
 | 字段 | 来自 | 含义 |
 |---|---|---|
-| `usage` | 两个 Worker 的按日计数（`security/usage.js`，需要 `STATS_TOKEN`） | `page_views` 页面访问、`visitor_days` 按日去重的访客（同一个人两天来算两次）、`questions_default_service` / `model_calls_default_service` / `asker_days` 默认服务的提问、模型调用与提问的人 |
+| `usage` | 两个 Worker 的按日计数（`security/usage.js`，用收集令牌读） | `page_views` 页面访问、`visitor_days` 按日去重的访客（同一个人两天来算两次）、`questions_default_service` / `model_calls_default_service` / `asker_days` 默认服务的提问、模型调用与提问的人 |
 | `records` | 仓库里的对话记录（`data/chat-logs/`） | **同意记录的访客**的提问数 `questions`（一轮只算一次，以最后一条记录为准）、按服务 `by_provider`、默认服务的模型 `by_model`、结局 `by_status`、模型调用 `model_calls`、token、工具调用与各工具次数、评价 `feedback`。只有计数，没有一个字的问题或回答；访客自设的接口记作 `custom`，其模型名不记 |
 | `edge` | 边缘的记录（`data/security-logs/edge/`，`kind: traffic`） | 当天到两个主机的全部请求 `requests`、Cloudflare 自己数的访问 `visits`、按状态分 `by_status`——包括没有经过 Worker 的静态文件与被边缘拦下的请求 |
 | `visitors` | 由 `usage` 推出 | **补不出来的那个数**：这段时间的访客在 `at_least`（人数最多的那一天）与 `at_most`（每天相加）之间。当时的去重键两天后就删了，同一个人跨天来了几次已无从得知 |
@@ -66,11 +70,11 @@ data/activity-analytics/
 
 - 这里没有访客编号、没有事件、没有地址；`places` 与 `referrers` 里访客不足 `min_cell`（默认 3，仓库变量 `ACTIVITY_MIN_CELL`）的合并成一行。
   `totals.countries` 仍然说一共有几个国家——有几个是可以说的，是哪几个小的不说。
-- 统计页（设置 → 统计）凭令牌读到的是不合并的；公开统计（`STATS_PUBLIC = "1"`）时，访客不足 5 的地方同样合并。
+- 网站上没有统计页：不合并的计数只在 D1 里，只有站长在 Cloudflare 里查得到。
 - 仓库须保持私有（`data/` 在 `distribution-policy.yaml` 里是 confidential，任何构建产物都不含它）。
 
 ## 日常
 
-- 重新生成某一天：Actions → activity → Run workflow，填 `day`。补启用之前的日子：勾选 `backfill`（设了 `STATS_TOKEN` 才有按日计数那一块）。
+- 重新生成某一天：Actions → activity → Run workflow，填 `day`。补启用之前的日子：勾选 `backfill`（设了 `LOG_EXPORT_TOKEN` 才有按日计数那一块）。
 - 本机：`LOG_EXPORT_TOKEN=… python3 security/activity.py report`；`python3 security/activity.py backfill`（没有令牌时只用仓库里的记录）。
 - 检查管道：`LOG_EXPORT_TOKEN=… python3 security/activity.py validate`——丢弃或丢失了事件、发件箱几小时没清空、归档与清单对不上，都会报错并让当次运行失败。

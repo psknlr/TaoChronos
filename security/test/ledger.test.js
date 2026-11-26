@@ -9,7 +9,6 @@ import { ACTIVITY, MANIFESTS, readBatch } from "../archive.js";
 import { classify, describe, envelope, EVENT_TYPES, LedgerCore, LedgerDrainer, SCHEMA_VERSION, ulid, verifyArchive } from "../ledger.js";
 import { apply, ensure, forget, known, METRICS, prune, rollup, serveLedgerStats, stats, TABLES } from "../ledger-d1.js";
 import { fingerprint } from "../sentinel.js";
-import { usageConfig } from "../usage.js";
 import { dayAlias, ledgerConfig } from "../visitor.js";
 import { alarmStorage, bucket, d1, sqlStore } from "./fakes.js";
 
@@ -523,28 +522,33 @@ test("an archive out of reach: the registry is written all the same, the rows wa
 });
 
 // ------------------------------------------------------------------ who may read it
-test("the stats are read with the stats token or the collector's; public, a place needs five visitors to be named", async () => {
+test("the ledger's counts are the owner's: the collector's token alone, never a page", async () => {
   const { events } = fortnight();
   const db = d1();
   await ensure(db);
   await apply(db, events); // not summed yet: reading sums what changed first
+  const EXPORT = "export-token-0123456789abcdef";
   const url = (q) => new URL(`https://chat.impf.ai/api/activity/stats${q}`);
-  const get = (q, token, extra = {}) => serveLedgerStats(new Request(url(q), { headers: token ? { Authorization: `Bearer ${token}` } : {} }), url(q),
-    { db, cfg: usageConfig({ STATS_TOKEN: "stats-token-0123456789", ...extra }), ledger: CFG, today: "2026-11-25", collector: "export-token-0123456789abcdef" });
-  assert.equal((await get("?range=all")).status, 401);
-  assert.deepEqual(await (await get("?range=all", "wrong-token-0123456789")).json(), { error: "统计令牌不对", token_required: true, configured: true });
-  const all = await (await get("?range=all", "stats-token-0123456789")).json();
+  const get = (q, token, opts = {}) => serveLedgerStats(new Request(url(q), { headers: token ? { Authorization: `Bearer ${token}` } : {} }), url(q),
+    { db, token: EXPORT, ledger: CFG, today: "2026-11-25", ...opts });
+  for (const given of [null, "stats-token-0123456789", "not-the-token-0123456789"]) {
+    const res = await get("?range=all", given);
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { error: "需要收集令牌" });
+  }
+  assert.equal((await get("?range=all", EXPORT, { token: "" })).status, 401); // no token set on the Worker: nobody
+  const res = await get("?range=all", EXPORT);
+  assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  const all = await res.json();
   assert.deepEqual([all.from, all.to, all.totals.visitors, all.places.length], ["2026-11-12", "2026-11-25", 3, 2]);
-  assert.equal((await (await get("?days=7", "export-token-0123456789abcdef")).json()).from, "2026-11-19");
-  const custom = await (await get("?from=2026-11-14&to=2026-11-20", "stats-token-0123456789")).json();
+  assert.equal((await (await get("?days=7", EXPORT)).json()).from, "2026-11-19");
+  const custom = await (await get("?from=2026-11-14&to=2026-11-20", EXPORT)).json();
   assert.deepEqual([custom.from, custom.to, custom.days.length, custom.totals.visitors], ["2026-11-14", "2026-11-20", 7, 2]);
-  assert.equal((await (await get("?from=2026-12-30&to=2099-01-01", "stats-token-0123456789")).json()).to, "2026-11-25"); // no day after today
-  const open = await (await get("?range=all", null, { STATS_PUBLIC: "1" })).json();
-  assert.deepEqual(open.places.map((p) => [p.country, p.visitors, p.folded]), [["", 3, 2]]);
-  assert.equal(open.totals.visitors, 3);
-  assert.equal((await get("?range=all", "stats-token-0123456789", {})).headers.get("Cache-Control"), "no-store");
-  const off = await serveLedgerStats(new Request(url("")), url(""), { db: null, cfg: usageConfig({}), ledger: CFG, today: "2026-11-25" });
-  assert.equal(off.status, 404);
-  assert.equal((await serveLedgerStats(new Request(url(""), { method: "POST" }), url(""), { db, cfg: usageConfig({}), ledger: CFG, today: "2026-11-25" })).status, 405);
+  assert.equal((await (await get("?from=2026-12-30&to=2099-01-01", EXPORT)).json()).to, "2026-11-25"); // no day after today
+  // without a ledger: said only to the token's holder
+  assert.equal((await get("", null, { db: null })).status, 401);
+  assert.equal((await get("", EXPORT, { db: null })).status, 404);
+  assert.equal((await serveLedgerStats(new Request(url(""), { method: "POST" }), url(""), { db, token: EXPORT, ledger: CFG, today: "2026-11-25" })).status, 405);
   assert.equal(TABLES.filter((t) => t.startsWith("CREATE TABLE")).length, 12);
 });

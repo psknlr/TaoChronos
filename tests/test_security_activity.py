@@ -95,7 +95,7 @@ def test_the_days_not_yet_kept_are_reported_with_the_week_the_month_and_the_year
     site = Site()
     monkeypatch.setattr(activity, "_request", site)
     out = activity.report(SITE, tmp_path)
-    assert out == {"new": 10, "ledger": 1, "days": 5, "through": "2026-11-24"}  # the 20th to the 24th; two weeks, a month, a year, the lifetime
+    assert out == {"new": 11, "ledger": 1, "days": 5, "through": "2026-11-24"}  # the 20th to the 24th; two weeks, a month, a year, the lifetime, the summary
     assert all(token == TOKEN and host == "chat.impf.ai" for host, _, _, token in site.asked)  # the collector's token, to the site alone
     day = read(tmp_path / "daily" / "2026" / "11" / "22.json")
     assert (day["kind"], day["period"], day["complete"], day["backfill"]) == ("daily", {"label": "2026-11-22", "from": "2026-11-22", "to": "2026-11-22"}, True, None)
@@ -119,9 +119,11 @@ def test_the_days_not_yet_kept_are_reported_with_the_week_the_month_and_the_year
     later = Site(today="2026-11-26")
     monkeypatch.setattr(activity, "_request", later)
     assert activity.report(SITE, tmp_path)["days"] == 1
-    # (the month and the year from the ledger's first day: there is nothing of it before)
-    assert sorted(q.get("from", "all") + "…" + q["to"] for _, _, q, _ in later.asked[1:]) == ["2026-11-20…2026-11-25", "2026-11-20…2026-11-25", "2026-11-23…2026-11-25",
-                                                                                           "2026-11-25…2026-11-25", "all…2026-11-25"]
+    # (the month, the year and the summary's last 7 and 30 days from the ledger's first day: there is nothing of it
+    # before), the lifetime, and the summary's yesterday
+    assert sorted(q.get("from", "all") + "…" + q["to"] for _, _, q, _ in later.asked[1:]) == [
+        "2026-11-20…2026-11-25", "2026-11-20…2026-11-25", "2026-11-20…2026-11-25", "2026-11-20…2026-11-25", "2026-11-23…2026-11-25",
+        "2026-11-25…2026-11-25", "2026-11-25…2026-11-25", "all…2026-11-25"]
     assert read(tmp_path / "weekly" / "2026-W48.json")["ledger"]["to"] == "2026-11-25"
 
 
@@ -221,7 +223,6 @@ def records(tmp_path: Path) -> Path:
 
 
 def test_the_days_before_the_ledger_are_told_from_what_was_kept_of_them(monkeypatch, tmp_path, env):
-    monkeypatch.setenv("STATS_TOKEN", "stats-token-0123456789abcdef")
     site = Site()
     monkeypatch.setattr(activity, "_request", site)
     out = tmp_path / "analytics"
@@ -234,7 +235,7 @@ def test_the_days_before_the_ledger_are_told_from_what_was_kept_of_them(monkeypa
     activity.report(SITE, out)  # the ledger's days: from the 20th
     done = activity.backfill(SITE, RELAY, out, records(tmp_path), tmp_path / "edge")
     assert done["days"] == 3 and done["first"] == "2026-11-17" and done["last"] == "2026-11-19" and done["sources"] == ["edge", "records", "usage"]
-    assert [t for _, p, _, t in site.asked if p in ("/api/stats", "/v1/stats")] == ["stats-token-0123456789abcdef"] * 2
+    assert [t for _, p, _, t in site.asked if p in ("/api/stats", "/v1/stats")] == [TOKEN] * 2  # the collector's token: the daily counts are the owner's
     d17 = read(out / "daily" / "2026" / "11" / "17.json")
     assert d17["ledger"] is None and d17["backfill"] == {
         "usage": {"page_views": 30, "visitor_days": 10, "questions_default_service": 8, "model_calls_default_service": 40, "asker_days": 4},
@@ -256,9 +257,9 @@ def test_the_days_before_the_ledger_are_told_from_what_was_kept_of_them(monkeypa
     assert week["backfill"]["records"]["by_provider"] == {"impf": 1, "custom": 1, "fixed": 1}
     life = read(out / "lifetime.json")
     assert life["backfill"]["days"] == 3 and life["ledger"]["lifetime"]["visitors"] == 40
-    # again: nothing changes; without the stats token, from the records and the edge alone
+    # again: nothing changes; without the collector's token, from the records and the edge alone
     assert activity.backfill(SITE, RELAY, out, tmp_path / "chat-logs", tmp_path / "edge")["new"] == 0
-    monkeypatch.delenv("STATS_TOKEN")
+    monkeypatch.delenv("LOG_EXPORT_TOKEN")
     alone = activity.backfill(SITE, RELAY, tmp_path / "alone", tmp_path / "chat-logs", tmp_path / "edge")
     assert alone["sources"] == ["edge", "records"] and alone["days"] == 2
 
@@ -285,3 +286,23 @@ def test_both_workers_run_the_ledger_alike():
     # the key is a secret of the repository, never a value in a file; the registry is bound at deployment
     for text in ((ROOT / "cloud" / "site" / "wrangler.toml").read_text(encoding="utf-8"), (ROOT / "relay" / "wrangler.toml").read_text(encoding="utf-8")):
         assert "ACTIVITY_KEY =" not in text and "ACTIVITY_DB" not in text.replace("ACTIVITY_DB (security/bind-ledger.sh)", "")
+
+
+def test_the_owners_summary_is_readable_and_names_no_one(monkeypatch, tmp_path, env):
+    """SUMMARY.md, the owner's view in the repository (no page of the site shows the counts): yesterday, the last 7 and 30
+    days and all time side by side, who came back, where from — sums only, the small places folded — and the same text
+    on the run's own summary page."""
+    step = tmp_path / "step.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(step))
+    monkeypatch.setattr(activity, "_request", Site())
+    activity.report(SITE, tmp_path / "out", least=3)
+    text = (tmp_path / "out" / "SUMMARY.md").read_text(encoding="utf-8")
+    assert step.read_text(encoding="utf-8") == text
+    assert text.startswith("# 使用统计摘要\n") and "截至 2026-11-24" in text and "活动账本自 2026-11-20 起" in text and "网站的页面上不显示这些统计" in text
+    assert "| 访客（整段时间去重） | 2 | 6 | 6 | 6 |" in text  # each stretch counted as a whole (the stand-in: a visitor a day and one every day)
+    assert "| 　其中未存档 | 3（60%） |" in text and "| 有过的访客（含已删除） | — | — | — | 40 |" in text
+    assert "首次来访后再来：第 1 天 25%（1/4）" in text
+    assert "CN·GD 5，其他 2 处 3" in text  # Singapore's two visitors and Iceland's one: folded
+    assert "IS" not in text and "hospital" not in text and "v_" not in text
+    # nothing new: the summary is not written again
+    assert activity.report(SITE, tmp_path / "out", least=3)["new"] == 0
