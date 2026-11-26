@@ -34,8 +34,8 @@ POLICY = "distribution-policy.yaml"
 PACKAGE = Path(__file__).resolve().parents[1]
 CLASSES = ("public", "restricted", "confidential")
 # what the build itself writes into a site, beside the client (web/) and Pyodide (named in the manifest)
-GENERATED = ("runtime/taochronos.zip", "runtime/home.zip", "runtime/corpus.sqlite.xz", "runtime/boot.json", "runtime/manifest.json",
-             "providers.json", "site.json", "robots.txt", "sitemap.xml", ".nojekyll")
+GENERATED = ("runtime/taochronos.zip", "runtime/home.zip", "runtime/corpus.sqlite.xz", "runtime/taocore.wasm", "runtime/boot.json",
+             "runtime/manifest.json", "providers.json", "site.json", "robots.txt", "sitemap.xml", ".nojekyll")
 CACHE_ENTRY = re.compile(r"^\.cache/yaml/[0-9a-f]{2}/[0-9a-f]{64}\.v\d+\.pickle$")
 TEXT = (".html", ".js", ".mjs", ".css", ".json", ".txt", ".xml", ".md", ".svg", ".webmanifest", ".py", ".yaml", ".yml", ".csv", ".pickle")
 # What reads as a credential, by the forms the services issue them in — never a guess from a variable's name alone.
@@ -233,6 +233,35 @@ def _banned(name: str, patterns: list[str]) -> str | None:
     return next((p for p in patterns if fnmatch.fnmatchcase(base, p)), None)
 
 
+def wasm_imports(module: bytes) -> int | None:
+    """How many imports a WebAssembly module declares — its import section's count (0 without one); None for bytes
+    that are not a module.  The text scan reads no binary, so this is what the audit knows of one: a module of no
+    imports can only compute on its own memory and give numbers back."""
+    if module[:8] != b"\0asm\x01\0\0\0":
+        return None
+
+    def leb(at: int) -> tuple[int, int]:
+        value = shift = 0
+        while True:
+            byte = module[at]
+            value, shift, at = value | (byte & 0x7F) << shift, shift + 7, at + 1
+            if not byte & 0x80:
+                return value, at
+
+    at = 8
+    try:
+        while at < len(module):
+            section, (size, start) = module[at], leb(at + 1)
+            if start + size > len(module):
+                return None  # a section cut short: no module
+            if section == 2:
+                return leb(start)[0]
+            at = start + size
+    except IndexError:
+        return None
+    return 0 if at == len(module) else None
+
+
 def audit_site(site: str | Path, home: str | Path, policy: dict[str, Any] | None = None, package: Path = PACKAGE,
                web: Path | None = None) -> list[str]:
     """What is wrong with a built site, by the policy (nothing: an empty list):
@@ -271,6 +300,8 @@ def audit_site(site: str | Path, home: str | Path, policy: dict[str, Any] | None
         if not rel.startswith("pyodide/") and path.suffix in TEXT and path.stat().st_size < 32_000_000:
             for what in marks(path.read_text(encoding="utf-8", errors="replace")):
                 problems.append(f"{rel}: reads as {what}")
+        if rel.startswith("runtime/") and path.suffix == ".wasm" and wasm_imports(path.read_bytes()) != 0:
+            problems.append(f"{rel}: not a WebAssembly module of no imports (the build ships only such: it computes and reaches nothing)")
 
     def entries(name: str) -> dict[str, bytes] | None:
         try:

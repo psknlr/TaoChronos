@@ -13,6 +13,13 @@
 //   too — so that a later visit loads in seconds, with nothing to download or index; so is the package's bytecode,
 //   compiled once after the first visit's indexing.
 //
+// TaoCore (docs/adr/0036-taocore.md): what a search computes over its candidates — BM25 of its query's tokens, the
+// hashed n-gram cosines — runs in a WebAssembly module (runtime/taocore.wasm, of no imports) where it loads: fetched
+// beside the archives, instantiated here (the page's own policy compiles no WebAssembly), and handed to Python as
+// `_taocore_wasm` before Python imports the package.  It is optional: where it does not load, or gives other numbers
+// than Python's own definitions on the self-test Python runs before using it, the search computes the same numbers in
+// Python, more slowly.
+//
 // 我的资料: a file the page hands over (data_add, its bytes transferred) is read, made anonymous and kept by the runtime;
 // what was kept — the anonymous dataset, never the file — is stored here too (IndexedDB, "mydata:<id>") and given back to
 // the runtime when it starts at the next visit, until the page removes it (data_remove, data_clear).
@@ -85,15 +92,37 @@ const kept = (() => {
   };
 })();
 
-/** A runtime archive: kept by content (the manifest's sha256), so that a new build is always fetched. */
-async function archive(base, name, sha) {
+/** The bytes' SHA-256 in hex, or null where this browser offers none (crypto.subtle is a secure context's). */
+async function sha256(bytes) {
+  try {
+    return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return null;
+  }
+}
+
+/** A runtime archive: kept by content (the manifest's sha256), so that a new build is always fetched.  Bytes are kept
+ * only when they are what the manifest names — a download cut short, or a file older than the manifest (a cache between
+ * here and the site), is used this once and fetched anew the next time, where it was once kept for good; and a kept
+ * copy that is no longer what its name says is dropped.  `exact` refuses such bytes outright (an optional file: better
+ * none than another).  Where the browser can compute no hash (a page served over plain http), as before. */
+async function archive(base, name, sha, exact = false) {
   const hit = sha ? await kept.get(`zip:${name}`) : undefined;
-  if (sha && hit?.sha === sha && hit.blob instanceof Blob) return new Uint8Array(await hit.blob.arrayBuffer());
+  if (sha && hit?.sha === sha && hit.blob instanceof Blob) {
+    const buf = new Uint8Array(await hit.blob.arrayBuffer());
+    const got = await sha256(buf);
+    if (got === sha || got === null) return buf;
+    kept.drop(`zip:${name}`);
+  }
   const url = new URL(`runtime/${name}`, base).href;
   const r = await fetch(url, { cache: "no-cache" });
   if (!r.ok) throw new Error(T`下载 ${url} 失败（HTTP ${r.status}）`);
   const buf = new Uint8Array(await r.arrayBuffer());
-  if (sha) kept.put(`zip:${name}`, { sha, blob: new Blob([buf]) }); // best effort, not waited for
+  if (sha) {
+    const got = await sha256(buf);
+    if (got === sha || got === null) kept.put(`zip:${name}`, { sha, blob: new Blob([buf]) }); // best effort, not waited for
+    else if (exact) throw new Error(`runtime/${name} is not the file the manifest names`);
+  }
   return buf;
 }
 
@@ -372,8 +401,14 @@ async function init({ base }) {
     archive(base, "taochronos.zip", files["taochronos.zip"]?.sha256),
     archive(base, "home.zip", files["home.zip"]?.sha256),
   ]);
-  corpusSource.catch(() => {}); // both awaited below; not unhandled rejections meanwhile
+  // TaoCore: the module and its loader, imported only now (a static import that failed would take this worker with it)
+  const kernel = files["taocore.wasm"];
+  const taocore = kernel
+    ? Promise.all([archive(base, "taocore.wasm", kernel.sha256, true), import("./taocore.js")]).then(([bytes, m]) => m.loadTaoCore(bytes))
+    : Promise.reject(new Error("the site carries no runtime/taocore.wasm"));
+  corpusSource.catch(() => {}); // all awaited below; not unhandled rejections meanwhile
   archives.catch(() => {});
+  taocore.catch(() => {});
 
   show();
   py = await loadPython(base, manifest);
@@ -395,6 +430,12 @@ async function init({ base }) {
   py.FS.mkdirTree("/home/pyodide/data");
   py.unpackArchive(home, "zip", { extractDir: "/home/pyodide/taochronos" });
   py.runPython(ENV); // before anything reads the home: the indexer below loads the domain pack
+  // before Python imports the package; a download that stalls does not hold the runtime up
+  let timer;
+  const late = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("runtime/taocore.wasm did not load in time")), 10000); });
+  const core = await Promise.race([taocore, late]).then((module) => ({ module }), (err) => ({ err }));
+  clearTimeout(timer);
+  if (core.module) py.registerJsModule("_taocore_wasm", core.module);
   view.step = T("载入 TaoChronos"); view.frac = 1; show();
 
   let rest = false;
@@ -429,6 +470,7 @@ async function init({ base }) {
   const info = JSON.parse(rpc("info", "{}"));
   info.load_ms = Math.round(performance.now() - t0);
   info.version_manifest = manifest.version;
+  info.taocore = core.module ? "wasm" : `python (${String(core.err?.message || core.err)})`;
   progress(100, T("就绪"));
   const compile = pyc || !files["taochronos.zip"]?.sha256 ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
   if (rest) setTimeout(() => indexRest(meta.sha256, compile), 0);

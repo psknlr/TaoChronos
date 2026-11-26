@@ -50,6 +50,9 @@ PYODIDE_CDN = f"https://cdn.jsdelivr.net/pyodide/v{PYODIDE_VERSION}/full/"
 PYODIDE_CORE = ["pyodide.mjs", "pyodide.asm.js", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"]
 PYODIDE_PACKAGES = ["pyyaml", "sqlite3"]
 EPOCH = (1980, 1, 1, 0, 0, 0)
+# TaoCore for the browser (docs/adr/0036-taocore.md): the module rust/wasm.sh builds, committed so that a build needs no
+# Rust (CI rebuilds it and compares the bytes); shipped as runtime/taocore.wasm, named in the manifest with its sha256
+TAOCORE_WASM = Path("rust") / "crates" / "taocore-wasm" / "taocore.wasm"
 
 
 def package_zip(package: Path = PACKAGE, home: Path | None = None, policy: dict[str, Any] | None = None) -> bytes:
@@ -67,10 +70,20 @@ def home_zip(home: Path, yaml_cache: Path | None = None, policy: dict[str, Any] 
     return zipped(entries, EPOCH)
 
 
-def manifest(pkg: bytes, home: bytes) -> dict[str, Any]:
-    return {"version": __version__, "pyodide": PYODIDE_VERSION,
-            "files": {"taochronos.zip": {"bytes": len(pkg), "sha256": hashlib.sha256(pkg).hexdigest()},
-                      "home.zip": {"bytes": len(home), "sha256": hashlib.sha256(home).hexdigest()}}}
+def manifest(pkg: bytes, home: bytes, kernel: bytes | None = None) -> dict[str, Any]:
+    files = {"taochronos.zip": {"bytes": len(pkg), "sha256": hashlib.sha256(pkg).hexdigest()},
+             "home.zip": {"bytes": len(home), "sha256": hashlib.sha256(home).hexdigest()}}
+    if kernel is not None:  # the worker loads it only for the ABI its loader speaks
+        from ..plugins.retrieval.taocore import ABI
+
+        files["taocore.wasm"] = {"bytes": len(kernel), "sha256": hashlib.sha256(kernel).hexdigest(), "abi": ABI}
+    return {"version": __version__, "pyodide": PYODIDE_VERSION, "files": files}
+
+
+def taocore_module(home: Path) -> bytes | None:
+    """TaoCore's browser module as this home holds it (None for a home without one: the runtime computes in Python)."""
+    path = home / TAOCORE_WASM
+    return path.read_bytes() if path.is_file() else None
 
 
 def _pack_digest(pack: Path) -> str:
@@ -276,7 +289,10 @@ def build_site(out: Path, *, home: Path, web: Path | None = None, pyodide: str =
         pkg, data = package_zip(home=home, policy=policy), home_zip(home, yaml_cache, policy)
     (runtime / "taochronos.zip").write_bytes(pkg)
     (runtime / "home.zip").write_bytes(data)
-    info = manifest(pkg, data)
+    kernel = taocore_module(home)
+    if kernel is not None:
+        (runtime / "taocore.wasm").write_bytes(kernel)
+    info = manifest(pkg, data, kernel)
     if corpus is not None:
         (runtime / "corpus.sqlite.xz").write_bytes(corpus[0])
         info["files"]["corpus.sqlite.xz"] = corpus[1]
