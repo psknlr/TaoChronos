@@ -259,6 +259,12 @@ CORPUS_DEPLOYED=1 bash cloud/site/deploy.sh
 再检查网站。Worker 会保留它已有的机密：这里不必提供 `LOG_EXPORT_TOKEN` 等（提示未设置，只表示不会重写）。日志最后是
 `a search on the full corpus: …`。新映像后的第一次调用可能要等几分钟让容器启动，`deploy.sh` 会等它。
 
+**部署了新映像，不等于马上由新映像应答。** 正在运行的容器仍是旧映像（Worker 也仍是旧版本：它为旧版本保存的运行环境信息与
+工具目录照常应答），要等平台把它停下：平台的滚动更新先发 `SIGTERM`，容器不退出就最多等十五分钟再强行终止。2026-11-25
+那次，15:16（UTC）部署的映像在 15:19 还没有应答，15:33 已经在应答。服务端收到信号就停止（`taochronos.chat.cloud`，
+容器日志里有 `asked to stop (SIGTERM)`），下一次请求即启动新映像。要看现在是哪个映像在应答，调用一个这次部署改过的工具，
+或取完整目录（`curl -s 'https://chat.impf.ai/api/catalog?mode=all'`）：切换后的第一次回答带 `X-TC-Corpus: live`。
+
 **B5. 导入 D1 备份**（四核机器上约两小时，请在 `tmux` 里运行）：
 
 ```bash
