@@ -23,11 +23,12 @@ detected and passed in.
 
 ## Building
 
-The compiler is pinned to one release (`rust-toolchain.toml`; rustup reads it here and below, not from the repository's
-root).  With [rustup](https://rustup.rs):
+Every block below runs from the repository's root, one after the other.  The compiler is pinned to one release
+(`rust-toolchain.toml`; rustup reads it in `rust/` and below, so the commands that need it run there, in a subshell).
+With [rustup](https://rustup.rs):
 
 ```bash
-cd rust && rustup toolchain install --no-self-update
+(cd rust && rustup toolchain install --no-self-update)
 ```
 
 The extension, into the environment taochronos is installed in (maturin from the hashed lockfile):
@@ -52,20 +53,36 @@ rust/wasm.sh
 
 ## Checks
 
-What CI runs (`.github/workflows/ci.yml`, jobs `rust`, `native` and `image`; `audit.yml`, job `rust`):
+What CI runs (`.github/workflows/ci.yml`): the job `rust` — formatting, lints natively and for the browser's target,
+the kernel's tests, and the committed module rebuilt and compared:
 
 ```bash
-cd rust && cargo fmt --all --check && cargo clippy --locked --workspace --all-targets -- -D warnings && cargo test --locked --workspace
+(cd rust && cargo fmt --all --check && cargo clippy --locked --workspace --all-targets -- -D warnings && cargo clippy --locked --target wasm32-unknown-unknown -p taocore-wasm -- -D warnings && cargo test --locked --workspace)
 ```
+
+```bash
+rust/wasm.sh --check
+```
+
+The job `native` runs the whole suite with the extension installed and required, on Python 3.11 and 3.12 (here, the
+two files that are TaoCore's own, a quicker subset):
 
 ```bash
 REQUIRE_TAOCORE=1 TAOCHRONOS_TAOCORE=require pytest tests/test_taocore.py tests/test_retrieval_index.py
 ```
 
+The job `image` builds the corpus image's stages up to the one that installs the wheel (`cloud/corpus/Dockerfile`), and
+imports it there; `audit.yml`'s job `rust` runs `cargo deny`:
+
+```bash
+(cd rust && cargo deny --locked check)
+```
+
 `tests/test_taocore.py` compares, bit for bit: the Python path with the indexes it replaced; the extension with the Python
 path (Python 3.11's plain sum and 3.12's compensated one); the module, run under Node through the worker's loader, with
-the Python path; whole searches with what they gave before TaoCore.  `cargo deny --locked check` reads `Cargo.lock`
-against RustSec's advisories and `deny.toml`'s rules (crates.io only, permissive licences, nothing yanked).
+the Python path; whole searches with what they gave before TaoCore.  `cargo deny` reads `Cargo.lock` against RustSec's
+advisories and `deny.toml`'s rules (crates.io only, permissive licences, nothing yanked); it is installed with
+`cargo install --locked cargo-deny` at the version `audit.yml` names.
 
 ## Measuring
 

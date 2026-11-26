@@ -14,7 +14,8 @@ case "${1:-}" in
   --check) check=1 ;;
   *) echo "usage: rust/wasm.sh [--check]" >&2; exit 2 ;;
 esac
-cargo build --quiet --locked --profile wasm --target wasm32-unknown-unknown -p taocore-wasm
+# into rust/target whatever CARGO_TARGET_DIR or a cargo config says: the module compared is the one just built
+cargo build --quiet --locked --profile wasm --target wasm32-unknown-unknown --target-dir target -p taocore-wasm
 built=target/wasm32-unknown-unknown/wasm/taocore_wasm.wasm
 kept=crates/taocore-wasm/taocore.wasm
 if [ "$check" = 1 ]; then

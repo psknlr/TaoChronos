@@ -113,7 +113,7 @@ class _Wasm:
 
     def grams(self, data: bytes, count: int) -> str:
         if self._grams is None:
-            raise Unsuitable("a loader from before the module computed the full-text tokens")
+            raise Unsuitable("the loader offers no full-text tokens (a loader or module from before them)")
         return str(self._grams(data, count))
 
 
@@ -397,17 +397,18 @@ class LocalIndexes:
 
 # ---------------------------------------------------------------- the self-test
 # Texts made to try the edges — none of the characters read, one, a doubled one, the private use area, Hangul, the
-# compatibility ideographs and the range's ends, characters beyond the plane, a lone surrogate, marks between
-# characters, a long passage — and the queries asked of them.
+# compatibility ideographs and the range's ends (written by number: an editor's normalisation turns U+F900 and its
+# neighbours into the unified forms), characters beyond the plane, a lone surrogate, marks between characters, a long
+# passage — and the queries asked of them.
 _SELFTEST_TEXTS = [
-    "", "。", "abc 123", "桂", "桂枝", "桂枝汤", "汤汤汤", "汤汤", "消渴消渴消渴消渴", "桂 枝,汤", " 缺字",
-    "한글 桂枝", "豈更車賈滑串句龜", "㐀퟿﫿", "𠀀𠀁 桂枝 𪚥", "桂\ud800枝汤", "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。",
-    "阳浮而阴弱，阳浮者，热自发；阴弱者，汗自出。", "太陽病，頭痛，發熱", "麻黄汤主之，桂枝汤亦主之。" * 12,
-    "渴而饮水，消渴，小便不利。", "伤寒，脉浮缓，身不疼，但重，乍有轻时。", "\x1e", "桂枝汤桂枝汤",
+    "", "。", "abc 123", "桂", "桂枝", "桂枝汤", "汤汤汤", "汤汤", "消渴消渴消渴消渴", "桂 枝,汤", "\ue3e7\uefbd 缺字", "한글 桂枝",
+    "\uf900\uf901\uf902\uf903\uf904\uf905\uf906\uf907", "\u3400\ud7ff\ue000\ufaff", "𠀀𠀁 桂枝 𪚥", "桂\ud800枝汤",
+    "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。", "阳浮而阴弱，阳浮者，热自发；阴弱者，汗自出。", "太陽病，頭痛，發熱", "麻黄汤主之，桂枝汤亦主之。" * 12, "渴而饮水，消渴，小便不利。",
+    "伤寒，脉浮缓，身不疼，但重，乍有轻时。", "\x1e", "桂枝汤桂枝汤",
 ]
 _SELFTEST_QUERIES = [
     (["桂枝", "枝汤"], "桂枝汤的主治"), (["汤汤"], "汤汤汤"), (["桂"], "桂"), (["消渴"] * 3, "消渴 三消"),
-    ([""], ""), (["桂枝", "桂枝", "不存"], ""), (["豈更", "﫿"], "abc"),
+    (["\ue3e7"], "\ue3e7\uefbd"), (["桂枝", "桂枝", "不存"], ""), (["\uf900\uf901", "\ufaff"], "abc"),
     (["太阳", "阳病", "麻黄", "黄汤"], "太阳之为病，脉浮，头项强痛而恶寒"),
 ]
 

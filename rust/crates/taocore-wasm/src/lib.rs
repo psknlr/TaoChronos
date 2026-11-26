@@ -8,7 +8,8 @@
 //!
 //! Every entry point checks what it is given and answers -1 (or 0 for a handle) rather than trusting it; a batch is
 //! named by a number, and the module keeps the last few: a caller that never frees leaks nothing, and a number that
-//! names no batch (freed, or pushed out by newer ones) is refused, never read.
+//! names no batch (freed, or pushed out by newer ones) is refused, never read.  A buffer is read or written only within
+//! what [`tc_alloc`] gave and [`tc_free`] has not taken back, whatever its caller says of its size.
 
 use std::alloc::{Layout, alloc, dealloc};
 use std::cell::RefCell;
@@ -29,6 +30,8 @@ thread_local! {
     static HELD: RefCell<Held> = const { RefCell::new(Held { next: 1, batches: Vec::new() }) };
     static CACHE: RefCell<Option<GramCache>> = const { RefCell::new(None) };
     static RESULT: RefCell<String> = const { RefCell::new(String::new()) };
+    /// What tc_alloc gave and tc_free has not taken back: (start, bytes).
+    static GIVEN: RefCell<Vec<(usize, usize)>> = const { RefCell::new(Vec::new()) };
 }
 
 fn with_batch<T>(id: u32, work: impl FnOnce(&mut Batch) -> Option<T>) -> Option<T> {
@@ -48,45 +51,70 @@ pub extern "C" fn tc_abi() -> u32 {
 /// `len` bytes of this module's memory, 8-aligned (a Float64Array may view them); 0 when there is none.
 #[unsafe(no_mangle)]
 pub extern "C" fn tc_alloc(len: usize) -> *mut u8 {
-    match Layout::from_size_align(len.max(1), 8) {
-        // SAFETY: the layout's size is not zero
-        Ok(layout) => unsafe { alloc(layout) },
-        Err(_) => std::ptr::null_mut(),
+    let Ok(layout) = Layout::from_size_align(len.max(1), 8) else {
+        return std::ptr::null_mut();
+    };
+    // SAFETY: the layout's size is not zero
+    let ptr = unsafe { alloc(layout) };
+    if !ptr.is_null() {
+        GIVEN.with(|given| given.borrow_mut().push((ptr as usize, len)));
     }
+    ptr
 }
 
-/// Gives back what [`tc_alloc`] gave, with the length it was asked for.
+/// Gives back what [`tc_alloc`] gave, with the length it was asked for — and nothing else: a pointer it did not give,
+/// another length, a second free are nothing.
 ///
 /// # Safety
-/// `ptr` came from `tc_alloc(len)` and is not used after.
+/// `ptr` is not used after.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tc_free(ptr: *mut u8, len: usize) {
-    if let (false, Ok(layout)) = (ptr.is_null(), Layout::from_size_align(len.max(1), 8)) {
-        // SAFETY: the caller's promise
+    let known = GIVEN.with(|given| {
+        let mut given = given.borrow_mut();
+        let at = given.iter().position(|&(start, bytes)| start == ptr as usize && bytes == len)?;
+        Some(given.swap_remove(at))
+    });
+    if let (Some(_), Ok(layout)) = (known, Layout::from_size_align(len.max(1), 8)) {
+        // SAFETY: tc_alloc gave it, with this layout, and it was not given back since
         unsafe { dealloc(ptr, layout) }
     }
 }
 
+/// Whether `len` values of `T` from `ptr` lie within one buffer [`tc_alloc`] gave and [`tc_free`] has not taken back.
+/// What a caller says of a buffer's size is checked here, not trusted: a loader that said too much (one did, for a k
+/// past 2^30) is refused, where this module would have written past what it was given.
+fn given<T>(ptr: *const T, len: usize) -> bool {
+    let start = ptr as usize;
+    let Some(end) = len.checked_mul(size_of::<T>()).and_then(|bytes| start.checked_add(bytes)) else {
+        return false;
+    };
+    GIVEN.with(|given| given.borrow().iter().any(|&(from, bytes)| from <= start && end - from <= bytes))
+}
+
+/// `len` values of `T` at `ptr`, or none (which every caller refuses) when they are not within a buffer given.
+///
 /// # Safety
-/// `ptr` names `len` readable bytes (or `len` is 0); the slice is not kept.
+/// What is given is not written meanwhile; the slice is not kept.
 unsafe fn read<'a, T>(ptr: *const T, len: usize) -> &'a [T] {
-    if len == 0 || ptr.is_null() || !(ptr as usize).is_multiple_of(align_of::<T>()) {
+    if len == 0 || ptr.is_null() || !(ptr as usize).is_multiple_of(align_of::<T>()) || !given(ptr, len) {
         return &[];
     }
-    // SAFETY: the caller's promise, and the alignment checked above
+    // SAFETY: within a buffer this module gave (given), aligned
     unsafe { std::slice::from_raw_parts(ptr, len) }
 }
 
+/// Room for `len` values of `T` at `ptr`, or none when it is not within a buffer given.
+///
 /// # Safety
-/// `ptr` names room for `len` values of `T`, written by nothing else meanwhile.
+/// What is given is read or written by nothing else meanwhile.
 unsafe fn write<'a, T>(ptr: *mut T, len: usize) -> Option<&'a mut [T]> {
     if len == 0 {
         return Some(&mut []);
     }
-    if ptr.is_null() || !(ptr as usize).is_multiple_of(align_of::<T>()) {
+    if ptr.is_null() || !(ptr as usize).is_multiple_of(align_of::<T>()) || !given(ptr, len) {
         return None;
     }
-    // SAFETY: the caller's promise, and the alignment checked above
+    // SAFETY: within a buffer this module gave (given), aligned
     Some(unsafe { std::slice::from_raw_parts_mut(ptr, len) })
 }
 

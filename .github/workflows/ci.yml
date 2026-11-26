@@ -85,8 +85,10 @@ jobs:
       - name: The committed browser module is what the source builds, byte for byte
         run: ./wasm.sh --check
 
-  # TaoCore's CPython extension, built and then required: every search of the suite runs on the kernel, which a build
-  # that failed cannot pass for — Python 3.11's plain float sum and 3.12's compensated one both
+  # TaoCore's CPython extension, built and then required (TAOCHRONOS_TAOCORE=require): the parity tests compare it with
+  # the definitions, and a search that goes to the kernel — a large store's — fails rather than falls back to Python,
+  # which a build that failed cannot pass for; the demonstration corpus's searches run in Python as everywhere.  Python
+  # 3.11's plain float sum and 3.12's compensated one both
   native:
     runs-on: ubuntu-latest
     strategy:
@@ -107,7 +109,7 @@ jobs:
           pip install --require-hashes -r requirements/build.txt -r requirements/dev.txt -r requirements/native.txt
           pip install --no-deps --no-build-isolation -e .
           pip install --no-deps --no-build-isolation ./rust/crates/taocore-py
-      - name: Tests, every search on the kernel
+      - name: Tests, the kernel required where a search goes to it
         env:
           REQUIRE_TAOCORE: "1"
           TAOCHRONOS_TAOCORE: require

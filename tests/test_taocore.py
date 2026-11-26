@@ -323,6 +323,110 @@ def test_the_module_is_what_the_source_builds():
                               "tc_bm25", "tc_dense", "tc_grams", "tc_result", "tc_result_len"])
 
 
+RAW = r"""
+import { readFileSync, writeFileSync } from "node:fs";
+const { instance } = await WebAssembly.instantiate(readFileSync("taocore.wasm"), {});
+const x = instance.exports;
+const put = (bytes) => { const p = x.tc_alloc(bytes.length); new Uint8Array(x.memory.buffer, p, bytes.length).set(bytes); return [p, bytes.length]; };
+const enc = new TextEncoder();
+const [t, tl] = put(enc.encode("桂枝汤\u001f桂枝\u001f汤"));
+const id = x.tc_batch(t, tl, 3);
+const [q, ql] = put(enc.encode("桂枝"));
+const df = x.tc_alloc(8);  // room for one df
+const idf = x.tc_alloc(8);
+new Float64Array(x.memory.buffer, idf, 1).set([1.0]);
+const said = { batch: id > 0, counted: x.tc_count(id, q, ql, df, 1), overstated: x.tc_count(id, q, ql, df, 2) };
+let places = x.tc_alloc(4), scores = x.tc_alloc(8);  // room for one result
+const bm25 = (k, p = places, s = scores) => x.tc_bm25(id, idf, 1, 2.0, 1.4, 0.75, k, p, s);
+Object.assign(said, { one: bm25(1), three: bm25(3), wrapped: bm25(2 ** 30 + 1), stray: bm25(1, 64, 128),
+                      textStray: x.tc_batch(16, 9, 1), textPast: x.tc_batch(t, tl + 64, 3) });
+x.tc_free(places, 4);
+said.freed = bm25(1);
+x.tc_free(places, 4);  // twice: nothing
+x.tc_free(scores, 16);  // another length than given: nothing
+said.notFreed = bm25(1, x.tc_alloc(4), scores);
+writeFileSync("out.json", JSON.stringify(said));
+"""
+
+
+def test_the_module_reads_and_writes_only_within_what_it_gave(tmp_path):
+    """The module checks a buffer's size against what tc_alloc gave, whatever its caller says: room claimed past an
+    allocation (as the loader once claimed for a k past 2^30, whose bytes wrapped), a pointer it never gave, a buffer
+    given back — each is refused (-1, or 0 for a batch), where it would have written or read past what was given.  A
+    second free, or one with another length, frees nothing."""
+    node = shutil.which("node")
+    if not node:
+        if REQUIRED:
+            raise AssertionError("node is needed to test the browser's module")
+        pytest.skip("node is not installed")
+    shutil.copy(MODULE, tmp_path / "taocore.wasm")
+    (tmp_path / "run.mjs").write_text(RAW, encoding="utf-8")
+    run = subprocess.run([node, "run.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0, run.stderr
+    said = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+    assert said == {"batch": True, "counted": 1, "overstated": -1, "one": 1, "three": -1, "wrapped": -1, "stray": -1,
+                    "textStray": 0, "textPast": 0, "freed": -1, "notFreed": 1}
+
+
+def _wasm(names: list[str]) -> bytes:
+    """A WebAssembly module of one function, () -> i32 giving the ABI, exported under each of ``names``; and a memory."""
+
+    def leb(n: int) -> bytes:
+        out = bytearray()
+        while True:
+            low, n = n & 0x7F, n >> 7
+            out.append(low | (0x80 if n else 0))
+            if not n:
+                return bytes(out)
+
+    def vec(items: list[bytes]) -> bytes:
+        return leb(len(items)) + b"".join(items)
+
+    def section(kind: int, body: bytes) -> bytes:
+        return bytes([kind]) + leb(len(body)) + body
+
+    exports = [leb(len(name)) + name.encode() + b"\x00\x00" for name in names] + [b"\x06memory\x02\x00"]
+    return (b"\0asm\x01\0\0\0" + section(1, vec([b"\x60\x00\x01\x7f"])) + section(3, vec([b"\x00"]))
+            + section(5, vec([b"\x00\x01"])) + section(7, vec(exports))
+            + section(10, vec([b"\x04\x00\x41" + bytes([taocore.ABI]) + b"\x0b"])))
+
+
+LOADS = r"""
+import { readFileSync, writeFileSync } from "node:fs";
+import { loadTaoCore } from "./taocore.js";
+const said = {};
+for (const name of ["bare", "half", "older", "real"]) {
+  try { said[name] = Object.keys(await loadTaoCore(readFileSync(`${name}.wasm`))).sort(); }
+  catch (e) { said[name] = String(e.message); }
+}
+writeFileSync("out.json", JSON.stringify(said));
+"""
+
+
+def test_the_loader_takes_a_module_only_with_what_it_calls(tmp_path):
+    """A module that speaks the ABI but lacks a function the loader calls is refused as it loads (the searches stay in
+    Python from the start), not at a search; one without the tokens' functions is taken without ``grams``, and the
+    facade then makes the tokens in Python and keeps the module for the searches."""
+    node = shutil.which("node")
+    if not node:
+        if REQUIRED:
+            raise AssertionError("node is needed to test the browser's loader")
+        pytest.skip("node is not installed")
+    calls = ["tc_alloc", "tc_free", "tc_batch", "tc_batch_free", "tc_total", "tc_count", "tc_bm25", "tc_dense"]
+    for name, exported in (("bare", ["tc_abi"]), ("half", ["tc_abi", *calls[:-1]]), ("older", ["tc_abi", *calls])):
+        (tmp_path / f"{name}.wasm").write_bytes(_wasm(exported))
+    shutil.copy(MODULE, tmp_path / "real.wasm")
+    shutil.copy(ROOT / "web" / "js" / "taocore.js", tmp_path / "taocore.js")
+    (tmp_path / "run.mjs").write_text(LOADS, encoding="utf-8")
+    run = subprocess.run([node, "run.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0, run.stderr
+    said = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+    assert said == {"bare": f"taocore: the module lacks {', '.join(calls)}", "half": "taocore: the module lacks tc_dense",
+                    "older": ["abi", "batch"], "real": ["abi", "batch", "grams"]}
+    with pytest.raises(taocore.Unsuitable):  # the facade over a loader without grams
+        taocore._Wasm(SimpleNamespace(abi=1, batch=lambda data, count: None)).grams(b"x", 1)
+
+
 # ---------------------------------------------------------------- choosing, and failing closed
 class Fake:
     """A kernel for the tests: the extension's answers, or none (``broken``), or other numbers (``wrong``)."""

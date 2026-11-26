@@ -45,6 +45,9 @@ export async function loadTaoCore(bytes) {
   const { instance } = await WebAssembly.instantiate(bytes, {});
   const x = /** @type {Exports} */ (/** @type {unknown} */ (instance.exports));
   if (typeof x.tc_abi !== "function" || x.tc_abi() !== ABI) throw new Error("taocore: the module does not speak this loader's ABI");
+  const has = (/** @type {string} */ name) => typeof (/** @type {Record<string, unknown>} */ (/** @type {unknown} */ (x)))[name] === "function";
+  const lacks = ["tc_alloc", "tc_free", "tc_batch", "tc_batch_free", "tc_total", "tc_count", "tc_bm25", "tc_dense"].filter((n) => !has(n));
+  if (lacks.length || !(x.memory instanceof WebAssembly.Memory)) throw new Error(`taocore: the module lacks ${lacks.join(", ") || "its memory"}`);
 
   /** @type {Array<[number, number]>} */
   let held = [];
@@ -119,8 +122,9 @@ export async function loadTaoCore(bytes) {
   });
 
   const dec = new TextDecoder();
-  return {
-    abi: ABI,
+  // a module without the tokens (one built before them) has no grams here: the facade then makes them in Python,
+  // and keeps the module for the rest
+  const tokens = has("tc_grams") && has("tc_result") && has("tc_result_len") ? {
     /** The full-text index's tokens of each text (store.py's grams), "\u001f"-separated as the texts are.
      * @param {Bytes} texts @param {number} count @returns {string} */
     grams(texts, count) {
@@ -132,6 +136,10 @@ export async function loadTaoCore(bytes) {
         giveBack();
       }
     },
+  } : {};
+  return {
+    abi: ABI,
+    ...tokens,
     /** A search's candidates: their texts ("\u001f"-separated UTF-8) and how many. @param {Bytes} texts @param {number} count */
     batch(texts, count) {
       try {

@@ -96,7 +96,9 @@ def plain_dense_search(vectors: dict[str, list[float]], text: str, k: int, candi
 # ---------------------------------------------------------------- texts
 EDGES = [
     "", "。", "abc 123", "桂", "桂枝", "桂枝汤", "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。",
-    "太陽病，頭痛，發熱（繁體）", "〇○々 桂 枝", "豈更車賈滑串句龜 — the compatibility ideographs", "𠀀𠀁 beyond the plane 桂枝 𪚥",
+    "太陽病，頭痛，發熱（繁體）", "〇○々 桂 枝",
+    "\uf900\uf901\uf902\uf903\uf904\uf905\uf906\uf907 — the compatibility ideographs (by number)",
+    "𠀀𠀁 beyond the plane 桂枝 𪚥",
     "消渴消渴消渴消渴", "阳浮而阴弱，阳浮者，热自发；阴弱者，汗自出。", "ａｂ　全角　与　半角 mixed 桂 枝\n汤\t主之",
 ]
 
