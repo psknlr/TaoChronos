@@ -12,15 +12,28 @@ updates:
       actions:
         patterns: ["*"]
 
-  # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26); and the
-  # type checker (tools/typecheck): typescript, and the Workers' types, within the range wrangler names as its peer
+  # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26)
   - package-ecosystem: npm
-    directories: ["/relay", "/cloud/site", "/cloud/corpus", "/tools/typecheck"]
+    directories: ["/relay", "/cloud/site", "/cloud/corpus"]
     schedule:
       interval: weekly
     groups:
       workers:
         patterns: ["*"]
+
+  # the type checker (tools/typecheck): typescript, and the Workers' types within the range wrangler names as its peer —
+  # a pull request of their own, so that what the checker reports holds up no deployment's toolchain; a new major of
+  # TypeScript, which reads unannotated JavaScript otherwise, is a change of its own
+  - package-ecosystem: npm
+    directory: /tools/typecheck
+    schedule:
+      interval: weekly
+    groups:
+      typecheck:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   # the digests of python:3.12-slim and of the Rust image TaoCore's extension is built in; the image stays on Python 3.12
   # (a new minor is a change of its own), and the Rust image on the release rust/rust-toolchain.toml names (the two move

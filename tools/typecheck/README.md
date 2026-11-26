@@ -17,8 +17,10 @@ tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.workers.json  
 
 CI runs exactly this (`.github/workflows/ci.yml`, job `typecheck`): the install takes under a second, the three
 programs about four seconds in all.  `typescript` and `@cloudflare/workers-types` are pinned exactly, with their sha512
-in the lockfile (`tests/test_supply_chain.py`), and Dependabot proposes the next with the Workers' toolchain; the
-Workers' types stay within the range `wrangler` (relay/, cloud/site/) names as its peer (`^5.20261023.1` for 4.153.0).
+in the lockfile (`tests/test_supply_chain.py`); Dependabot proposes the next in a pull request of their own (a new
+TypeScript major, which reads unannotated JavaScript otherwise, is left to a change of its own), and the audit workflow
+reads the lockfile each week.  The Workers' types stay within the range `wrangler` (relay/, cloud/site/) names as its
+peer (`^5.20261023.1` for 4.153.0).
 
 ## Opting a file in
 
