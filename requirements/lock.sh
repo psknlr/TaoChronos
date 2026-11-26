@@ -37,4 +37,5 @@ lock dev pyproject.toml --extra dev --extra anthropic              # the tests, 
 lock litellm pyproject.toml --extra litellm                        # the LiteLLM provider
 lock ingest pyproject.toml --extra pdf --extra parquet             # the PDF and Parquet corpus ingesters
 lock audit requirements/audit.in                                   # pip-audit, for the audit workflow
+lock native requirements/native.in                                 # maturin, which builds TaoCore's extension (rust/)
 if [ "$mode" = check ]; then echo "the lockfiles match pyproject.toml"; else echo "requirements/*.txt written"; fi

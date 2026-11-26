@@ -1,5 +1,5 @@
 # Keeps the pins current (docs/adr/0026-pinned-supply-chain-and-enforced-policies.md): the Actions by commit, each
-# Worker's wrangler by its lockfile, the full corpus's base image by digest.  A pull request each week at most per
+# Worker's wrangler by its lockfile, the full corpus's base images by digest, TaoCore's crates by its Cargo.lock.  A pull request each week at most per
 # group; the tests (tests/test_supply_chain.py) check that whatever it changes is still pinned.  The Python lockfiles
 # (requirements/) are regenerated with requirements/lock.sh, and the audit workflow reads them every week.
 version: 2
@@ -21,7 +21,9 @@ updates:
       workers:
         patterns: ["*"]
 
-  # the digest of python:3.12-slim; the image stays on Python 3.12 (a new minor is a change of its own)
+  # the digests of python:3.12-slim and of the Rust image TaoCore's extension is built in; the image stays on Python 3.12
+  # (a new minor is a change of its own), and the Rust image on the release rust/rust-toolchain.toml names (the two move
+  # together, with the committed browser module: tests/test_supply_chain.py)
   - package-ecosystem: docker
     directory: /cloud/corpus
     schedule:
@@ -29,3 +31,14 @@ updates:
     ignore:
       - dependency-name: python
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: rust
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+
+  # TaoCore's crates (rust/Cargo.lock): PyO3 and what builds it; the kernel itself depends on nothing
+  - package-ecosystem: cargo
+    directory: /rust
+    schedule:
+      interval: weekly
+    groups:
+      crates:
+        patterns: ["*"]

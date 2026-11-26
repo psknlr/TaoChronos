@@ -36,6 +36,7 @@ from ..classics.corpus import Corpus
 from ..classics.domain import DomainPack, Mention
 from ..classics.store import is_han
 from .index import BM25Index, DenseIndex, HashingEmbedder, query_tokens
+from .taocore import LocalIndexes
 
 ROUTES = ("bm25", "dense", "graph", "temporal", "citation", "variant", "sense")
 DEFAULT_WEIGHTS = {"bm25": 1.0, "dense": 0.6, "graph": 1.0, "temporal": 0.5, "citation": 0.5, "variant": 0.6, "sense": 0.7}
@@ -568,11 +569,11 @@ def _witness(wits: list[Any], cfg: dict[str, Any]) -> str | None:
 
 
 class _Running(threading.local):
-    """What a search keeps while it runs, one for each thread: the index's rank of its candidates, and the indexes built
+    """What a search keeps while it runs, one for each thread: the index's rank of its candidates, and its own indexes
     over them.  (A thread that has run no search reads no ranks.)"""
 
     rank: dict[str, float] = {}
-    local: Any = None
+    local: LocalIndexes | None = None
 
 
 class HybridRetriever:
@@ -615,11 +616,13 @@ class HybridRetriever:
         self._running.rank = value
 
     @property
-    def _local(self) -> tuple[BM25Index, DenseIndex]:
-        return self._running.local
+    def _local(self) -> LocalIndexes:
+        local = self._running.local
+        assert local is not None, "a route of a large corpus runs inside a search (_fuse)"
+        return local
 
     @_local.setter
-    def _local(self, value: tuple[BM25Index, DenseIndex]) -> None:
+    def _local(self, value: LocalIndexes) -> None:
         self._running.local = value
 
     def norm(self, pid: str) -> str:
@@ -663,16 +666,14 @@ class HybridRetriever:
             ids.update(hits[:SENSE_LIMIT // 4])
         return ids
 
-    def _local_indexes(self, cand: set[str]) -> tuple[BM25Index, DenseIndex]:
-        """Per-query BM25 / dense indexes over the candidates (large corpora)."""
-        bm25 = BM25Index()
-        for pid in cand:
-            bm25.add(pid, self.norm(pid))
-        dense = DenseIndex(self.embedder)
+    def _local_indexes(self, cand: set[str]) -> LocalIndexes:
+        """The search's own BM25 and dense rankings over its candidates (large corpora): BM25 over every candidate, the
+        dense route over the DENSE_LIMIT the index ranks best — computed when the routes ask, by TaoCore where there
+        is a kernel (``taocore``), the same numbers either way."""
+        ids = sorted(cand)  # a tie between two passages is broken by the id: in this order, by the place too
+        place = {pid: i for i, pid in enumerate(ids)}
         order = sorted(cand, key=lambda pid: (-self._rank.get(pid, 0.0), pid))[:DENSE_LIMIT]
-        for pid in order:
-            dense.add(pid, self.norm(pid))
-        return bm25, dense
+        return LocalIndexes(ids, [self.norm(pid) for pid in ids], [place[pid] for pid in order], self.embedder)
 
     def route_bm25(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float]]:
         toks: list[str] = []
@@ -680,13 +681,15 @@ class HybridRetriever:
             toks.extend(query_tokens(self.pack.variants.normalize_text(s)))
         if not toks:
             toks = query_tokens(self.pack.variants.normalize_text(q.text))
-        index = self._local[0] if self.large else self.bm25
-        return index.search(toks, k, cand if not self.large else set(index.docs) & cand)
+        if self.large:
+            return self._local.bm25(toks, k)  # over every candidate: the search's own index holds no other passage
+        return self.bm25.search(toks, k, cand)
 
     def route_dense(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float]]:
-        text = " ".join([q.text, *q.all_surfaces()])
-        index = self._local[1] if self.large else self.dense
-        return index.search(self.pack.variants.normalize_text(text), k, cand if not self.large else set(index.vectors) & cand)
+        text = self.pack.variants.normalize_text(" ".join([q.text, *q.all_surfaces()]))
+        if self.large:
+            return self._local.dense(text, k)
+        return self.dense.search(text, k, cand)
 
     def route_graph(self, q: ParsedQuery, cand: set[str], k: int) -> list[tuple[str, float, list[str]]]:
         if self.knowledge is None or not q.terms:

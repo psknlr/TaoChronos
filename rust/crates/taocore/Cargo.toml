@@ -1,0 +1,9 @@
+[package]
+name = "taocore"
+description = "The per-search retrieval primitives of TaoChronos (BM25 of a query's tokens, hashed n-gram cosines), bit for bit as the Python definitions compute them"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]

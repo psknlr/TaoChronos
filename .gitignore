@@ -6,6 +6,8 @@ dist/
 .pytest_cache/
 .venv/
 venv/
+# TaoCore's build output (rust/); the browser's module, which the site ships, is committed beside its crate
+rust/target/
 # runtime data (event logs, artifacts, workspaces)
 .taochronos/
 *.sqlite

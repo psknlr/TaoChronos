@@ -1,0 +1,3 @@
+# What builds TaoCore's CPython extension (rust/crates/taocore-py): its pyproject.toml's [build-system] requires, word
+# for word (tests/test_supply_chain.py checks).  maturin's wheel carries a static binary and needs nothing else.
+maturin>=1.16,<2

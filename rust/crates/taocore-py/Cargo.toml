@@ -1,0 +1,16 @@
+[package]
+name = "taocore-py"
+description = "TaoCore for CPython: the extension module _taocore (one abi3 wheel for Python 3.11 and later)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+name = "_taocore"
+crate-type = ["cdylib"]
+
+[dependencies]
+taocore = { path = "../taocore" }
+# 0.29 is the first release no published advisory applies to (RUSTSEC-2026-0176, -0177)
+pyo3 = { version = "0.30.1", default-features = false, features = ["macros", "abi3-py311"] }

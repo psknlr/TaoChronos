@@ -1,0 +1,26 @@
+# TaoCore: the per-search retrieval primitives, compiled (docs/adr/0036-taocore.md).  One crate holds what is computed
+# (taocore, no dependency); two thin bindings carry it to Python (taocore-py, a CPython extension) and to the browser's
+# runtime worker (taocore-wasm, a module of no imports).
+[workspace]
+members = ["crates/taocore", "crates/taocore-py", "crates/taocore-wasm"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+publish = false
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = false
+strip = true
+# panic stays "unwind" here: the Python extension turns a panic into an exception, and the caller into its own code
+
+# the browser's module (rust/wasm.sh): wasm32-unknown-unknown has no unwinding; a panic traps, and the runtime worker
+# turns the trap into the same fallback
+[profile.wasm]
+inherits = "release"
+panic = "abort"

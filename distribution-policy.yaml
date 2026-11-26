@@ -35,6 +35,7 @@ assets:
     - cloud
     - relay
     - security
+    - rust                      # TaoCore's source; its browser module ships (runtime/taocore.wasm), built from it
     - tests
     - docs
     - paper

@@ -1,0 +1,17 @@
+# TaoCore's CPython extension: `pip install --no-deps --no-build-isolation ./rust/crates/taocore-py` with maturin from
+# requirements/native.txt on the PATH (rust/README.md).  A distribution of its own, so that taochronos itself never
+# needs Rust to install: without it the retrieval plugin computes the same numbers in Python.
+[build-system]
+requires = ["maturin>=1.16,<2"]
+build-backend = "maturin"
+
+[project]
+name = "taochronos-taocore"
+version = "0.1.0"
+description = "TaoCore for CPython: the per-search retrieval primitives of TaoChronos, compiled"
+requires-python = ">=3.11"
+
+[tool.maturin]
+module-name = "_taocore"
+# the workspace's Cargo.lock as it is: a build that would change it fails (it would otherwise be rewritten silently)
+locked = true

@@ -62,3 +62,66 @@ jobs:
           python -m taochronos.chat.d1 fixture cloud/.d1-fixture
       - name: The site's Worker (and its D1 backup) and the corpus Worker (cloud/)
         run: REQUIRE_D1_FIXTURE=1 node --test cloud/test/site.test.js cloud/test/corpus.test.js cloud/test/backup.test.js
+
+  # TaoCore (rust/, docs/adr/0036-taocore.md): the kernel's own checks, under the compiler rust/rust-toolchain.toml pins
+  # (rustup reads it in rust/ and below only); and the browser's module, committed, is what its source builds
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The pinned toolchain
+        run: rustup toolchain install --no-self-update
+      - name: Format, lints (natively and for the browser's target), tests
+        run: |
+          cargo fmt --all --check
+          cargo clippy --locked --workspace --all-targets -- -D warnings
+          cargo clippy --locked --target wasm32-unknown-unknown -p taocore-wasm -- -D warnings
+          cargo test --locked --workspace
+      - name: The committed browser module is what the source builds, byte for byte
+        run: ./wasm.sh --check
+
+  # TaoCore's CPython extension, built and then required: every search of the suite runs on the kernel, which a build
+  # that failed cannot pass for — Python 3.11's plain float sum and 3.12's compensated one both
+  native:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: The pinned toolchain
+        working-directory: rust
+        run: rustup toolchain install --no-self-update
+      - name: Install, the extension too (maturin from the hashed requirements/native.txt)
+        run: |
+          pip install --require-hashes -r requirements/build.txt -r requirements/dev.txt -r requirements/native.txt
+          pip install --no-deps --no-build-isolation -e .
+          pip install --no-deps --no-build-isolation ./rust/crates/taocore-py
+      - name: Tests, every search on the kernel
+        env:
+          REQUIRE_TAOCORE: "1"
+          TAOCHRONOS_TAOCORE: require
+        run: pytest
+
+  # the full corpus's image up to its server's code (cloud/corpus/Dockerfile): the extension's stages build as they will
+  # when the site is deployed (the store, fetched by the deployment, is not needed for these)
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the image's base stage, the kernel in it
+        run: |
+          docker build --target base -f cloud/corpus/Dockerfile -t taochronos-base .
+          docker run --rm taochronos-base python -c "import _taocore; from taochronos.plugins.retrieval import taocore; s = taocore.status(); print(s); assert s['kernel'] == 'native', s"

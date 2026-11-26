@@ -20,6 +20,10 @@ kernel_forbidden_terms: [anthropic, openai, claude, gpt-, deepseek, gemini, neo4
 # vendor SDKs may only be imported by model-provider plugins
 vendor_sdks: [anthropic, openai, litellm]
 vendor_sdk_allowed_in: [src/taochronos/plugins/models]
+# compiled kernels (TaoCore, rust/) are reached through one facade, which falls back to the Python definitions whenever
+# one is absent, fails or disagrees with them: no other module may import one
+native_modules: [_taocore, _taocore_wasm]
+native_modules_allowed_in: [src/taochronos/plugins/retrieval/taocore.py]
 # agents act through capabilities and tools, never by importing concrete plugins
 agents_may_not_import: [taochronos.plugins]
 # authority comes from identity objects (kernel/authority.py): only the kernel, the engine and the app mint privileged
