@@ -14,7 +14,8 @@ what was measured and what was left out: [ADR 0036](../docs/adr/0036-taocore.md)
 Only the facade `src/taochronos/plugins/retrieval/taocore.py` imports either (governance's `native_module` rule).  It
 checks a kernel against the Python definitions before using it, and falls back to them on any failure:
 `TAOCHRONOS_TAOCORE` = `auto` (default) · `off` · `require` (a search fails without a kernel: CI) · `shadow` (both
-computed, Python's answer given, differences counted in `taocore.status()`).
+computed, Python's answer given, differences counted in `taocore.status()`); any other value is read as `off` and named
+in the status.
 
 What stays in Python, because it differs by platform: a token's weight (idf) is `math.log` of the C library Python runs
 on, the average length is Python's int / int, and which summation `sum()` does (compensated from CPython 3.12) is

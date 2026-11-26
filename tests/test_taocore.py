@@ -15,8 +15,10 @@ import os
 import random
 import shutil
 import subprocess
+from array import array
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from test_retrieval_index import plain_tokens, texts
@@ -443,7 +445,13 @@ def test_the_modes(monkeypatch):
     other = LocalIndexes(ids, all_texts, [0, 1, 2], type("Other", (HashingEmbedder,), {})())
     assert bits(other.dense("桂枝汤", 5)) == bits(other._dense_python("桂枝汤", 5))
     assert taocore.kernel() is drifting and taocore.status()["failed"] == 0
-    monkeypatch.setenv("TAOCHRONOS_TAOCORE", "nonsense")
+    # a switch written otherwise is read as off — the kernel taken out rather than left in — and the status says why
+    for written in ("python", "0", "false", "OFF", " off "):
+        monkeypatch.setenv("TAOCHRONOS_TAOCORE", written)
+        assert taocore.mode() == "off" and taocore.status()["reason"] == f"TAOCHRONOS_TAOCORE={written.strip()}"
+    monkeypatch.setenv("TAOCHRONOS_TAOCORE", "requrie")
+    assert taocore.mode() == "off" and "'requrie' is not one of auto, off, require, shadow" in taocore.status()["reason"]
+    monkeypatch.setenv("TAOCHRONOS_TAOCORE", "")
     assert taocore.mode() == "auto"
 
 
@@ -484,3 +492,87 @@ def test_the_full_text_tokens_by_every_way(monkeypatch):
     taocore.reset()
     monkeypatch.setattr(taocore, "_find", lambda: (Before(), ""))
     assert taocore.kernel() is not None and taocore.grams_many(every) == want and taocore.status()["python"] >= 1
+
+
+def test_k_is_never_more_room_than_candidates_and_a_negative_one_is_pythons():
+    """A route asks for k results; the browser's module reserves room for them in a memory that never shrinks, so the
+    facade asks for no more than there are candidates (the same results), and leaves a negative k — Python's slice,
+    which drops from the end — to the definitions."""
+    kern = native()
+    ids, all_texts = corpus()
+    local = LocalIndexes(ids, all_texts, dense_places(len(ids)), HashingEmbedder())
+    for k in (10**9, len(ids), len(ids) + 1):
+        assert bits(local._bm25_kernel(kern, ["桂枝", "枝汤"], k)) == bits(local._bm25_python(["桂枝", "枝汤"], k))
+        assert bits(local._dense_kernel(kern, "桂枝汤", k)) == bits(local._dense_python("桂枝汤", k))
+    with pytest.raises(taocore.Unsuitable):
+        local._bm25_kernel(kern, ["桂枝"], -1)
+    with pytest.raises(taocore.Unsuitable):
+        local._dense_kernel(kern, "桂枝", -2)
+    assert bits(local.bm25(["桂枝"], -1)) == bits(local._bm25_python(["桂枝"], -1))  # and the definitions answer
+
+
+class LoaderStandIn:
+    """web/js/taocore.js's object as Python reaches it under Pyodide, over the extension: what it is given read as the
+    loader reads it (Python bytes as UTF-8, as float64s, as uint32s), what it gives back as JavaScript does (arrays of
+    numbers, an integral one arriving as a Python int).  So the browser adapter's half of the boundary (taocore._Wasm)
+    is tested where there is no browser; the loader's half is the Node test above."""
+
+    abi = 1
+
+    def __init__(self, module):
+        self._m = module
+
+    @staticmethod
+    def _js(numbers):
+        return [int(x) if float(x).is_integer() else x for x in numbers]
+
+    def batch(self, data, count):
+        assert isinstance(data, bytes) and isinstance(count, int)
+        inner, js = self._m.Batch(data, count), self._js
+
+        class Batch:
+            def count(self, tokens):
+                assert isinstance(tokens, bytes)
+                df, total = inner.count(tokens.decode("utf-8").split("\n") if tokens else [])
+                return SimpleNamespace(df=js(df), total=total)
+
+            def bm25(self, idf, avgdl, k1, b, k):
+                assert isinstance(idf, bytes) and (k1, b) == (1.4, 0.75)
+                places, scores = inner.bm25(list(array("d", idf)), avgdl, k1, b, k)
+                return SimpleNamespace(places=js(places), scores=js(scores))
+
+            def dense(self, docs, query, dim, ngram, compensated, threshold, k):
+                assert isinstance(docs, bytes) and isinstance(query, bytes) and isinstance(ngram, bytes)
+                assert compensated in (0, 1) and type(compensated) is int and threshold == 0.05
+                places, scores = inner.dense(list(array("I", docs)), query, dim, list(array("I", ngram)), bool(compensated),
+                                             threshold, k)
+                return SimpleNamespace(places=js(places), scores=js(scores))
+
+            def free(self):
+                pass
+
+        return Batch()
+
+    def grams(self, data, count):
+        assert isinstance(data, bytes)
+        return self._m.grams(data, count)
+
+
+def test_the_browser_adapter_speaks_the_loaders_language():
+    """taocore._Wasm, which the browser's searches go through: its self-test passes over a stand-in of the loader, and its
+    rankings and tokens are the definitions'.  (An argument in the wrong order or form fails here, in CI, and not only in
+    a visitor's browser, where the self-test would leave the searches to Python without a word.)"""
+    native()
+    import _taocore
+
+    kern = taocore._Wasm(LoaderStandIn(_taocore))
+    assert kern.name == "wasm" and taocore._selftest(kern) == ""
+    ids, all_texts = corpus()
+    for embedder in (HashingEmbedder(), HashingEmbedder(dim=64, ngram=(2, 4))):
+        local = LocalIndexes(ids, all_texts, dense_places(len(ids)), embedder)
+        for query in queries()[:20]:
+            assert bits(local._bm25_kernel(kern, query, 40)) == bits(local._bm25_python(query, 40)), query
+        for text in DENSE_TEXTS:
+            assert bits(local._dense_kernel(kern, text, 40)) == bits(local._dense_python(text, 40)), text
+    every = [*TOKEN_EDGES, *all_texts]
+    assert taocore._grams_kernel(kern, every) == [grams(t) for t in every]

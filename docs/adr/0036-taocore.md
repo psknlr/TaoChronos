@@ -64,7 +64,11 @@ Those rules were applied before anything was built.  Seven investigations, each 
    definitions on edge texts before its first use (every score, bit for bit), and on any failure during a search puts
    it aside for the process and answers in Python.  `TAOCHRONOS_TAOCORE` = `auto` · `off` · `require` · `shadow` — the
    proposal's modes, with `rust-native` and `rust-wasm` left to the platform (a browser has no extension, a server no
-   module).  A new governance rule, `native_module`, lets no other module import a kernel.
+   module); any other value is read as `off`, so that a mistyped switch takes the kernel out rather than leave it in,
+   and the status names it.  A route never asks the kernel for more results than it has candidates (the browser's
+   module would keep the room for good).  A new governance rule, `native_module`, lets no other module import a
+   kernel.  The browser's info and the server's log say what searches run on, as Python found it — not counts, which
+   are the owner's (ADR 0035).
 4. **The browser.**  `taochronos web build` copies the committed module to `runtime/taocore.wasm` and names it in the
    manifest with its SHA-256 and ABI; the worker fetches it beside the archives, imports its loader dynamically (a
    static import that failed would take the worker with it), instantiates it and registers it as `_taocore_wasm` before
@@ -166,6 +170,7 @@ before TaoCore.
   is committed with the module `rust/wasm.sh` writes, or CI fails.
 * The compiler moves in one change: the toolchain file, the image's Rust stage and its `RUSTUP_TOOLCHAIN`, the module.
 * The full corpus's image takes a minute or two longer to build (the Rust stage; nothing of it ships but the wheel).
-* **Rollback**, each one line: `TAOCHRONOS_TAOCORE=off` (the server's environment); the build ships no module once
+* **Rollback**, each one line: `TAOCHRONOS_TAOCORE=off` in the server's environment (an `ENV` line in the image's last
+  stage); the build ships no module once
   `rust/crates/taocore-wasm/taocore.wasm` is gone (the worker then says why, and searches in Python); the image's two
   stages and its `COPY --from=native` lines removed.

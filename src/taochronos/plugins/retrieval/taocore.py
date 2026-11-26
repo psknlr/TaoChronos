@@ -16,9 +16,10 @@ kernel sums as this Python's ``sum()`` does (``COMPENSATED``: from CPython 3.12 
 result is the one the definitions give on the same interpreter: the extension's beside CPython, the module's beside
 Pyodide.
 
-``TAOCHRONOS_TAOCORE`` says how: ``auto`` (the default) uses a kernel that passed its self-test; ``off`` never does;
-``require`` fails a search rather than run it without one (how CI shows the kernel really ran); ``shadow`` computes
-both and answers with the definitions', counting any difference (``status()``).
+``TAOCHRONOS_TAOCORE`` says how: ``auto`` (the default) uses a kernel that passed its self-test; ``off`` never does
+(nor does any value that is not a mode: a mistyped switch takes the kernel out); ``require`` fails a search rather
+than run it without one (how CI shows the kernel really ran); ``shadow`` computes both and answers with the
+definitions', counting any difference (``status()``).
 """
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ from .index import B, DENSE_FLOOR, K1, BM25Index, DenseIndex, HashingEmbedder, c
 ABI = 1  # what the kernel's bindings must speak (rust/crates/taocore/src/lib.rs: ABI)
 SEPARATOR = "\x1f"  # between a batch's texts: no character the indexes read
 MODES = ("auto", "off", "require", "shadow")
+OFF = ("python", "0", "false", "no", "none", "disabled")  # what one may write meaning off, read as off
 MAX_NGRAM = 42  # the longest n-gram the kernel hashes (one BLAKE2b block)
 # which summation this Python's sum() does over floats: compensated (CPython 3.12 and later) or plain (3.11)
 COMPENSATED = sum([1e100, 1.0, -1e100]) == 1.0
@@ -48,9 +50,19 @@ class Unsuitable(Exception):
 
 
 def mode() -> str:
-    """``TAOCHRONOS_TAOCORE``, read each time (``auto`` when unset or not one of MODES)."""
+    """``TAOCHRONOS_TAOCORE``, read each time: ``auto`` when unset; one of MODES as written; any other value ``off`` —
+    a mistyped switch takes the kernel out rather than leave it in (``status()`` names the value)."""
     chosen = os.environ.get("TAOCHRONOS_TAOCORE", "").strip().lower()
-    return chosen if chosen in MODES else "auto"
+    if not chosen:
+        return "auto"
+    return chosen if chosen in MODES else "off"
+
+
+def _off_reason() -> str:
+    written = os.environ.get("TAOCHRONOS_TAOCORE", "").strip()
+    if written.lower() in ("off", *OFF):
+        return f"TAOCHRONOS_TAOCORE={written}"
+    return f"TAOCHRONOS_TAOCORE={written!r} is not one of {', '.join(MODES)}: taken as off"
 
 
 # ---------------------------------------------------------------- the kernels
@@ -186,7 +198,7 @@ def status() -> dict[str, Any]:
     chosen = mode()
     kern = kernel() if chosen != "off" else None
     return {"mode": chosen, "kernel": kern.name if kern else None,
-            "reason": "TAOCHRONOS_TAOCORE=off" if chosen == "off" else _state["reason"], **_counts}
+            "reason": _off_reason() if chosen == "off" else _state["reason"], **_counts}
 
 
 def reset() -> None:
@@ -307,6 +319,9 @@ class LocalIndexes:
     def _bm25_kernel(self, kern: Any, query: list[str], k: int) -> Ranked:
         if not all(len(t) in (1, 2) and kept(t) == t for t in query):
             raise Unsuitable("a token that is not one or two of the characters read")
+        if k < 0:
+            raise Unsuitable("a negative k: Python's slice, which drops from the end")
+        k = min(k, len(self.ids))  # the same results; a module's memory, which never shrinks, sized by what can come
         batch = self._batch_for(kern)
         df, total = batch.count(query)
         n = len(self.ids)
@@ -318,6 +333,9 @@ class LocalIndexes:
         e = self.embedder
         if type(e) is not HashingEmbedder or e.dim < 1 or not all(1 <= n <= MAX_NGRAM for n in e.ngram):
             raise Unsuitable("an embedder the kernel does not compute")
+        if k < 0:
+            raise Unsuitable("a negative k: Python's slice, which drops from the end")
+        k = min(k, len(self.dense_places))
         batch = self._batch_for(kern)
         places, scores = batch.dense(self.dense_places, text.encode("utf-8", "replace"), e.dim, list(e.ngram), k)
         return [(self.ids[p], s) for p, s in zip(places, scores)]

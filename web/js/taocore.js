@@ -75,11 +75,12 @@ export async function loadTaoCore(bytes) {
     if (n < 0) throw new Error("taocore: the module refused its input");
     return { places: Array.from(new Uint32Array(x.memory.buffer, places, n)), scores: Array.from(new Float64Array(x.memory.buffer, scores, n)) };
   };
-  /** @param {number} k */
-  const room = (k) => Math.max(k, 1);
+  /** Room for k results, never more than there are documents to rank (the module's memory never shrinks).
+   * @param {number} k @param {number} most */
+  const room = (k, most) => Math.max(Math.min(k, most), 1);
 
-  /** @param {number} id @returns {Batch} */
-  const batch = (id) => ({
+  /** @param {number} id @param {number} count the batch's documents @returns {Batch} */
+  const batch = (id, count) => ({
     count(tokens) {
       try {
         const [p, len] = put(tokens);
@@ -95,8 +96,9 @@ export async function loadTaoCore(bytes) {
     bm25(idf, avgdl, k1, b, k) {
       try {
         const [p, len] = put(idf);
-        const places = take(4 * room(k)), scores = take(8 * room(k));
-        return ranked(places, scores, x.tc_bm25(id, p, len / 8, avgdl, k1, b, k, places, scores));
+        const n = room(k, count);
+        const places = take(4 * n), scores = take(8 * n);
+        return ranked(places, scores, x.tc_bm25(id, p, len / 8, avgdl, k1, b, n, places, scores));
       } finally {
         giveBack();
       }
@@ -104,8 +106,9 @@ export async function loadTaoCore(bytes) {
     dense(docs, query, dim, ngram, compensated, threshold, k) {
       try {
         const [d, dl] = put(docs), [q, ql] = put(query), [g, gl] = put(ngram);
-        const places = take(4 * room(k)), scores = take(8 * room(k));
-        return ranked(places, scores, x.tc_dense(id, d, dl / 4, q, ql, dim, g, gl / 4, compensated, threshold, k, places, scores));
+        const n = room(k, dl / 4);
+        const places = take(4 * n), scores = take(8 * n);
+        return ranked(places, scores, x.tc_dense(id, d, dl / 4, q, ql, dim, g, gl / 4, compensated, threshold, n, places, scores));
       } finally {
         giveBack();
       }
@@ -135,7 +138,7 @@ export async function loadTaoCore(bytes) {
         const [p, len] = put(texts);
         const id = x.tc_batch(p, len, count);
         if (!id) throw new Error("taocore: the texts are not as many as said, or not UTF-8");
-        return batch(id);
+        return batch(id, count);
       } finally {
         giveBack();
       }
