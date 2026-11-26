@@ -24,6 +24,8 @@ cloud/*/node_modules/
 cloud/*/.wrangler/
 cloud/*/wrangler.deploy.toml
 relay/wrangler.deploy.toml
+# the type checker's install (tools/typecheck: npm ci --ignore-scripts)
+tools/typecheck/node_modules/
 # a day of the private archive read back (relay/collect.py archive, security/collect.py archive): never committed
 .archive/
 _site/

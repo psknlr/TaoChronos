@@ -1,0 +1,9 @@
+{
+  "name": "taochronos-typecheck",
+  "private": true,
+  "description": "tsc over the repository's JavaScript, typed in JSDoc: nothing is built or emitted (README.md)",
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261023.1",
+    "typescript": "6.0.3"
+  }
+}

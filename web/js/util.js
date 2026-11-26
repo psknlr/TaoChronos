@@ -210,6 +210,8 @@ export function toast(message, kind = "", ms = 2600) {
 }
 
 export const storage = {
+  /** What was kept under `key` (JSON, as whichever version of the page kept it), else `fallback`.
+   * @param {string} key @param {unknown} [fallback] @returns {any} */
   get(key, fallback = null) {
     try {
       const v = localStorage.getItem(key);

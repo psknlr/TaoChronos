@@ -1,3 +1,4 @@
+// @ts-check
 // How long a turn waits for each thing it waits on, each with a limit of its own — a search and a research run do not
 // share one: the model's first reply, a streamed reply gone silent, a reply read whole, one tool call, a research run,
 // one look at a research run on a server, and the turn itself.  A limit counts the time the page ran: a phone asleep or
@@ -15,6 +16,7 @@ export const LIMITS = Object.freeze({
   offer: 20000,       // a round's tools waited on this long: the page offers to answer with what it has
   turn: 1800000,      // a turn: past this, no more tools run, and the model answers from what it has
 });
+/** @typedef {Record<keyof typeof LIMITS, number>} Limits  a caller's own (watch, a research run's) */
 
 // how often a limit looks at the clock, and the most of a gap between two looks it counts: a hidden tab's clock may be
 // looked at only once a minute, and that minute counts; a longer gap is a page that did not run (a phone asleep, a tab
@@ -24,19 +26,21 @@ const MAX_GAP = 65000;
 
 /** A limit of `ms` on a wait, counted in the time the page ran: `onExpire` is called once, when it is used up.  pause()
  * and resume(): time that does not count (a call waiting for its turn); restart(): the count begins again (a stream that
- * sent something); stop(): it ends.  `spent`: the time counted so far. */
+ * sent something); stop(): it ends.  `spent`: the time counted so far.
+ * @param {number} ms @param {() => void} onExpire */
 export function limit(ms, onExpire) {
   const tick = Math.max(1, Math.min(TICK, ms));
   let spent = 0;
   let last = Date.now();
   let paused = false;
+  /** @type {number | null} */
   let timer = null;
   const look = () => {
     const now = Date.now();
     if (!paused) spent += Math.min(now - last, MAX_GAP);
     last = now;
     if (spent >= ms) {
-      clearInterval(timer);
+      clearInterval(/** @type {number} */ (timer));
       timer = null;
       onExpire();
     }
@@ -47,22 +51,29 @@ export function limit(ms, onExpire) {
     pause() { if (timer && !paused) { look(); paused = true; } },
     resume() { if (paused) { last = Date.now(); paused = false; } },
     restart() { spent = 0; last = Date.now(); },
-    stop() { clearInterval(timer); timer = null; },
+    stop() { clearInterval(/** @type {number | undefined} */ (timer)); timer = null; },
   };
 }
+
+/** @typedef {"firstReply" | "silence" | "whole"} Expiry */
+/** @typedef {{ sent?: number, open?: number, first?: number, last?: number, expired?: Expiry,
+ *   [field: string]: unknown }} Mark */
 
 /** A model request's limits: its first reply, then — once it streams — its silence (or, read whole, the time to read it).
  * `signal` ends the request when one of them is used up, or when the caller's `outer` signal ends it; `expired` names
  * the limit that did ("firstReply" | "silence" | "whole"), and `ms` what it was.  close() when the request is done.
  * `mark` (an object), when given, is told when the request was sent (`sent`), when its reply began (`open`), when its
- * first and its last part came (`first`, `last`), and the limit that ended it (`expired`): the page's clock, Date.now(). */
+ * first and its last part came (`first`, `last`), and the limit that ended it (`expired`): the page's clock, Date.now().
+ * @param {AbortSignal | null} [outer] @param {Partial<Limits>} [limits] @param {Mark | null} [mark] */
 export function watch(outer, limits = {}, mark = null) {
   const lim = { ...LIMITS, ...limits };
   const ctl = new AbortController();
+  /** @type {ReturnType<typeof limit> | null} */
   let current = null;
-  const stop = () => ctl.abort(outer.reason);
+  const stop = () => ctl.abort(/** @type {AbortSignal} */ (outer).reason);
   const w = {
     signal: ctl.signal,
+    /** @type {Expiry | null} */
     expired: null,
     ms: 0,
     /** the request is sent: its first reply is waited for */
@@ -82,7 +93,7 @@ export function watch(outer, limits = {}, mark = null) {
       outer?.removeEventListener("abort", stop);
     },
   };
-  const arm = (what) => {
+  const arm = (/** @type {Expiry} */ what) => {
     current?.stop();
     current = limit(lim[what], () => {
       w.expired = what;
@@ -128,7 +139,8 @@ export function pageClock() {
   };
 }
 
-/** A promise's result (or a value's), or an AbortError as soon as `signal` ends the wait (the promise itself goes on). */
+/** A promise's result (or a value's), or an AbortError as soon as `signal` ends the wait (the promise itself goes on).
+ * @template T @param {Promise<T>} promise @param {AbortSignal | null} [signal] @returns {Promise<T>} */
 export function until(promise, signal) {
   if (!signal) return promise;
   const waited = Promise.resolve(promise);
@@ -143,7 +155,8 @@ export function until(promise, signal) {
   });
 }
 
-/** A wait that ends early when `signal` does. */
+/** A wait that ends early when `signal` does.
+ * @param {number} ms @param {AbortSignal | null} [signal] @returns {Promise<void>} */
 export function pause(ms, signal) {
   return new Promise((resolve) => {
     if (signal?.aborted) return resolve();

@@ -1,0 +1,19 @@
+// What the three programs share (tsconfig.web.json, tsconfig.worker.json, tsconfig.workers.json; README.md says why
+// there are three).  tsc reads the JavaScript as it is and writes nothing.  A file is checked only once its first line
+// is `// @ts-check` (checkJs stays off), and then under strict; the rest — the vendored xzwasm, the files not typed
+// yet — is read for what it exports and never reported on.
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    // TypeScript 6 no longer adds node_modules/@types of itself: each program names what it has
+    "types": [],
+    // the declarations TypeScript ships are not checked again each run; ours (types/) and the Workers' are
+    "skipDefaultLibCheck": true
+  }
+}

@@ -1,3 +1,4 @@
+// @ts-check
 // The page in Sanskrit: each string as i18n.js looks it up, by the Chinese it is written in.
 // A template's {0}, {1}… are its values, in the order the Chinese has them.
 
