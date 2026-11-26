@@ -1087,7 +1087,7 @@ export default {
   "提交太频繁，请稍后再试": "Gửi quá nhiều lần; vui lòng thử lại sau",
   "反馈未能提交（{0}），请稍后再试": "Không gửi được góp ý ({0}); vui lòng thử lại sau",
   "网络不通，反馈未能提交，请稍后再试": "Không có kết nối mạng: không gửi được góp ý; vui lòng thử lại sau",
-  "你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。": "Đánh giá (hữu ích / có vấn đề) và góp ý bạn đưa ra dưới các câu trả lời chỉ được gửi khi bạn bấm gửi, còn nội dung cuộc trò chuyện chỉ được gửi kèm khi bạn đánh dấu ô đính kèm.",
+  "你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。": "Đánh giá (hữu ích / có vấn đề) và góp ý bạn đưa ra dưới các câu trả lời chỉ được gửi khi bạn bấm gửi, còn nội dung cuộc trò chuyện chỉ được gửi kèm khi bạn đánh dấu ô đính kèm. ",
   "运行环境不可用": "Môi trường chạy không khả dụng",
   "你的目标": "Mục tiêu của bạn",
   "减重方案": "Giảm cân",

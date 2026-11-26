@@ -1087,7 +1087,7 @@ export default {
   "提交太频繁，请稍后再试": "Too many submissions; please try again later",
   "反馈未能提交（{0}），请稍后再试": "The feedback could not be submitted ({0}); please try again later",
   "网络不通，反馈未能提交，请稍后再试": "No connection: the feedback could not be submitted; please try again later",
-  "你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。": "The ratings (helpful / has problems) and feedback you give under answers are sent only when you submit them, and a conversation's content only when you tick the box to attach it.",
+  "你在回答下给出的评价（有帮助 / 有问题）和反馈，只在你提交时发送；对话内容只在你勾选附上时随之发送。": "The ratings (helpful / has problems) and feedback you give under answers are sent only when you submit them, and a conversation's content only when you tick the box to attach it. ",
   // 饮食与体重管理 (the diet mode)
   "运行环境不可用": "The runtime is not available",
   "你的目标": "Your goal",
