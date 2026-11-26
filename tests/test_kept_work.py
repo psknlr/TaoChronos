@@ -8,7 +8,11 @@ order.
 
 from __future__ import annotations
 
+import threading
+import time
+
 from taochronos.plugins.classics import intertext, reuse
+from taochronos.plugins.classics.kept import LONGEST_KEPT, TextMemo
 from taochronos.plugins.knowledge.hypergraph import ClaimHypergraph
 from taochronos.verification.gates import GateEvaluator
 
@@ -22,12 +26,39 @@ def test_lineage_edges_whether_the_texts_are_kept_or_not(harness, monkeypatch):
     detector.intertext._prepared.clear()
     kept = [e.to_dict() for e in builder.reuse_edges(passages)]
     assert kept and len(detector._texts) > 100 and detector.intertext._prepared
-    monkeypatch.setattr(reuse, "TEXTS_KEPT", 1)  # every form dropped as the next is kept: each computed afresh
-    monkeypatch.setattr(intertext, "PREPARED_KEPT", 1)
+    monkeypatch.setattr(detector._texts, "texts", 1)  # every form dropped as the next is kept: each computed afresh
+    monkeypatch.setattr(detector.intertext._prepared, "texts", 1)
     detector._texts.clear()
     detector.intertext._prepared.clear()
     assert [e.to_dict() for e in builder.reuse_edges(passages)] == kept
     assert len(detector._texts) == 1 and len(detector.intertext._prepared) == 1
+
+
+def test_a_memo_holds_so_many_texts_and_characters_and_no_long_text():
+    memo: TextMemo[int] = TextMemo(texts=3, chars=100)
+    long = "黄" * (LONGEST_KEPT + 1)
+    assert memo.put(long, 7) == 7 and long not in memo and len(memo) == 0  # given back, never kept
+    for i in range(3):
+        memo.put(str(i) * 30, i)
+    assert len(memo) == 3 and memo.get("1" * 30) == 1
+    memo.put("x", 9)  # a fourth text: all go, then it is kept
+    assert len(memo) == 1 and memo.get("x") == 9 and memo.get("0" * 30) is None
+    memo.put("y" * 60, 1)
+    memo.put("z" * 40, 2)  # 61 + 40 would pass 100 characters
+    assert len(memo) == 1 and memo.get("z" * 40) == 2
+
+
+def test_a_callers_long_text_is_prepared_as_ever_and_not_kept(harness):
+    """study.reuse and the pair form prepare the caller's own texts, of any length: those are worked each time, as
+    before the passages' work was kept, and only a passage's length is kept."""
+    detector = harness.capabilities.get("reuse")
+    an = detector.intertext
+    text = "黄芪补气，" * 2_000  # 10,000 characters
+    first = an.prepare(text)
+    assert text not in an._prepared and an.prepare(text) == first and an.prepare(text) is not first
+    passage = harness.corpus.passages()[0].text
+    assert an.prepare(passage) is an.prepare(passage)  # a passage's is kept
+    assert detector._comparable(text) == detector._comparable(text) and text not in detector._texts
 
 
 def test_g3_whether_a_passages_terms_are_kept_or_not(harness, monkeypatch):
@@ -66,3 +97,28 @@ def test_hypergraph_indexes_built_when_first_read(harness):
         index = getattr(hg, name)
         assert dict(index) == plain[name] and list(index) == list(plain[name]), name
     assert list(hg.claims) == list(dict.fromkeys(c.id for c in claims))
+
+
+def test_hypergraph_indexes_read_by_threads_at_once_are_whole(harness, monkeypatch):
+    """A graph the server's threads share: those that read an index while it is first built wait for it whole."""
+    claims = harness.capabilities.get("knowledge").claims()[:200]
+    whole = sum(len(ids) for ids in ClaimHypergraph(claims).by_term.values())
+    members = ClaimHypergraph.members
+    monkeypatch.setattr(ClaimHypergraph, "members", staticmethod(lambda c, **kw: (time.sleep(0.0002), members(c, **kw))[1]))
+    for _ in range(5):  # a build of some 50 ms: the readers come while it runs
+        hg = ClaimHypergraph(claims)
+        start, seen = threading.Barrier(8), []
+
+        def read() -> None:
+            start.wait()
+            try:
+                seen.append(sum(len(ids) for ids in hg.by_term.values()))
+            except RuntimeError as exc:  # read while another thread filled it
+                seen.append(str(exc))
+
+        readers = [threading.Thread(target=read) for _ in range(8)]
+        for t in readers:
+            t.start()
+        for t in readers:
+            t.join()
+        assert seen == [whole] * 8

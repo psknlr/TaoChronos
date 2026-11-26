@@ -8,6 +8,7 @@ hyperedge stays the unit of record.
 
 from __future__ import annotations
 
+import threading
 from collections import Counter, defaultdict
 from typing import Any, Callable, Iterable
 
@@ -19,6 +20,9 @@ CONTENT_ROLES = (
     Role.CONDITION, Role.CONCEPT,
 )
 _INDEXES = ("by_term", "by_relation", "by_book", "by_passage")
+# a graph's indexes built (__getattr__) and its claims added (add) one at a time: a graph the server's threads share
+# (KnowledgeBase.hypergraph) is never read half indexed, nor added to while its indexes are built
+_INDEXING = threading.Lock()
 
 
 class ClaimHypergraph:
@@ -40,26 +44,29 @@ class ClaimHypergraph:
         them."""
         if name not in _INDEXES:
             raise AttributeError(name)
-        for index in _INDEXES:
-            setattr(self, index, defaultdict(set))
-        for claim in self.claims.values():
-            self._index(claim)
-        return self.__dict__[name]
+        with _INDEXING:
+            if name not in self.__dict__:  # not built by another thread while this one waited
+                built: dict[str, defaultdict[str, set[str]]] = {index: defaultdict(set) for index in _INDEXES}
+                for claim in self.claims.values():
+                    self._index(claim, built)
+                self.__dict__.update(built)  # all four, whole: a reader finds none of them, or each complete
+            return self.__dict__[name]
 
     # ------------------------------------------------------------ mutation
     def add(self, claim: Claim) -> None:
-        if claim.id in self.claims:
-            return
-        self.claims[claim.id] = claim
-        if "by_term" in self.__dict__:
-            self._index(claim)
+        with _INDEXING:
+            if claim.id in self.claims:
+                return
+            self.claims[claim.id] = claim
+            if "by_term" in self.__dict__:
+                self._index(claim, self.__dict__)
 
-    def _index(self, claim: Claim) -> None:
+    def _index(self, claim: Claim, into: dict[str, Any]) -> None:
         for term in self.members(claim, include_negated=True):
-            self.by_term[term].add(claim.id)
-        self.by_relation[claim.relation.value].add(claim.id)
-        self.by_book[claim.book_id].add(claim.id)
-        self.by_passage[claim.passage_id].add(claim.id)
+            into["by_term"][term].add(claim.id)
+        into["by_relation"][claim.relation.value].add(claim.id)
+        into["by_book"][claim.book_id].add(claim.id)
+        into["by_passage"][claim.passage_id].add(claim.id)
 
     def __len__(self) -> int:
         return len(self.claims)

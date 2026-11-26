@@ -10,11 +10,13 @@ from dataclasses import dataclass, field
 
 from ...protocol.documents import Passage
 from .domain import DomainPack
+from .kept import TextMemo
 
 PUNCT = set("，。；：、？！“”‘’（）《》…—·「」『』 \n\t,.;:!?()[]")
-# passages whose comparable form compare keeps (_comparable): above a research run's 2400; one costs 1.7 KB on average
-# in the 要籍语料, 22 KB for a passage of 650 characters
+# passages whose comparable form compare keeps (_comparable, kept.TextMemo): a research run's 1,130 compared texts (some
+# 70,000 characters) several times over; 38 bytes a character in the 要籍语料, so some 19 MB at the most
 TEXTS_KEPT = 4096
+TEXTS_CHARS = 500_000
 
 
 def strip_punct(text: str) -> tuple[str, list[int]]:
@@ -58,7 +60,7 @@ class TextReuseDetector:
         self._corpus = None  # large corpora: document frequencies come from the full-text index on demand
         self._n = 0
         self.intertext = None  # an IntertextAnalyzer: types each match (直接引用, 转述, 引而驳之 …)
-        self._texts: dict[str, tuple[str, list[int], str]] = {}  # text → its comparable form (_comparable)
+        self._texts: TextMemo[tuple[str, list[int], str]] = TextMemo(TEXTS_KEPT, TEXTS_CHARS)  # text → _comparable(text)
 
     def fit(self, passages: list[Passage]) -> None:
         df: Counter = Counter()
@@ -94,15 +96,12 @@ class TextReuseDetector:
     def _comparable(self, text: str) -> tuple[str, list[int], str]:
         """A passage's text variant-normalised without punctuation, the map back to its offsets, and that text masked:
         what every comparison of the passage starts from.  A passage is compared in many pairs (lineage pairs each
-        passage of its scope with the others), so the form is kept, under the text itself — a changed text is another
-        key, never an older entry — and all are dropped when TEXTS_KEPT are held."""
+        passage of its scope with the others), so the form is kept, under the text itself (TextMemo, TEXTS_KEPT and
+        TEXTS_CHARS)."""
         kept = self._texts.get(text)
         if kept is None:
             clean, index = strip_punct(self.pack.variants.normalize_text(text))
-            kept = clean, index, self._masked(clean)
-            if len(self._texts) >= TEXTS_KEPT:
-                self._texts.clear()
-            self._texts[text] = kept
+            kept = self._texts.put(text, (clean, index, self._masked(clean)))
         return kept
 
     def _formulaic(self, block: str) -> bool:

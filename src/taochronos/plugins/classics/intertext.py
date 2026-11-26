@@ -18,14 +18,16 @@ from typing import Any
 from ...protocol.yamlio import load_yaml
 from ...science.semantic_reuse import ReuseFeatures, SparseEncoder, classify, order_concordance, weighted_coverage
 from .domain import DomainPack
+from .kept import TextMemo
 
 HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff〓□]")
 NOTE = re.compile(r"（[^（）]*）|\([^()]*\)|〔[^〔〕]*〕|【[^【】]*】")  # interlinear notes (夹注)
 FUNCTION_CHARS = set("之乎者也矣焉哉而其以于於所则乃且亦又即若如故夫盖此是斯兮耳尔曰云为")
 _WEAK_CATEGORIES = {"herb", "formula"}  # single-character drug and formula names match everywhere (发, 阴)
-# texts whose Prepared form prepare keeps: above a research run's 2400 lineage passages; one costs 3.3 KB on average in
-# the 要籍语料, 30 KB for a passage of 650 characters
+# texts whose Prepared form prepare keeps (kept.TextMemo): a research run's 1,130 compared texts (some 70,000
+# characters) several times over; 40 to 50 bytes a character in the 要籍语料, so some 25 MB at the most
 PREPARED_KEPT = 4096
+PREPARED_CHARS = 500_000
 
 
 @dataclass
@@ -73,13 +75,14 @@ class IntertextAnalyzer:
         self._df: dict[str, int] = {}
         self._n = max(1, len(corpus))
         self.encoder = SparseEncoder(self.idf)
-        self._prepared: dict[str, Prepared] = {}  # text → prepare(text)
+        self._prepared: TextMemo[Prepared] = TextMemo(PREPARED_KEPT, PREPARED_CHARS)  # text → prepare(text)
 
     # ------------------------------------------------------------ texts
     def prepare(self, text: str) -> Prepared:
         """Normalised, with its Han characters — interlinear notes (夹注) left out: they comment on the text.  It
         depends on the text alone, and lineage labels a passage again in every pair it is in, so it is kept, under the
-        text itself (all dropped when PREPARED_KEPT are held): the same Prepared is handed out again, and only read."""
+        text itself (TextMemo, PREPARED_KEPT and PREPARED_CHARS): the same Prepared is handed out again, and only
+        read."""
         kept = self._prepared.get(text)
         if kept is not None:
             return kept
@@ -92,11 +95,7 @@ class IntertextAnalyzer:
             if len(m.surface) == 1 and m.category in _WEAK_CATEGORIES:
                 continue
             concepts.append(Concept(m.term_id, m.surface, m.start, m.end, m.category))
-        prepared = Prepared(norm, han, index, concepts)
-        if len(self._prepared) >= PREPARED_KEPT:
-            self._prepared.clear()
-        self._prepared[text] = prepared
-        return prepared
+        return self._prepared.put(text, Prepared(norm, han, index, concepts))
 
     # ------------------------------------------------------------ rarity
     def df(self, surface: str) -> int:
