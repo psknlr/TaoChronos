@@ -104,16 +104,19 @@ excerpts.  Two steps choose them:
   the search of the later ones waits, a few seconds.  The page does not show it (the side panel's pill carries it as
   `data-indexing`, for scripts and tests).
 * **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
-  so that a half-kept store is never read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an
-  http:// page too — the site is served over http until its certificate is issued — so a later visit downloads and indexes
-  nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled
-  once after the first visit's indexing), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`),
-  and the store's counts come with the store.
+  so that a half-kept store is never read; one tab keeps it at a time, and a kept store whose parts do not add up to its
+  size is not read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an http:// page too
+  (`taochronos serve` reached from another machine), so a later visit downloads and indexes nothing: Pyodide, then the
+  kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled once after the first
+  visit's indexing, from the package the manifest names and only from it), the YAML the runtime reads comes parsed with
+  the site (`home.zip`, `.cache/yaml`), and the store's counts come with the store.  An archive is kept only once its
+  SHA-256 is the manifest's: on an http:// page of another machine, where the browser computes none, the archives are
+  downloaded each visit, and TaoCore's module is not used.
 * **Searches on a compiled kernel** — TaoCore ([ADR 0036](adr/0036-taocore.md), [`rust/`](../rust/README.md)): what a
   search computes over its candidates, BM25 of the query's tokens and the hashed n-gram cosines, runs in a WebAssembly
   module of no imports (`runtime/taocore.wasm`, 50 KB) that the worker fetches beside the archives, instantiates (in the
   worker: the page's own policy compiles no WebAssembly) and hands to Python as `_taocore_wasm`.  The same numbers as
-  Python's own, bit for bit, three times faster on a warm search (Pyodide, the 13 measured queries: 12.2 s → 4.1 s);
+  Python's own, bit for bit, about three times faster on a warm search (Pyodide, the 13 measured queries: 12.2 s → 4.1 s);
   the first visit's full-text tokens are made there too (its indexing 15% shorter).  Python checks the module against
   its definitions before its first use, and computes in Python where it does not load or is refused (the runtime's
   info says which, as Python found it: `taocore` — `kernel` `"wasm"` or `null` with the `reason`, and how often each
@@ -285,7 +288,10 @@ characters differ); Thai dates count Gregorian years, and Thai, Hindi and Sanskr
 
 The code is written in Chinese: every string a visitor reads goes through `T` (`web/js/i18n.js`), which looks it up in
 `web/js/i18n-<code>.js` by the Chinese (a template's `{0}`, `{1}`… are its values); a string with no translation there
-is shown in Chinese, and a Chinese page fetches no dictionary at all.  The Traditional Chinese dictionary is the Chinese
+is shown in Chinese, and a Chinese page fetches no dictionary at all.  A worker is told the page's language in its
+address and fetches the dictionary as it starts (a top-level await): its first import, `web/js/inbox.js`, holds the
+messages that come meanwhile and hands them on once the worker listens — without it a page in any language but Chinese
+lost the runtime's start one time in three, and never answered.  The Traditional Chinese dictionary is the Chinese
 converted with OpenCC (`s2twp`, Taiwan wording, 「」 quotation marks).  The model is asked to answer in the page's
 language, quoting the classics in the original Chinese (exactly as the tools return them, so that the quotation check
 still holds) with a translation; the corpus is searched in Chinese as always.  The About page (`about.html`) carries
@@ -1098,7 +1104,7 @@ and the model told, its figures not shown twice), and the 工具台's charts; an
 analysed, a `mine:` row cited and checked, nothing naming a patient sent to the model and no record sent; the browser's
 own runtime (the worker's code and IndexedDB, with a stand-in for Pyodide whose Python runs in the test) keeping a
 workbook across a reload; and the page working with a server elsewhere keeping the data in the browser; and, with
-`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
+`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin of another machine (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,

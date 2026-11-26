@@ -87,25 +87,31 @@ Those rules were applied before anything was built.  Seven investigations, each 
 ### Improved in Python — better than compiling
 
 1. **A search's BM25 counts its query's tokens only** — the scores BM25Index gave, from what it reads of the
-   candidates.  Without a kernel a warm search is 1.5 times faster natively (1.2 in Pyodide).
+   candidates.  Without a kernel a warm search is 1.4–1.5 times faster natively (1.2 in Pyodide).
 2. **The embedder's n-gram cache** keeps two halves of 100 000 (about 19 MB at the most, its numbers shared) instead of
    emptying itself at 100 000: a large search no longer hashes every n-gram again each time.
-3. **The character class written by number** (`㐀-퟿-﫿`), as the indexes have read it all along, and
+3. **The character class written by number** (`[\u3400-\ud7ff\ue000-\ufaff]`), as the indexes have read it all along, and
    pinned by a test that names the code points; the lone surrogates left out, which no text can be encoded with and which
    stopped a search's dense route (`UnicodeEncodeError`).  The D1 backup's copy (`search.js`) the same, and its other
    copied constants (k1, b, the weights, the fusion's 60, its query tokens under Node) now pinned to the server's.
 4. **The worker keeps only what the manifest names.**  It kept whatever arrived under the manifest's SHA-256 — a
    download cut short was reused on every later visit.  Now bytes are kept, and a kept copy used, only when their hash
-   is the manifest's; TaoCore's module is refused outright otherwise.
+   is the manifest's; TaoCore's module is refused outright otherwise.  The package's bytecode likewise: it was compiled
+   from whatever package arrived and kept under the manifest's name, then laid over the right package on every later
+   visit.  Where the browser computes no hash (`crypto.subtle` is a secure context's: an http:// page of another
+   machine), nothing is kept and the module is not used.
 5. **The hotspots outside retrieval, in Python** — each output proved identical (every 要籍语料 passage, the research
    scopes, the searches):
    * `Lexicon.match` tries only the lengths of the surfaces that begin where it stands (82–91% of positions begin
      none): 4.4 times faster; the searches that target a sense 1.25–1.56 times faster.
    * the lineage builder and the G3 gate keep a passage's text work for every pair or claim it is in: a research
      run's lineage 1.57 times faster on the web scope (2.47 on the demonstration corpus), G3 7.5 times, claim
-     extraction 1.42 times; a whole web research run 1.20 times (demo 1.58).
+     extraction 1.42 times; a whole web research run 1.20 times (demo 1.58).  What is kept is bounded by texts and by
+     characters, and no text longer than 2 000 characters is kept: a passage is at most 900, but the study tools
+     prepare a caller's own text, of any length (100 000 characters held 11 MB).
    * `ClaimHypergraph` builds the indexes nothing reads until one is read (5.3 ms → 0.23 ms for 1 909 claims) —
-     where the proposal would have ported it.
+     where the proposal would have ported it — under a lock, and publishes them whole: the graph the server's threads
+     share is never read half indexed.
 6. **The JavaScript typed with JSDoc checked by `tsc`** (`tools/typecheck`; a file opts in with `// @ts-check` and is
    checked under `strict`), not converted to TypeScript: nothing is built or emitted, the site ships `web/` as it is.
    The RPC between the page and its worker is declared once (`tools/typecheck/types/runtime.d.ts`); of 18 seeded
@@ -139,16 +145,17 @@ Those rules were applied before anything was built.  Seven investigations, each 
 |---|---|---|
 | CPython 3.13, CPU | before 7 219 ms · Python definitions 4 801 ms (1.50×) · extension 2 177 ms (**3.32×**; 1.29–6.30× per query) | all 13 |
 | Pyodide 0.28.2 (Node 22) | before 12 195 ms · Python 9 890 ms (1.23×) · module 4 064 ms (**3.00×**) | all 13 |
-| Chromium 158, the built site under its CSPs | e.g. 桂枝汤 445 → 130 ms, 黄芪补气 708 → 152, 麻黄汤的方源 273 → 55 (two browsers at once on 4 vCPUs: indicative) | all 10 queries, scores too |
+| Chromium 158, the built site under its CSPs | warm, 10 queries, 1.7–5.8× (桂枝汤 361 → 73 ms, 黄芪补气 584 → 121, 麻黄汤的方源 235 → 42, 风 2 783 → 621); ready 10.1 → 9.4 s | all 10, scores too, and with no loader |
 
-The extension reached the ceiling the profile set (3.3×).  The first visit's indexing in Pyodide: the works the first
-answer waits for 5.3 s → 4.5 s, the whole 14.9 s → 12.6 s, the same index.  The module is 50 178 bytes (0.17% of a
-first visit); the wheel 232 KB, built in about 25 s.  In Chromium a missing module, a missing loader and a corrupt module each left a
-runtime that answered in Python; a module corrupted on its first download was not kept, and the next visit used it.
-Parity (`tests/test_taocore.py`): the extension gives the Python definitions' scores bit for bit on the test corpus's 265
-texts, 51 BM25 queries and 8 dense ones, under three embedder shapes and both sums (CPython 3.11, 3.12, 3.13); the module,
-under Node through the worker's own loader, on 24 and 8 under two shapes; whole searches over a store give what they gave
-before TaoCore.
+The table is one run each, on a 4-vCPU machine shared with other work: other runs gave 3.1–3.3× natively (the
+definitions 1.4–1.5×) and 2.9–3.0× in Pyodide (1.2×) — about the ceiling the profile set (3.3×).  The first visit's
+indexing in Pyodide: the works the first answer waits for 5.3 s → 4.5 s, the whole 14.9 s → 12.6 s, the same index.  The
+module is 52 322 bytes (0.18% of a first visit); the wheel 232 KB, built in about 25 s.  In Chromium a missing module, a
+missing loader and a corrupt module each left a runtime that answered in Python; a module corrupted on its first
+download was not kept, and the next visit used it.  Parity (`tests/test_taocore.py`): the extension gives the Python
+definitions' scores bit for bit on the test corpus's 265 texts, 51 BM25 queries and 8 dense ones, under three embedder
+shapes and both sums (CPython 3.11, 3.12, 3.13); the module, under Node through the worker's own loader, on 24 and 8
+under two shapes; whole searches over a store give what they gave before TaoCore.
 
 ## Not done here
 
@@ -170,7 +177,12 @@ before TaoCore.
   is committed with the module `rust/wasm.sh` writes, or CI fails.
 * The compiler moves in one change: the toolchain file, the image's Rust stage and its `RUSTUP_TOOLCHAIN`, the module.
 * The full corpus's image takes a minute or two longer to build (the Rust stage; nothing of it ships but the wheel).
-* **Rollback**, each one line: `TAOCHRONOS_TAOCORE=off` in the server's environment (an `ENV` line in the image's last
-  stage); the build ships no module once
-  `rust/crates/taocore-wasm/taocore.wasm` is gone (the worker then says why, and searches in Python); the image's two
-  stages and its `COPY --from=native` lines removed.
+* **Rollback**, each one line, with nothing else to change: `TAOCHRONOS_TAOCORE=off` in the server's environment (an
+  `ENV` line in the image's last stage), and in the browser's (a line in `web/js/worker.js`'s `ENV`:
+  `os.environ["TAOCHRONOS_TAOCORE"] = "off"`).  The kernels stay where they are, unused, and `taocore.status()` says
+  so.  Taking them out is more than a line, and takes their checks with them: the browser's module —
+  `rust/crates/taocore-wasm/taocore.wasm` deleted (the build then ships none; the worker says why), with CI's
+  `rust/wasm.sh --check` and the tests that read the file (`tests/test_taocore.py`, `tests/test_chat.py`,
+  `tests/test_distribution.py`); the image's — its stages `maturin` and `native` and the three lines that install the
+  wheel (`cloud/corpus/Dockerfile`), with the job `image`'s import of `_taocore` and the Dockerfile's half of
+  `tests/test_supply_chain.py`'s toolchain test.
