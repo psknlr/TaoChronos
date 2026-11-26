@@ -188,7 +188,9 @@ Result: `taochronos.zip` 1,507,509 → 1,113,458 bytes (225 of the package's 279
 * `GET /v1/egress` in a browser shows `worker` and `direct` only; for `places` and `model`,
   `LOG_EXPORT_TOKEN=… python3 relay/collect.py check`, or `curl -H "Authorization: Bearer …"`.
 * **For the owner, after merging**: run *Actions → security → Run workflow* with `plan`, then `apply` (the origins of
-  rule 3 changed; the two rule changes of the same day are still to be applied).  Policy reports already in
-  `data/security-logs/site/` keep their addresses until they are rewritten; the collector keeps none from now on.
+  rule 3 changed; the two rule changes of the same day are still to be applied).
+* The policy reports stored before the deployment were rewritten by the same rule on 2026-11-26 (2,030 events, their
+  fingerprint alone).  Git history still holds them as they were; only rewriting the repository's history would take
+  them out of it, and that is the owner's call.
 * Rollback, each one line: `HONEYPOT = "observe"` stops refusals at scanner paths; the `guarded` entry of a tool
   returns its argument; a path added to `site.home.ship` ships it again.
