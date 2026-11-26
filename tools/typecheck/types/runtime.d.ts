@@ -26,6 +26,8 @@ export interface RuntimeInfo {
   system_prompt: string;
   load_ms?: number;
   version_manifest?: string;
+  /** in the browser (worker.js): which way searches run — "wasm" (TaoCore's module), or "python (…why)" */
+  taocore?: string;
 }
 
 /** CORPUS_LABELS' keys (chat/__init__.py): the demonstration corpus, the 要籍语料, the full corpus. */

@@ -32,12 +32,13 @@ peer (`^5.20261023.1` for 4.153.0).
 3. Types from elsewhere come in as a comment, which no browser follows:
    `/** @import { RuntimeInfo } from "../../tools/typecheck/types/runtime" */`.
 
-Opted in: `limits.js`, `store.js`, `providers.js`, `runtime.js`, `unpack.js`, `unpack-worker.js`, `brand.js`,
-`diet/prompt.js` and the fifteen `i18n-*.js` tables (where tsc finds a key written twice).  The generated modules
+Opted in: `limits.js`, `store.js`, `providers.js`, `runtime.js`, `worker.js` (with the part of Pyodide's API it uses
+declared in it), `taocore.js`, `unpack.js`, `unpack-worker.js`, `brand.js`, `diet/prompt.js` and the fifteen
+`i18n-*.js` tables (where tsc finds a key written twice).  The generated modules
 (`diet/dishes.js`, `diet/medicinal-data.js`, `cloud/site/src/backup/tables.js`) are clean but left out: their tests
 compare them byte for byte with what their generators write, and checking a megabyte of literals costs a second for
-nothing tsc could find in them.  `worker.js` is a root of `tsconfig.worker.json`, so what it imports is checked
-there under a worker's globals; it is checked itself once it opts in.
+nothing tsc could find in them.  `worker.js` is a root of `tsconfig.worker.json`: it and what it imports are checked
+there under a worker's globals.
 
 ## Three programs, and `types/`
 

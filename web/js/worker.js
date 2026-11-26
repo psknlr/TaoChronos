@@ -1,3 +1,4 @@
+// @ts-check
 // The in-browser runtime: Pyodide (CPython compiled to WebAssembly) running the TaoChronos package on the 要籍语料 — the
 // ranked works (the first classics whole, the rest in chapters spread through the book), shipped xz-compressed as a
 // store without its full-text index — or, on a site built without it, the demonstration corpus.  It runs inside a module
@@ -34,26 +35,69 @@
 import { readAll, spool, unxz } from "./unpack.js";
 import { LANG, T } from "./i18n.js";
 
+/** @import { DataAddResult, DataClearResult, DataRemoveResult, RuntimeInfo } from "../../tools/typecheck/types/runtime" */
+/**
+ * @typedef {object} PyFS  the part of Emscripten's file system this worker uses
+ * @property {(path: string) => void} mkdirTree
+ * @property {(path: string, data: Uint8Array) => void} writeFile
+ * @property {(path: string) => void} unlink
+ * @property {(path: string) => { size: number }} stat
+ * @property {(path: string, flags: string) => unknown} open
+ * @property {(stream: unknown, buffer: Uint8Array, offset: number, length: number, position?: number) => number} read
+ * @property {(stream: unknown, buffer: Uint8Array, offset: number, length: number, position?: number, canOwn?: boolean) => number} write
+ * @property {(stream: unknown) => void} close
+ */
+/**
+ * @typedef {object} Pyodide  the part of Pyodide's API this worker uses (pyodide.mjs, loadPyodide)
+ * @property {(code: string) => any} runPython
+ * @property {(names: string[], options?: object) => Promise<unknown>} loadPackage
+ * @property {(buffer: Uint8Array, format: string, options?: { extractDir?: string }) => void} unpackArchive
+ * @property {(name: string, module: object) => void} registerJsModule
+ * @property {(buffer: Int32Array) => void} setInterruptBuffer
+ * @property {{ get(name: string): any, set(name: string, value: unknown): void }} globals
+ * @property {PyFS} FS
+ */
+/**
+ * @typedef {object} RuntimeFile  a file of the manifest (chat/build.py manifest())
+ * @property {number} bytes
+ * @property {string} sha256
+ * @property {number} [abi]
+ */
+/**
+ * @typedef {RuntimeFile & { raw_bytes: number, passages: number, core_rank: number, core_passages: number, profile?: string }} CorpusFile
+ *   the corpus's, with what it holds (webcorpus.site_store_info)
+ */
+/** @typedef {{ version: string, files?: Record<string, RuntimeFile>, pyodide_base?: string }} Manifest  runtime/manifest.json */
+
 const CDN = "https://cdn.jsdelivr.net/pyodide/v0.28.2/full/";
 const CORPUS = "/home/pyodide/data/corpus/tcm.sqlite";
 const SLICE = 3000;          // passages indexed per background step (a few tenths of a second)
 const PART = 16 * 1048576;   // bytes per IndexedDB record of the kept store
-let py = null;
-let rpc = null;
+/** @type {Pyodide} */
+let py = /** @type {any} */ (null);
+/** @type {(method: string, params: string) => string} */
+let rpc = /** @type {any} */ (null);
+/** @type {Promise<RuntimeInfo> | null} */
 let ready = null;
+/** @type {Int32Array | null} */
 let interrupt = null; // the flag the page sets to interrupt Python (SIGINT, 2), where it can share it
 
+/** @param {number} p @param {string} message */
 const progress = (p, message) => self.postMessage({ type: "progress", progress: Math.round(p), message });
+/** @param {number} n */
 const mb = (n) => (n / 1048576).toFixed(1);
-/** fn, called at most every `ms` milliseconds (a status line, not a message per chunk). */
+/** fn, called at most every `ms` milliseconds (a status line, not a message per chunk).
+ * @param {number} ms @param {(...a: any[]) => void} fn @returns {(...a: any[]) => void} */
 const every = (ms, fn) => { let last = 0; return (...a) => { const now = performance.now(); if (now - last >= ms) { last = now; fn(...a); } }; };
 
 // ------------------------------------------------------------------------------------------------ kept between visits
 /** IndexedDB, reduced to what this worker needs; every call resolves (undefined / false when storage is unavailable). */
 const kept = (() => {
+  /** @type {Promise<IDBDatabase | null> | null} */
   let opened = null;
   // a connection the browser closes (storage reclaimed or cleared, another tab's upgrade) is forgotten: the next use
   // opens a new one (store.js does the same for the conversations)
+  /** @param {IDBDatabase} db */
   const forget = (db) => { try { db.close(); } catch { /* closed already */ } opened = null; };
   const open = () => (opened ||= new Promise((resolve) => {
     try {
@@ -67,14 +111,17 @@ const kept = (() => {
       req.onerror = req.onblocked = () => resolve(null);
     } catch { resolve(null); }
   }));
+  /** @param {IDBDatabase} db @param {IDBTransactionMode} mode @param {(s: IDBObjectStore) => IDBRequest | undefined} fn
+   * @returns {Promise<{ ok: boolean, value?: any, gone?: boolean }>} */
   const once = (db, mode, fn) => new Promise((resolve) => {
     try {
       const tx = db.transaction("files", mode);
       const req = fn(tx.objectStore("files"));
       tx.oncomplete = () => resolve({ ok: true, value: req?.result });
       tx.onerror = tx.onabort = () => resolve({ ok: false });
-    } catch (err) { resolve({ ok: false, gone: err?.name === "InvalidStateError" }); }
+    } catch (err) { resolve({ ok: false, gone: /** @type {any} */ (err)?.name === "InvalidStateError" }); }
   });
+  /** @param {IDBTransactionMode} mode @param {(s: IDBObjectStore) => IDBRequest | undefined} fn */
   const run = async (mode, fn) => {
     const db = await open();
     if (!db) return { ok: false };
@@ -85,14 +132,19 @@ const kept = (() => {
     return again ? once(again, mode, fn) : { ok: false };
   };
   return {
+    /** @param {string} key @returns {Promise<any>} */
     get: async (key) => (await run("readonly", (s) => s.get(key))).value,
+    /** @param {string} key @param {unknown} value */
     put: async (key, value) => (await run("readwrite", (s) => s.put(value, key))).ok,
+    /** @param {string | IDBKeyRange} key */
     drop: async (key) => (await run("readwrite", (s) => s.delete(key))).ok,
+    /** @param {string} prefix @returns {Promise<string[]>} */
     keys: async (prefix) => (await run("readonly", (s) => s.getAllKeys(IDBKeyRange.bound(prefix, `${prefix}\uffff`)))).value || [],
   };
 })();
 
-/** The bytes' SHA-256 in hex, or null where this browser offers none (crypto.subtle is a secure context's). */
+/** The bytes' SHA-256 in hex, or null where this browser offers none (crypto.subtle is a secure context's).
+ * @param {Uint8Array<ArrayBuffer>} bytes @returns {Promise<string | null>} */
 async function sha256(bytes) {
   try {
     return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -105,7 +157,9 @@ async function sha256(bytes) {
  * only when they are what the manifest names — a download cut short, or a file older than the manifest (a cache between
  * here and the site), is used this once and fetched anew the next time, where it was once kept for good; and a kept
  * copy that is no longer what its name says is dropped.  `exact` refuses such bytes outright (an optional file: better
- * none than another).  Where the browser can compute no hash (a page served over plain http), as before. */
+ * none than another).  Where the browser can compute no hash (a page served over plain http), as before.
+ * @param {string} base @param {string} name @param {string | undefined} sha @param {boolean} [exact]
+ * @returns {Promise<Uint8Array<ArrayBuffer>>} */
 async function archive(base, name, sha, exact = false) {
   const hit = sha ? await kept.get(`zip:${name}`) : undefined;
   if (sha && hit?.sha === sha && hit.blob instanceof Blob) {
@@ -126,7 +180,8 @@ async function archive(base, name, sha, exact = false) {
   return buf;
 }
 
-/** The indexed store kept from an earlier visit: {parts: Blob[], bytes}, or null when there is none for this build. */
+/** The indexed store kept from an earlier visit: {parts: Blob[], bytes}, or null when there is none for this build.
+ * @param {string} sha @returns {Promise<{ parts: Blob[], bytes: number } | null>} */
 async function keptCorpus(sha) {
   const head = await kept.get("corpus");
   if (!head || head.sha !== sha || head.state !== "built") return null;
@@ -139,7 +194,8 @@ async function keptCorpus(sha) {
   return { parts, bytes: head.bytes };
 }
 
-/** Keep the store (indexed) for the next visit, part by part; its head is written last, so a half-kept store is never read. */
+/** Keep the store (indexed) for the next visit, part by part; its head is written last, so a half-kept store is never read.
+ * @param {string} sha */
 async function keepCorpus(sha) {
   await kept.drop("corpus");
   await kept.drop(IDBKeyRange.bound("corpus:", "corpus:\uffff")); // any earlier build's parts, kept or half kept
@@ -166,9 +222,12 @@ async function keepCorpus(sha) {
 // ------------------------------------------------------------------------------------------------------- download
 
 /** The corpus downloaded and unpacked in a worker of its own, in parallel with Python starting here (unpacking on this
- * thread would take its turns with Python's start); here as it was when a worker cannot be started from this one. */
+ * thread would take its turns with Python's start); here as it was when a worker cannot be started from this one.
+ * @param {string} url @param {number} size @param {(n: number) => void} [onGot] @param {(n: number) => void} [onUnpacked]
+ * @returns {Promise<Uint8Array>} */
 function unpackCorpus(url, size, onGot, onUnpacked) {
   return new Promise((resolve, reject) => {
+    /** @type {Worker | null} */
     let helper = null;
     const here = async () => {
       const r = await fetch(url, { cache: "no-cache" });
@@ -188,14 +247,15 @@ function unpackCorpus(url, size, onGot, onUnpacked) {
       heard = true;
       if (data.got !== undefined) onGot?.(data.got);
       if (data.unpacked !== undefined) onUnpacked?.(data.unpacked);
-      if (data.error) { helper.terminate(); reject(new Error(data.error)); }
-      if (data.buffer) { helper.terminate(); resolve(new Uint8Array(data.buffer)); }
+      if (data.error) { /** @type {Worker} */ (helper).terminate(); reject(new Error(data.error)); }
+      if (data.buffer) { /** @type {Worker} */ (helper).terminate(); resolve(new Uint8Array(data.buffer)); }
     };
     helper.postMessage({ url, size });
   });
 }
 
-/** The corpus, whole in `buf`, as the file at CORPUS — the file system takes the buffer itself (canOwn). */
+/** The corpus, whole in `buf`, as the file at CORPUS — the file system takes the buffer itself (canOwn).
+ * @param {Uint8Array} buf */
 function ownCorpus(buf) {
   py.FS.mkdirTree("/home/pyodide/data/corpus");
   const file = py.FS.open(CORPUS, "w+");
@@ -207,9 +267,11 @@ function ownCorpus(buf) {
 }
 
 // ----------------------------------------------------------------------------------------------------------- Python
+/** @param {string} base @param {Manifest} manifest @returns {Promise<Pyodide>} */
 async function loadPython(base, manifest) {
   const wanted = new URL(manifest.pyodide_base || CDN, base).href;
   const bases = wanted === CDN ? [CDN] : [wanted, CDN];
+  /** @type {any} */
   let lastErr = null;
   for (const b of bases) {
     try {
@@ -297,6 +359,7 @@ def _bytecode():
     return buf.getvalue()
 `;
 
+/** @param {string} key */
 async function keepBytecode(key) {
   try {
     py.runPython(BYTECODE);
@@ -307,7 +370,8 @@ async function keepBytecode(key) {
   } catch { /* a later visit compiles from source, as before */ }
 }
 
-/** The rest of the corpus indexed in slices, between the questions the runtime answers; kept once it is all indexed. */
+/** The rest of the corpus indexed in slices, between the questions the runtime answers; kept once it is all indexed.
+ * @param {string} sha @param {(() => void) | null} [then] */
 async function indexRest(sha, then) {
   const step = py.globals.get("_index");
   let again = false;
@@ -323,8 +387,8 @@ async function indexRest(sha, then) {
     self.postMessage({ type: "index", done: true, kept: keptNow });
   } catch (err) {
     // an interrupt meant for a call that ended as this slice began: the slice, not committed, is indexed again
-    if (/KeyboardInterrupt/.test(String(err?.message || err))) again = true;
-    else self.postMessage({ type: "index", error: String(err?.message || err) });
+    if (/KeyboardInterrupt/.test(String(/** @type {any} */ (err)?.message || err))) again = true;
+    else self.postMessage({ type: "index", error: String(/** @type {any} */ (err)?.message || err) });
   } finally {
     step.destroy?.();
     if (again) setTimeout(() => indexRest(sha, then), 0);
@@ -335,7 +399,8 @@ async function indexRest(sha, then) {
 // ------------------------------------------------------------------------------------------------------ 我的资料
 const MINE = "mydata:";
 
-/** A file of the user's: read and kept by the runtime, and its anonymous dataset kept here for the next visit. */
+/** A file of the user's: read and kept by the runtime, and its anonymous dataset kept here for the next visit.
+ * @param {{ name: string, bytes: ArrayBuffer }} file @returns {Promise<DataAddResult>} */
 async function addData({ name, bytes }) {
   const path = `/tmp/mydata-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   py.FS.writeFile(path, new Uint8Array(bytes));
@@ -358,28 +423,33 @@ async function restoreData() {
   }
 }
 
+/** @param {{ id: string }} dataset @returns {Promise<DataRemoveResult>} */
 async function removeData({ id }) {
   const out = JSON.parse(rpc("data_remove", JSON.stringify({ id })));
   if (out.ok) await kept.drop(MINE + out.removed);
   return out;
 }
 
+/** @returns {Promise<DataClearResult>} */
 async function clearData() {
   const out = JSON.parse(rpc("data_clear", "{}"));
   await kept.drop(IDBKeyRange.bound(MINE, `${MINE}\uffff`));
   return out;
 }
 
+/** @param {{ base: string }} params @returns {Promise<RuntimeInfo>} */
 async function init({ base }) {
   const t0 = performance.now();
   progress(3, T("读取运行清单"));
   const got = await fetch(new URL("runtime/manifest.json", base), { cache: "no-cache" });
   if (!got.ok) throw new Error(T`这里没有内置运行环境（runtime/manifest.json：HTTP ${got.status}）：请用 taochronos web build 构建站点，或连接 taochronos serve`);
-  const manifest = await got.json();
+  const manifest = /** @type {Manifest} */ (await got.json());
+  /** @type {Record<string, RuntimeFile>} */
   const files = manifest.files || {};
-  const meta = files["corpus.sqlite.xz"];
+  const meta = /** @type {CorpusFile | undefined} */ (files["corpus.sqlite.xz"]);
 
   // Python and the corpus at the same time: the status line shows both
+  /** @type {{ step: string, frac: number, got: number, total: number, downloading: boolean, unpacked?: number }} */
   const view = { step: T("载入 Python 运行时"), frac: 0, got: 0, total: meta?.bytes || 0, downloading: false };
   const show = () => {
     const dl = view.downloading && view.got < view.total ? T` · 下载要籍语料 ${mb(view.got)} / ${mb(view.total)} MB（仅首次）` : "";
@@ -431,8 +501,10 @@ async function init({ base }) {
   py.unpackArchive(home, "zip", { extractDir: "/home/pyodide/taochronos" });
   py.runPython(ENV); // before anything reads the home: the indexer below loads the domain pack
   // before Python imports the package; a download that stalls does not hold the runtime up
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
   let timer;
   const late = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("runtime/taocore.wasm did not load in time")), 10000); });
+  /** @type {{ module?: object, err?: any }} */
   const core = await Promise.race([taocore, late]).then((module) => ({ module }), (err) => ({ err }));
   clearTimeout(timer);
   if (core.module) py.registerJsModule("_taocore_wasm", core.module);
@@ -440,7 +512,7 @@ async function init({ base }) {
 
   let rest = false;
   if (meta) {
-    const src = await corpusSource;
+    const src = /** @type {{ kept?: boolean, whole: Promise<Uint8Array> }} */ (await corpusSource);
     if (src.kept) {
       progress(62, T("载入已保存的要籍语料"));
       ownCorpus(await src.whole);
@@ -456,7 +528,7 @@ async function init({ base }) {
         clearInterval(unpacking);
       }
       const what = meta.core_rank && meta.core_passages < meta.passages ? T`前 ${meta.core_rank} 部要籍` : T("要籍语料");
-      py.globals.set("_index_progress", (done, total) => progress(66 + 22 * done / total,
+      py.globals.set("_index_progress", /** @param {number} done @param {number} total */ (done, total) => progress(66 + 22 * done / total,
         T`为${what}建立全文索引 ${Math.round(100 * done / total)}%（仅首次）`));
       py.runPython(`_index("core", progress=lambda done, total: _index_progress(done, total))`);
       rest = true;
@@ -473,7 +545,7 @@ async function init({ base }) {
   info.taocore = core.module ? "wasm" : `python (${String(core.err?.message || core.err)})`;
   progress(100, T("就绪"));
   const compile = pyc || !files["taochronos.zip"]?.sha256 ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
-  if (rest) setTimeout(() => indexRest(meta.sha256, compile), 0);
+  if (rest) setTimeout(() => indexRest(/** @type {CorpusFile} */ (meta).sha256, compile), 0);
   else compile?.();
   return info;
 }
@@ -489,13 +561,13 @@ self.onmessage = async (e) => {
       if (!ready) throw new Error(T("运行环境尚未启动"));
       await ready;
       if (interrupt) Atomics.store(interrupt, 0, 0); // one set for the call before this one is not for this one
-      const local = { data_add: addData, data_remove: removeData, data_clear: clearData }[method];
+      const local = /** @type {Record<string, ((params: any) => Promise<unknown>) | undefined>} */ ({ data_add: addData, data_remove: removeData, data_clear: clearData })[method];
       result = local ? await local(params || {}) : JSON.parse(rpc(method, JSON.stringify(params || {})));
     }
     self.postMessage({ id, result });
   } catch (err) {
     if (method === "init") ready = null;
-    const msg = String(err?.message || err);
+    const msg = String(/** @type {any} */ (err)?.message || err);
     self.postMessage({ id, error: msg.includes("Traceback") ? msg.split("\n").filter(Boolean).slice(-3).join(" ") : msg });
   }
 };
