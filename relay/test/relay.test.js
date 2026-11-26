@@ -934,6 +934,11 @@ test("a scanner path refuses its address for a day; the page's requests score no
   assert.deepEqual([page.n, page.score, page.flagged], [1, 0, 0]); // the page's visitor: a count, no address
   assert.equal((await r.call("/v1/security/export")).status, 401);
   assert.equal((await r.call("/v1/security/summary", { headers: { Authorization: "Bearer not-the-token-0123456789" } })).status, 401);
+  // the owner's: no page reads them, the site's own included — with the token or without it
+  for (const headers of [{ Origin: PAGE }, { Origin: PAGE, ...auth }]) {
+    const res = await r.call("/v1/security/summary", { headers });
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+  }
   assert.deepEqual(await (await r.call("/v1/security/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: items[1].id }) })).json(), { remaining: 0 });
   // a browser's policy report is kept as an event
   const csp = await r.call("/v1/security/csp", { method: "POST", headers: { "Content-Type": "application/csp-report", Origin: PAGE },

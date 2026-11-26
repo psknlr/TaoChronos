@@ -385,6 +385,11 @@ test("a scanner path refuses its address the API for a day; the page's own calls
   assert.deepEqual([visitor.n, visitor.score, visitor.flagged], [2, 0, 0]); // the browser's two calls: a count, no address
   assert.equal((await call(`${PAGE}/api/security/export`)).status, 401);
   assert.equal((await call(`${PAGE}/api/security/summary`, { headers: { Authorization: "Bearer not-it-not-it-not-it" } })).status, 401);
+  // the owner's: no page reads them, the site's own included — with the token or without it
+  for (const headers of [{ ...BROWSER, Origin: PAGE }, { ...BROWSER, Origin: PAGE, ...auth }]) {
+    const res = await call(`${PAGE}/api/security/summary`, { headers });
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+  }
   assert.deepEqual(await (await call(`${PAGE}/api/security/ack`, { method: "POST", headers: auth, body: JSON.stringify({ through: items[1].id }) })).json(), { remaining: 0 });
   // a browser's policy report comes with no origin of its own, and is kept
   const csp = await call(`${PAGE}/api/security/csp`, { method: "POST", headers: { "Content-Type": "application/reports+json", Origin: "null", ...BROWSER },

@@ -154,8 +154,14 @@ test("a day of the archive is read back with the collector's token, a page at a 
   const page2 = await (await read(`?day=2026-10-14&limit=2&cursor=${page1.cursor}`)).json();
   assert.deepEqual([page2.items.map((i) => i.n), page2.more, page2.cursor], [[3], false, null]);
   assert.deepEqual((await (await read("?day=2026-10-15")).json()).items.map((i) => i.question), ["问4"]);
-  const none = await serveArchive(new Request("https://x/a?day=2026-10-14"), new URL("https://x/a?day=2026-10-14"), { bucket: undefined, prefix: RECORDS, token: TOKEN });
-  assert.equal(none.status, 404);
+  // the collector's alone: no CORS headers, and that there is no bucket is told to the token's holder only
+  const ours = await serveArchive(new Request("https://x/a?day=2026-10-14", { headers: { Authorization: `Bearer ${TOKEN}`, Origin: "https://chat.impf.ai" } }),
+    new URL("https://x/a?day=2026-10-14"), { bucket: b, prefix: RECORDS, token: TOKEN });
+  assert.deepEqual([ours.status, ours.headers.get("Access-Control-Allow-Origin")], [200, null]);
+  const none = (auth) => serveArchive(new Request("https://x/a?day=2026-10-14", { headers: auth ? { Authorization: `Bearer ${auth}` } : {} }),
+    new URL("https://x/a?day=2026-10-14"), { bucket: undefined, prefix: RECORDS, token: TOKEN });
+  assert.equal((await none(null)).status, 401);
+  assert.equal((await none(TOKEN)).status, 404);
 });
 
 test("the sentinel's events: drained like the records, the export says the archive collects them, an ack is refused", async () => {

@@ -244,7 +244,7 @@ export async function handle(request, env, deps) {
     }
     if (s && url.pathname.startsWith("/v1/security/")) {
       if (url.pathname === "/v1/security/csp" && (await bursting(request, deps))) return error(429, "报告太频繁", "rate_limited", { ...cors, "Retry-After": "10" });
-      if (url.pathname === "/v1/security/archive") return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("relay"), token: env.LOG_EXPORT_TOKEN || "", cors });
+      if (url.pathname === "/v1/security/archive") return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("relay"), token: env.LOG_EXPORT_TOKEN || "" });
       const res = await serveSecurity(request, url, { prefix: "/v1/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: scfg, fp: s.fp,
         now: deps.now(), cors, archived: Boolean(env.ARCHIVE) });
       if (res) return res;

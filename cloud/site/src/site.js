@@ -352,7 +352,7 @@ async function api(request, env, cfg, deps, url, s, from = null, L = null) {
   if (url.pathname.startsWith("/api/security/")) { // before the origin check: a browser's report may come with none
     if (!s) return url.pathname === "/api/security/csp" ? new Response(null, { status: 204 }) : json({ error: "no such endpoint" }, 404, cors);
     if (url.pathname === "/api/security/csp" && deps.limit && !(await deps.limit("call", ipKey(s.fp.ip)))) return new Response(null, { status: 429, headers: { "Retry-After": "60" } });
-    if (url.pathname === "/api/security/archive") return serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("site"), token: env.LOG_EXPORT_TOKEN || "", cors });
+    if (url.pathname === "/api/security/archive") return serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("site"), token: env.LOG_EXPORT_TOKEN || "" });
     const res = await serveSecurity(request, url, { prefix: "/api/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: s.cfg, fp: s.fp,
       now: s.now, cors, archived: Boolean(env.ARCHIVE) });
     if (res) return res;

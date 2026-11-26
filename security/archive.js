@@ -163,14 +163,15 @@ export async function readBatch(bucket, key) {
 
 /**
  * GET <path>?day=YYYY-MM-DD&cursor=&limit=  the items archived that day under `prefix`, oldest first, for the holder of
- * the collector's token: {day, items, cursor, more}.  Without a bucket, 404.
+ * the collector's token alone: {day, items, cursor, more}.  Without a bucket, 404 — told, like everything here, to the
+ * token's holder only.  No CORS headers: no page, the site's own or another's, reads it.
  */
-export async function serveArchive(request, url, { bucket, prefix, token, cors = {} }) {
-  if (!bucket) return json({ error: { message: "没有归档", type: "not_found" } }, 404, cors);
-  if (request.method !== "GET") return json({ error: { message: "GET", type: "bad_request" } }, 405, { ...cors, Allow: "GET" });
-  if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401, cors);
+export async function serveArchive(request, url, { bucket, prefix, token }) {
+  if (request.method !== "GET") return json({ error: { message: "GET", type: "bad_request" } }, 405, { Allow: "GET" });
+  if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401);
+  if (!bucket) return json({ error: { message: "没有归档", type: "not_found" } }, 404);
   const day = url.searchParams.get("day") || "";
-  if (!DAY.test(day)) return json({ error: { message: "day=YYYY-MM-DD", type: "bad_request" } }, 400, cors);
+  if (!DAY.test(day)) return json({ error: { message: "day=YYYY-MM-DD", type: "bad_request" } }, 400);
   const limit = Math.min(100, Math.max(1, Math.floor(Number(url.searchParams.get("limit") || 100)) || 100));
   const listed = await bucket.list({ prefix: `${prefix}${day.slice(0, 4)}/${day.slice(5, 7)}/${day.slice(8, 10)}/`, limit,
     cursor: url.searchParams.get("cursor") || undefined });
@@ -180,5 +181,5 @@ export async function serveArchive(request, url, { bucket, prefix, token, cors =
     if (!got) continue; // removed since it was listed
     try { items.push(JSON.parse(await got.text())); } catch { items.push({ key: o.key, unreadable: true }); }
   }
-  return json({ day, items, cursor: listed.truncated ? listed.cursor : null, more: Boolean(listed.truncated) }, 200, cors);
+  return json({ day, items, cursor: listed.truncated ? listed.cursor : null, more: Boolean(listed.truncated) }, 200);
 }

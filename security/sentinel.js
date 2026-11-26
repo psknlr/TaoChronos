@@ -696,23 +696,24 @@ export async function serveSecurity(request, url, { prefix, token, watch, cfg, f
     if (reports.length) await watch.observe(fp, assess(fp, { route: "csp", ownPrefix: cfg.ownPrefix }), { kind: "csp", status: 204, reports }, cfg, now); // one round trip a POST
     return new Response(null, { status: 204, headers });
   }
-  if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401, headers);
+  // the rest is the owner's (the collector's token): answered with no CORS headers, so no page — ours or another's — reads it
+  if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401);
   if (what === "export" && request.method === "GET") {
     const after = Math.max(0, Math.floor(Number(url.searchParams.get("after") || 0)) || 0);
     const limit = Math.min(1000, Math.max(1, Math.floor(Number(url.searchParams.get("limit") || 500)) || 500));
     const page = await watch.records(after, limit);
-    return json(archived ? { ...page, archive: "r2" } : page, 200, headers);
+    return json(archived ? { ...page, archive: "r2" } : page, 200);
   }
   if (what === "ack" && request.method === "POST") {
-    if (archived) return json({ error: { message: "事件由归档取走，这里不再确认", type: "archived" } }, 409, headers);
+    if (archived) return json({ error: { message: "事件由归档取走，这里不再确认", type: "archived" } }, 409);
     let body;
-    try { body = JSON.parse(await request.text()); } catch { return json({ error: { message: "请求不是有效的 JSON", type: "bad_request" } }, 400, headers); }
+    try { body = JSON.parse(await request.text()); } catch { return json({ error: { message: "请求不是有效的 JSON", type: "bad_request" } }, 400); }
     const through = Math.floor(Number(body?.through));
-    if (!Number.isFinite(through) || through < 1) return json({ error: { message: "缺少 through", type: "bad_request" } }, 400, headers);
-    return json(await watch.remove(through), 200, headers);
+    if (!Number.isFinite(through) || through < 1) return json({ error: { message: "缺少 through", type: "bad_request" } }, 400);
+    return json(await watch.remove(through), 200);
   }
-  if (what === "summary" && request.method === "GET") return json(await watch.summary(now), 200, headers);
-  return json({ error: { message: "没有这个接口", type: "not_found" } }, 404, headers);
+  if (what === "summary" && request.method === "GET") return json(await watch.summary(now), 200);
+  return json({ error: { message: "没有这个接口", type: "not_found" } }, 404);
 }
 
 /** A browser's policy reports — the legacy shape ({"csp-report": {...}}, hyphenated keys) or the Reporting API's (an
