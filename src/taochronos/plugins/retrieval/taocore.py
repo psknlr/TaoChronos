@@ -30,7 +30,7 @@ import threading
 from array import array
 from typing import Any, Callable
 
-from .index import B, DENSE_FLOOR, K1, HashingEmbedder, cosine, kept
+from .index import B, DENSE_FLOOR, K1, BM25Index, DenseIndex, HashingEmbedder, cosine, kept
 
 ABI = 1  # what the kernel's bindings must speak (rust/crates/taocore/src/lib.rs: ABI)
 SEPARATOR = "\x1f"  # between a batch's texts: no character the indexes read
@@ -407,15 +407,21 @@ def _selftest(kern: Any) -> str:
     else:
         if tokens != [grams(t) for t in texts]:
             return "the full-text tokens differed"
+    # against the indexes themselves, each text read and embedded once (a browser's boot waits for this)
     ids = [f"t{i:02d}" for i in range(len(_SELFTEST_TEXTS))]
     places = list(range(len(ids)))[::-1]
+    bm25 = BM25Index()
+    for pid, text in zip(ids, _SELFTEST_TEXTS):
+        bm25.add(pid, text)
     for embedder in (HashingEmbedder(), HashingEmbedder(dim=60, ngram=(2, 1, 4))):
         local = LocalIndexes(ids, list(_SELFTEST_TEXTS), places, embedder)
+        dense = DenseIndex(embedder)
+        for place in places:
+            dense.add(ids[place], _SELFTEST_TEXTS[place])
         for query, text in _SELFTEST_QUERIES:
-            if _bits(local._bm25_kernel(kern, query, 100)) != _bits(local._bm25_python(query, 100)):
-                return f"BM25 differed for {query}"
-            if _bits(local._dense_kernel(kern, text, 100)) != _bits(local._dense_python(text, 100)):
+            for k in (100, 2):
+                if _bits(local._bm25_kernel(kern, query, k)) != _bits(bm25.search(query, k)):
+                    return f"BM25 differed for {query}"
+            if _bits(local._dense_kernel(kern, text, 100)) != _bits(dense.search(text, 100)):
                 return f"the dense route differed for {text!r} (dim {embedder.dim})"
-            if _bits(local._bm25_kernel(kern, query, 2)) != _bits(local._bm25_python(query, 2)):
-                return f"BM25's first 2 differed for {query}"
     return ""

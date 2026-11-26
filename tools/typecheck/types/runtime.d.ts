@@ -26,11 +26,25 @@ export interface RuntimeInfo {
   system_prompt: string;
   load_ms?: number;
   version_manifest?: string;
-  /** in the browser (worker.js): which way searches run — "wasm" (TaoCore's module), or "python (…why)" */
-  taocore?: string;
+  /** in the browser (worker.js): what searches run on, as Python found it (taocore.status()) */
+  taocore?: TaoCoreStatus;
 }
 
 /** CORPUS_LABELS' keys (chat/__init__.py): the demonstration corpus, the 要籍语料, the full corpus. */
+/** TaoCore's state (src/taochronos/plugins/retrieval/taocore.py status()): the kernel in use, or none and why; how often
+ * each way ran.  Without the module the worker says only why: {kernel: null, reason}. */
+export interface TaoCoreStatus {
+  kernel: "wasm" | "native" | null;
+  reason: string;
+  mode?: "auto" | "off" | "require" | "shadow";
+  bm25?: number;
+  dense?: number;
+  grams?: number;
+  python?: number;
+  failed?: number;
+  differed?: number;
+}
+
 export type CorpusKind = "demo" | "canon" | "full";
 
 export interface CorpusInfo {

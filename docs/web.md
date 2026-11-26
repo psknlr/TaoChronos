@@ -116,7 +116,8 @@ excerpts.  Two steps choose them:
   Python's own, bit for bit, three times faster on a warm search (Pyodide, the 13 measured queries: 12.2 s → 4.1 s);
   the first visit's full-text tokens are made there too (its indexing 15% shorter).  Python checks the module against
   its definitions before its first use, and computes in Python where it does not load or is refused (the runtime's
-  info says which: `taocore`, `wasm` or `python (…why)`).
+  info says which, as Python found it: `taocore` — `kernel` `"wasm"` or `null` with the `reason`, and how often each
+  way ran).
 * **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
   info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.

@@ -341,6 +341,14 @@ def _index(phase, limit=0, progress=None):
     return json.dumps({"indexed_now": n, **index_state(Path("${CORPUS}"))})
 `;
 
+// What searches run on, as Python found it: TaoCore's module once it passed the self-test Python runs before using it
+// (here, where no search and no indexing has used it yet), or Python's own code and why.
+const TAOCORE = `
+import json
+from taochronos.plugins.retrieval import taocore as _taocore
+json.dumps(_taocore.status())
+`;
+
 // The package's bytecode, compiled once in this browser and kept (by the package's hash): a later visit imports it
 // instead of compiling some 240 modules from source (about a second).  Unchecked-hash .pyc: valid whatever the files'
 // times, and only ever next to the very sources they were compiled from.
@@ -542,7 +550,11 @@ async function init({ base }) {
   const info = JSON.parse(rpc("info", "{}"));
   info.load_ms = Math.round(performance.now() - t0);
   info.version_manifest = manifest.version;
-  info.taocore = core.module ? "wasm" : `python (${String(core.err?.message || core.err)})`;
+  try {
+    info.taocore = core.module ? JSON.parse(py.runPython(TAOCORE)) : { kernel: null, reason: String(core.err?.message || core.err) };
+  } catch (err) {
+    info.taocore = { kernel: null, reason: String(/** @type {any} */ (err)?.message || err) };
+  }
   progress(100, T("就绪"));
   const compile = pyc || !files["taochronos.zip"]?.sha256 ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
   if (rest) setTimeout(() => indexRest(/** @type {CorpusFile} */ (meta).sha256, compile), 0);
