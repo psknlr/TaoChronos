@@ -3667,10 +3667,143 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
         mock.shutdown()
 
 
+def test_the_page_counts_its_questions_for_the_sites_ledger_and_the_visitor_can_switch_it_off(tmp_path):
+    """A site with the activity ledger (web/js/telemetry.js; security/ledger.js): once the page has loaded it asks its own
+    host, once, who this browser is; every call the relay makes for a turn — its tool rounds and the self-check's rewrite
+    — carries the turn's name and the visitor's pass; a visitor who declines the records is still counted, the turn's end
+    told to the relay in counts and short words and never a word of the question.  设置 → 数据 → 访问统计 shows the id
+    and switches the count off: then the turns are still named (a question is one), with no pass and no end told, and a
+    page opened again asks nothing.  关于 says what is counted."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from urllib.parse import urlparse
+
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url, activity=True).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    visitor = "v_0123456789abcdef01234567"
+    pass_ = f"{visitor}.abc.PASSPASSPASSPASSPASSPA"
+    site: list[tuple[str, dict | None]] = []  # what the page asked of its own host's ledger
+    off = {"now": False}
+
+    def ledger(route) -> None:
+        """The site's ledger endpoints (cloud/site/src/site.js): the server runtime has none, so they are answered here."""
+        path = urlparse(route.request.url).path
+        body = json.loads(route.request.post_data) if route.request.post_data else None
+        site.append((path, body))
+        if path.endswith("/choice"):
+            off["now"] = body.get("ids") == "off"
+        if path.endswith("/forget"):
+            off["now"] = True
+        on = not off["now"]
+        told = {"v": 1, "ledger": True, "ids": "notice", "state": "valid" if on else "off", "visitor": visitor if on else None,
+                "pass": pass_ if on else None, "expires": int(time.time() * 1000) + 86400000 if on else None}
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(told))
+
+    def until(check, wait=20.0) -> None:
+        end = time.time() + wait
+        while not check() and time.time() < end:
+            time.sleep(0.2)
+
+    def named(c: dict) -> dict:
+        return {k.lower(): v for k, v in c["headers"].items() if k.lower().startswith("x-tao-")}
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN").new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.route("**/api/activity/**", ledger)
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=20000)
+            until(lambda: site)
+            time.sleep(0.5)
+            assert site == [("/api/activity/hello", {"v": 1, "lang": "zh"})]
+
+            # a question, the records declined: counted all the same, in counts
+            page.fill("#input", "桂枝汤主治什么？请给出原文。")
+            page.keyboard.press("Enter")
+            page.wait_for_selector("#consent[open]", timeout=15000)
+            page.click("#consent .btn.secondary")  # 不记录
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            until(lambda: relay.beacons)
+            calls = [named(c) for c in relay.chat]
+            turn = calls[0]["x-tao-turn"]
+            assert turn.startswith("m_") and len(calls) >= 2  # its tool rounds and the self-check's rewrite
+            assert all(c == {"x-tao-turn": turn, "x-tao-visitor": pass_} for c in calls)
+            assert relay.records == []
+            [told] = relay.beacons
+            assert told["type"].startswith("text/plain")  # a simple request: no preflight
+            end = told["body"]
+            assert {k: end[k] for k in ("kind", "turn", "pass", "provider", "model", "status", "module", "consent", "turn_index", "lang")} == {
+                "kind": "turn", "turn": turn, "pass": pass_, "provider": "impf", "model": "Tao-R1", "status": "done", "module": "chat", "consent": False,
+                "turn_index": 1, "lang": "zh"}
+            assert end["rounds"] >= 2 and end["tool_count"] >= 1 and all(re.fullmatch(r"[a-z][a-z0-9_.]+", t) for t in end["tools"])
+            assert set(end) <= {"v", "kind", "turn", "pass", "provider", "model", "status", "rounds", "tool_count", "tools", "retries", "input", "output", "ms",
+                                "runtime", "corpus", "module", "turn_index", "consent", "lang"}
+            assert "桂枝" not in json.dumps(end, ensure_ascii=False)
+
+            # 设置 → 数据 → 访问统计: the visitor's id, and the switch
+            page.click("#settings-btn")
+            page.click("nav.settings-nav button:has-text('数据')")
+            field = page.locator(".settings-pane .field", has_text="访问统计")
+            assert visitor in field.inner_text()
+            box = field.locator("input[type=checkbox]")
+            assert box.is_checked()
+            box.uncheck()
+            until(lambda: site[-1][0] == "/api/activity/choice")
+            assert site[-1] == ("/api/activity/choice", {"ids": "off"})
+            until(lambda: visitor not in field.inner_text(), 5)
+            assert not box.is_checked() and visitor not in field.inner_text()
+            page.keyboard.press("Escape")
+
+            # switched off: the next turn is named, with no pass, and its end is not told
+            before = len(relay.chat)
+            page.fill("#input", "它的剂量出自哪里？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
+            time.sleep(1.0)
+            later = [named(c) for c in relay.chat[before:]]
+            assert later and all(set(c) == {"x-tao-turn"} and c["x-tao-turn"] != turn for c in later)
+            assert len(relay.beacons) == 1
+            # opened again: nothing is asked of the site
+            asked = len(site)
+            page.reload()
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            time.sleep(1.5)
+            assert len(site) == asked
+            page.click("#settings-btn")
+            page.click("nav.settings-nav button:has-text('关于')")
+            assert "本站另以匿名编号统计访问与提问的次数" in page.inner_text(".settings-pane")
+            assert errors == []
+            browser.close()
+    finally:
+        srv.shutdown()
+        relay.shutdown()
+        mock.shutdown()
+
+
 def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_path):
     """道乃久默认服务 with a second model (GPT-6 Luna, counted in questions): offered beside Tao-R1 when the relay's health
     names it — and asked by a visitor who has chosen none while the health names it the default — each call of its turn
-    naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name none.  Switched in the chat's own
+    naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name none (a relay that does not say it
+    counts every model's turns: one without the activity ledger, or older).  Switched in the chat's own
     picker or the settings, used at once.  And 赞助: a visitor's own key and model, sent once to the relay after they
     agree, kept nowhere on the page."""
     exe = _chromium()

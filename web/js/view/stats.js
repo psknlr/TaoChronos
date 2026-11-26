@@ -154,8 +154,9 @@ function filters(root, S, token) {
     go({ days: "custom", from: from.value, to: DAY.test(to.value) && to.value >= from.value ? to.value : "" });
   };
   for (const input of [from, to]) input.addEventListener("keydown", (e) => { if (e.key === "Enter") between(); });
+  // (a stretch between two dates is the ledger's alone: the daily counts reach back from today only)
   return h("div.stats-filters", range,
-    h("span.stats-dates", { class: state.days === "custom" ? "on" : "" }, from, h("span.muted", "–"), to,
+    state.noLedger ? null : h("span.stats-dates", { class: state.days === "custom" ? "on" : "" }, from, h("span.muted", "–"), to,
       h("button.btn-ghost", { type: "button", on: { click: between } }, T("查看"))),
     h("button.btn-ghost", { type: "button", title: T("重新读取"), on: { click: () => render(root, S) } }, icon("redo", "sm"), T("刷新")),
     token ? h("button.btn-ghost", { type: "button", title: T("在本浏览器忘记统计令牌"), on: { click: () => { storage.remove(TOKEN_KEY); state.data = null; state.ledger = null; render(root, S); } } },
