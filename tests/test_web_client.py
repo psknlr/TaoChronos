@@ -4353,9 +4353,11 @@ def test_a_question_about_the_assistant_gets_the_fixed_reply(tmp_path):
 
 @pytest.mark.skipif(not os.environ.get("TAOCHRONOS_PYODIDE_E2E"), reason="set TAOCHRONOS_PYODIDE_E2E=1: builds the site with Pyodide")
 def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
-    """The built site in Chromium, on an http:// origin like the published one (no Cache API there): Pyodide starts, the
-    要籍语料 is downloaded and indexed — the first-ranked works before the runtime answers, the rest in the background —
-    and kept in IndexedDB, so that a reload has nothing to download or index; a turn cites it."""
+    """The built site in Chromium, on an http:// origin of another machine (not a secure context: no Cache API, no
+    crypto.subtle, no locks — the hardest case; the published site is https): Pyodide starts, the 要籍语料 is downloaded
+    and indexed — the first-ranked works before the runtime answers, the rest in the background — and kept in
+    IndexedDB, so that a reload has nothing to download or index; a turn cites it.  The archives, which cannot be
+    checked here, are not kept, and TaoCore's module is not used: the searches run in Python."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -4534,6 +4536,7 @@ def test_my_data_with_a_server_on_this_machine(tmp_path):
 # (PY: its address, "" when it is the site's own) — the worker's own code, its IndexedDB and the page are the real ones
 STAND_IN = r"""
 const PY = "{py}";
+const MISSING = "{missing}"; // a package it cannot load ("" none): left out of what loadPackage gives, as Pyodide does
 function post(path, body, type) {
   const x = new XMLHttpRequest();
   x.open("POST", PY + path, false); // a worker may wait: Python's calls are synchronous too
@@ -4545,8 +4548,14 @@ function post(path, body, type) {
 export async function loadPyodide() {
   post("/py/start", "{}"); // a new visit: a new interpreter
   const rpc = (method, params) => post("/py/rpc", JSON.stringify({ method, params }));
+  const loadedPackages = {};
   return {
-    loadPackage: async () => {},
+    loadPackage: async (names, options) => names.filter((name) => {
+      if (name !== MISSING) loadedPackages[name] = "default channel";
+      else for (const m of [`The following error occurred while loading ${name}:`, "Failed to fetch"]) options?.errorCallback?.(m);
+      return name !== MISSING;
+    }).map((name) => ({ name })),
+    loadedPackages,
     unpackArchive: () => {},
     runPython: (code) => (code.includes("purelib") ? "/lib/python3.13/site-packages" : undefined),
     globals: { get: (name) => (name === "_rpc" ? rpc : undefined), set: () => {} },
@@ -4560,15 +4569,16 @@ export async function loadPyodide() {
 """
 
 
-def _browser_runtime(site: Path, tmp: Path, py: str = "") -> None:
-    """The in-browser runtime's files in ``site``, with the stand-in for Pyodide (its Python behind ``py``)."""
+def _browser_runtime(site: Path, tmp: Path, py: str = "", missing: str = "") -> None:
+    """The in-browser runtime's files in ``site``, with the stand-in for Pyodide (its Python behind ``py``; ``missing``:
+    a package it cannot load)."""
     (site / "runtime").mkdir(exist_ok=True)
     (site / "runtime" / "manifest.json").write_text(json.dumps({"version": "test", "pyodide_base": "pyodide/",
                                                                 "files": {"taochronos.zip": {}, "home.zip": {}}}), encoding="utf-8")
     for name in ("taochronos.zip", "home.zip"):
         (site / "runtime" / name).write_bytes(b"PK\x05\x06" + b"\x00" * 18)
     (site / "pyodide").mkdir(exist_ok=True)
-    (site / "pyodide" / "pyodide.mjs").write_text(STAND_IN.replace("{py}", py), encoding="utf-8")
+    (site / "pyodide" / "pyodide.mjs").write_text(STAND_IN.replace("{py}", py).replace("{missing}", missing), encoding="utf-8")
 
 
 def _python_behind(site: Path, tmp: Path):
@@ -4649,6 +4659,82 @@ def _prescriptions_book(tmp: Path) -> Path:
     book = tmp / "处方.xlsx"
     book.write_bytes(xlsx(rows))
     return book
+
+
+def test_the_browsers_runtime_starts_on_a_page_in_another_language(tmp_path):
+    """The runtime's worker on a page in English fetches its dictionary as it starts (i18n.js's top-level await), and the
+    page's init comes meanwhile: the worker's first import holds it until the worker listens (inbox.js).  The dictionary
+    is made slow here, so that the init comes first every time — and the runtime starts, as on a Chinese page."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    site = tmp_path / "site"
+    shutil.copytree(ROOT / "web", site)
+    _browser_runtime(site, tmp_path)
+    server = _python_behind(site, tmp_path)
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="en-US")
+            ctx.add_init_script("localStorage.setItem('tc.settings', JSON.stringify({runtime: 'browser'}));")
+            slowed: list[str] = []
+
+            def late(route) -> None:
+                slowed.append(route.request.url)
+                time.sleep(1.5)
+                route.continue_()
+
+            ctx.route("**/js/i18n-en.js*", late)
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{server.server_address[1]}/?lang=en")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            assert any("worker.js" in w.url for w in page.workers) and len(slowed) >= 2, slowed  # the page's, the worker's
+            assert not errors, errors
+            browser.close()
+    finally:
+        server.shutdown()
+
+
+def test_a_package_pyodide_cannot_load_ends_the_start_saying_which(tmp_path):
+    """Pyodide's loadPackage settles without a package it could not load, and says why only to its callbacks: the
+    browser's runtime ends its start there, naming the package and why — not at an import that fails later, where all
+    the page could show was the end of a traceback."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    site = tmp_path / "site"
+    shutil.copytree(ROOT / "web", site)
+    _browser_runtime(site, tmp_path, missing="sqlite3")
+    server = _python_behind(site, tmp_path)
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+            ctx.add_init_script("localStorage.setItem('tc.settings', JSON.stringify({runtime: 'browser'}));")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{server.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.bad", timeout=60000)
+            said = page.inner_text(".hero .status")
+            assert "无法载入 Python 运行时（sqlite3: Failed to fetch）" in said, said
+            assert "Traceback" not in said and "pyyaml" not in said, said
+            assert not errors, errors
+            browser.close()
+    finally:
+        server.shutdown()
 
 
 def test_my_data_in_the_browsers_own_runtime(tmp_path):

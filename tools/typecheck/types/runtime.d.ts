@@ -30,7 +30,6 @@ export interface RuntimeInfo {
   taocore?: TaoCoreStatus;
 }
 
-/** CORPUS_LABELS' keys (chat/__init__.py): the demonstration corpus, the 要籍语料, the full corpus. */
 /** TaoCore's state (src/taochronos/plugins/retrieval/taocore.py status()): the kernel in use, or none and why; how often
  * each way ran.  Without the module the worker says only why: {kernel: null, reason}. */
 export interface TaoCoreStatus {
@@ -45,6 +44,7 @@ export interface TaoCoreStatus {
   differed?: number;
 }
 
+/** CORPUS_LABELS' keys (chat/__init__.py): the demonstration corpus, the 要籍语料, the full corpus. */
 export type CorpusKind = "demo" | "canon" | "full";
 
 export interface CorpusInfo {

@@ -218,6 +218,11 @@ export class BrowserRuntime {
       if (this.ready === ready) { // not a worker ended meanwhile (_end): that one's calls have their end already
         this._status({ status: "error", message: err.message });
         this.ready = null;
+        if (this.worker === worker) { // the next start is a worker of its own: this one, and the Python it holds, go now
+          worker.terminate();
+          this.worker = null;
+          this.interrupt = null;
+        }
         for (const job of this.queue.splice(0)) this._settle(job, { error: err.message });
       }
       throw err;

@@ -3,6 +3,7 @@
 // Python's start instead of taking turns with it.  {url, size} → {got} / {unpacked} as it goes, then {buffer}
 // (transferred, not copied) or {error}.
 
+import { listen } from "./inbox.js"; // first: it keeps the request while i18n.js waits for its dictionary
 import { readAll, spool, unxz } from "./unpack.js";
 import { T } from "./i18n.js";
 /** @import { UnpackMessage, UnpackRequest } from "../../tools/typecheck/types/runtime" */
@@ -10,7 +11,7 @@ import { T } from "./i18n.js";
 /** @param {number} ms @param {(n: number) => void} fn @returns {(n: number) => void} */
 const every = (ms, fn) => { let last = 0; return (n) => { const now = performance.now(); if (now - last >= ms) { last = now; fn(n); } }; };
 
-self.onmessage = async (/** @type {MessageEvent<UnpackRequest>} */ { data: { url, size } }) => {
+listen(async (/** @type {MessageEvent<UnpackRequest>} */ { data: { url, size } }) => {
   try {
     const r = await fetch(url, { cache: "no-cache" });
     if (!r.ok || !r.body) throw new Error(T`下载 ${url} 失败（HTTP ${r.status}）`);
@@ -21,4 +22,4 @@ self.onmessage = async (/** @type {MessageEvent<UnpackRequest>} */ { data: { url
   } catch (/** @type {any} */ err) {
     self.postMessage(/** @satisfies {UnpackMessage} */ ({ error: String(err?.message || err) }));
   }
-};
+});

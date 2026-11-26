@@ -33,7 +33,7 @@ peer (`^5.20261023.1` for 4.153.0).
    `/** @import { RuntimeInfo } from "../../tools/typecheck/types/runtime" */`.
 
 Opted in: `limits.js`, `store.js`, `providers.js`, `runtime.js`, `worker.js` (with the part of Pyodide's API it uses
-declared in it), `taocore.js`, `unpack.js`, `unpack-worker.js`, `brand.js`, `diet/prompt.js` and the fifteen
+declared in it), `taocore.js`, `unpack.js`, `unpack-worker.js`, `inbox.js`, `brand.js`, `diet/prompt.js` and the fifteen
 `i18n-*.js` tables (where tsc finds a key written twice).  The generated modules
 (`diet/dishes.js`, `diet/medicinal-data.js`, `cloud/site/src/backup/tables.js`) are clean but left out: their tests
 compare them byte for byte with what their generators write, and checking a megabyte of literals costs a second for

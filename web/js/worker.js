@@ -32,10 +32,11 @@
 // hands the page a flag ({type: "interrupt", buffer}), and a call the page no longer waits for is stopped when Python
 // next looks at it (KeyboardInterrupt).  Elsewhere a call runs to its end, and the page drops what it returns.
 
+import { listen } from "./inbox.js"; // first: it keeps the page's init while i18n.js waits for its dictionary
 import { readAll, spool, unxz } from "./unpack.js";
 import { LANG, T } from "./i18n.js";
 
-/** @import { DataAddResult, DataClearResult, DataRemoveResult, RuntimeInfo } from "../../tools/typecheck/types/runtime" */
+/** @import { DataAddResult, DataClearResult, DataRemoveResult, RuntimeInfo, UnpackMessage, UnpackRequest, WorkerEvent, WorkerReply, WorkerRequest } from "../../tools/typecheck/types/runtime" */
 /**
  * @typedef {object} PyFS  the part of Emscripten's file system this worker uses
  * @property {(path: string) => void} mkdirTree
@@ -50,7 +51,9 @@ import { LANG, T } from "./i18n.js";
 /**
  * @typedef {object} Pyodide  the part of Pyodide's API this worker uses (pyodide.mjs, loadPyodide)
  * @property {(code: string) => any} runPython
- * @property {(names: string[], options?: object) => Promise<unknown>} loadPackage
+ * @property {(names: string[], options?: { messageCallback?: (message: string) => void, errorCallback?: (message: string) => void, checkIntegrity?: boolean }) => Promise<{ name: string }[]>} loadPackage
+ *   settles with what it loaded: a package it could not load is left out, and why is said only to errorCallback
+ * @property {Record<string, string>} loadedPackages  each package loaded, by name: where from
  * @property {(buffer: Uint8Array, format: string, options?: { extractDir?: string }) => void} unpackArchive
  * @property {(name: string, module: object) => void} registerJsModule
  * @property {(buffer: Int32Array) => void} setInterruptBuffer
@@ -79,11 +82,11 @@ let py = /** @type {any} */ (null);
 let rpc = /** @type {any} */ (null);
 /** @type {Promise<RuntimeInfo> | null} */
 let ready = null;
-/** @type {Int32Array | null} */
+/** @type {Int32Array<SharedArrayBuffer> | null} */
 let interrupt = null; // the flag the page sets to interrupt Python (SIGINT, 2), where it can share it
 
 /** @param {number} p @param {string} message */
-const progress = (p, message) => self.postMessage({ type: "progress", progress: Math.round(p), message });
+const progress = (p, message) => self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "progress", progress: Math.round(p), message }));
 /** @param {number} n */
 const mb = (n) => (n / 1048576).toFixed(1);
 /** fn, called at most every `ms` milliseconds (a status line, not a message per chunk).
@@ -153,50 +156,66 @@ async function sha256(bytes) {
   }
 }
 
-/** A runtime archive: kept by content (the manifest's sha256), so that a new build is always fetched.  Bytes are kept
- * only when they are what the manifest names — a download cut short, or a file older than the manifest (a cache between
- * here and the site), is used this once and fetched anew the next time, where it was once kept for good; and a kept
- * copy that is no longer what its name says is dropped.  `exact` refuses such bytes outright (an optional file: better
- * none than another).  Where the browser can compute no hash (a page served over plain http), as before.
+/** A runtime archive: kept by content (the manifest's sha256), so that a new build is always fetched.  Bytes are kept,
+ * and a kept copy read, only when they are what the manifest names (`checked`) — a download cut short, or a file older
+ * than the manifest (a cache between here and the site), is used this once and fetched anew the next time, where it was
+ * once kept for good.  Where the browser computes no hash (crypto.subtle: a page served over plain http from another
+ * machine), nothing can be checked, so nothing is kept.  `exact` refuses bytes not checked (an optional file: better
+ * none than another).
  * @param {string} base @param {string} name @param {string | undefined} sha @param {boolean} [exact]
- * @returns {Promise<Uint8Array<ArrayBuffer>>} */
+ * @returns {Promise<{ bytes: Uint8Array<ArrayBuffer>, checked: boolean }>} */
 async function archive(base, name, sha, exact = false) {
   const hit = sha ? await kept.get(`zip:${name}`) : undefined;
   if (sha && hit?.sha === sha && hit.blob instanceof Blob) {
-    const buf = new Uint8Array(await hit.blob.arrayBuffer());
-    const got = await sha256(buf);
-    if (got === sha || got === null) return buf;
-    kept.drop(`zip:${name}`);
+    const bytes = new Uint8Array(await hit.blob.arrayBuffer());
+    if ((await sha256(bytes)) === sha) return { bytes, checked: true };
+    kept.drop(`zip:${name}`); // no longer what its name says
   }
   const url = new URL(`runtime/${name}`, base).href;
   const r = await fetch(url, { cache: "no-cache" });
   if (!r.ok) throw new Error(T`下载 ${url} 失败（HTTP ${r.status}）`);
-  const buf = new Uint8Array(await r.arrayBuffer());
-  if (sha) {
-    const got = await sha256(buf);
-    if (got === sha || got === null) kept.put(`zip:${name}`, { sha, blob: new Blob([buf]) }); // best effort, not waited for
-    else if (exact) throw new Error(`runtime/${name} is not the file the manifest names`);
-  }
-  return buf;
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  const got = sha ? await sha256(bytes) : null;
+  const checked = got !== null && got === sha;
+  if (checked) kept.put(`zip:${name}`, { sha, blob: new Blob([bytes]) }); // best effort, not waited for
+  else if (exact) throw new Error(got === null ? `runtime/${name} cannot be checked here` : `runtime/${name} is not the file the manifest names`);
+  return { bytes, checked };
 }
 
-/** The indexed store kept from an earlier visit: {parts: Blob[], bytes}, or null when there is none for this build.
+/** `fn`, while no other tab of this browser keeps a store ("shared"), or while none keeps or reads one ("exclusive"):
+ * two tabs keeping theirs at once would leave parts of each under one head.  Where the browser has no locks (they are a
+ * secure context's: an http:// page of another machine), at once, as before.
+ * @template T @param {"shared" | "exclusive"} mode @param {() => Promise<T>} fn @returns {Promise<T>} */
+function keeping(mode, fn) {
+  return self.navigator?.locks ? navigator.locks.request("taochronos-keep", { mode }, fn) : fn();
+}
+
+/** The indexed store kept from an earlier visit: {parts: Blob[], bytes}, or null when there is none for this build, or
+ * when its parts do not add up to the size its head names.
  * @param {string} sha @returns {Promise<{ parts: Blob[], bytes: number } | null>} */
-async function keptCorpus(sha) {
-  const head = await kept.get("corpus");
-  if (!head || head.sha !== sha || head.state !== "built") return null;
-  const parts = [];
-  for (let i = 0; i < head.parts; i++) {
-    const blob = await kept.get(`corpus:${sha}:${i}`);
-    if (!(blob instanceof Blob)) return null;
-    parts.push(blob);
-  }
-  return { parts, bytes: head.bytes };
+function keptCorpus(sha) {
+  return keeping("shared", async () => {
+    const head = await kept.get("corpus");
+    if (!head || head.sha !== sha || head.state !== "built") return null;
+    const parts = [];
+    for (let i = 0; i < head.parts; i++) {
+      const blob = await kept.get(`corpus:${sha}:${i}`);
+      if (!(blob instanceof Blob)) return null;
+      parts.push(blob);
+    }
+    return parts.reduce((n, b) => n + b.size, 0) === head.bytes ? { parts, bytes: head.bytes } : null;
+  });
 }
 
-/** Keep the store (indexed) for the next visit, part by part; its head is written last, so a half-kept store is never read.
+/** Keep the store (indexed) for the next visit, part by part; its head is written last, so a half-kept store is never
+ * read, and one tab at a time (keeping).
  * @param {string} sha */
-async function keepCorpus(sha) {
+function keepCorpus(sha) {
+  return keeping("exclusive", () => keepCorpusNow(sha));
+}
+
+/** @param {string} sha */
+async function keepCorpusNow(sha) {
   await kept.drop("corpus");
   await kept.drop(IDBKeyRange.bound("corpus:", "corpus:\uffff")); // any earlier build's parts, kept or half kept
   // one snapshot, read between two questions with no await in between: a question answered meanwhile may write to the
@@ -243,14 +262,14 @@ function unpackCorpus(url, size, onGot, onUnpacked) {
     }
     let heard = false;
     helper.onerror = (e) => { e.preventDefault?.(); if (!heard) fallback(); else { helper?.terminate(); reject(new Error(T("解压要籍语料失败：请刷新重试"))); } };
-    helper.onmessage = ({ data }) => {
+    helper.onmessage = (/** @type {MessageEvent<UnpackMessage>} */ { data }) => {
       heard = true;
       if (data.got !== undefined) onGot?.(data.got);
       if (data.unpacked !== undefined) onUnpacked?.(data.unpacked);
       if (data.error) { /** @type {Worker} */ (helper).terminate(); reject(new Error(data.error)); }
       if (data.buffer) { /** @type {Worker} */ (helper).terminate(); resolve(new Uint8Array(data.buffer)); }
     };
-    helper.postMessage({ url, size });
+    helper.postMessage(/** @satisfies {UnpackRequest} */ ({ url, size }));
   });
 }
 
@@ -282,6 +301,18 @@ async function loadPython(base, manifest) {
     }
   }
   throw new Error(T`无法载入 Python 运行时（${lastErr?.message || lastErr}）`);
+}
+
+/** Pyodide's packages the runtime needs, loaded.  loadPackage settles without one it could not load and says why only
+ * to its callbacks: here that is the start's end, with the package and why, rather than an import that fails later.
+ * @param {Pyodide} py @param {string[]} names */
+async function loadPackages(py, names) {
+  /** @type {string[]} */
+  const why = []; // its causes, without the line that announces each ("The following error occurred while loading …:")
+  const said = (/** @type {string} */ m) => { if (!m.startsWith("The following error occurred")) why.push(m); };
+  await py.loadPackage(names, { messageCallback: () => {}, errorCallback: said });
+  const missing = names.filter((n) => !Object.hasOwn(py.loadedPackages, n)).join(", ");
+  if (missing) throw new Error(T`无法载入 Python 运行时（${why.length ? `${missing}: ${why.join(" ")}` : missing}）`);
 }
 
 const ENV = `
@@ -374,6 +405,7 @@ async function keepBytecode(key) {
     const make = py.globals.get("_bytecode");
     const data = make().toJs();
     make.destroy?.();
+    await kept.drop(IDBKeyRange.bound("pyc:", "pyc:\uffff")); // an earlier build's: one build's is kept, not each one's
     await kept.put(key, { blob: new Blob([data]) });
   } catch { /* a later visit compiles from source, as before */ }
 }
@@ -387,16 +419,16 @@ async function indexRest(sha, then) {
     for (;;) {
       await new Promise((r) => setTimeout(r, 30)); // a question waiting is answered first
       const st = JSON.parse(step("all", SLICE));
-      self.postMessage({ type: "index", indexed: st.indexed, total: st.total, done: st.state === "built" });
+      self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "index", indexed: st.indexed, total: st.total, done: st.state === "built" }));
       if (st.state === "built") break;
       if (!st.indexed_now) return; // nothing moved: leave it (the next visit starts over)
     }
     const keptNow = await keepCorpus(sha);
-    self.postMessage({ type: "index", done: true, kept: keptNow });
+    self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "index", done: true, kept: keptNow }));
   } catch (err) {
     // an interrupt meant for a call that ended as this slice began: the slice, not committed, is indexed again
     if (/KeyboardInterrupt/.test(String(/** @type {any} */ (err)?.message || err))) again = true;
-    else self.postMessage({ type: "index", error: String(/** @type {any} */ (err)?.message || err) });
+    else self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "index", error: String(/** @type {any} */ (err)?.message || err) }));
   } finally {
     step.destroy?.();
     if (again) setTimeout(() => indexRest(sha, then), 0);
@@ -482,7 +514,7 @@ async function init({ base }) {
   // TaoCore: the module and its loader, imported only now (a static import that failed would take this worker with it)
   const kernel = files["taocore.wasm"];
   const taocore = kernel
-    ? Promise.all([archive(base, "taocore.wasm", kernel.sha256, true), import("./taocore.js")]).then(([bytes, m]) => m.loadTaoCore(bytes))
+    ? Promise.all([archive(base, "taocore.wasm", kernel.sha256, true), import("./taocore.js")]).then(([a, m]) => m.loadTaoCore(a.bytes))
     : Promise.reject(new Error("the site carries no runtime/taocore.wasm"));
   corpusSource.catch(() => {}); // all awaited below; not unhandled rejections meanwhile
   archives.catch(() => {});
@@ -493,20 +525,22 @@ async function init({ base }) {
   if (self.crossOriginIsolated && typeof SharedArrayBuffer === "function") {
     interrupt = new Int32Array(new SharedArrayBuffer(4));
     py.setInterruptBuffer(interrupt);
-    self.postMessage({ type: "interrupt", buffer: interrupt.buffer });
+    self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "interrupt", buffer: interrupt.buffer }));
   }
   view.step = T("载入 PyYAML 与 SQLite"); view.frac = 0.6; show();
-  await py.loadPackage(["pyyaml", "sqlite3"], { messageCallback: () => {}, errorCallback: () => {} });
+  await loadPackages(py, ["pyyaml", "sqlite3"]);
   view.step = T("载入 TaoChronos"); view.frac = 0.8; show();
   const [pkg, home] = await archives;
   const site = py.runPython("import sysconfig; sysconfig.get_paths()['purelib']");
-  py.unpackArchive(pkg, "zip", { extractDir: site });
+  py.unpackArchive(pkg.bytes, "zip", { extractDir: site });
+  // the bytecode kept is that of the package the manifest names: laid over that package alone, and made only from it
+  // (made from another — an older file a cache gave — it would be that one's, kept under this one's name)
   const pycKey = `pyc:${files["taochronos.zip"]?.sha256 || ""}`;
-  const pyc = files["taochronos.zip"]?.sha256 ? await kept.get(pycKey) : undefined;
+  const pyc = pkg.checked ? await kept.get(pycKey) : undefined;
   if (pyc?.blob instanceof Blob) py.unpackArchive(new Uint8Array(await pyc.blob.arrayBuffer()), "zip", { extractDir: site });
   py.FS.mkdirTree("/home/pyodide/taochronos");
   py.FS.mkdirTree("/home/pyodide/data");
-  py.unpackArchive(home, "zip", { extractDir: "/home/pyodide/taochronos" });
+  py.unpackArchive(home.bytes, "zip", { extractDir: "/home/pyodide/taochronos" });
   py.runPython(ENV); // before anything reads the home: the indexer below loads the domain pack
   // before Python imports the package; a download that stalls does not hold the runtime up
   /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -547,7 +581,7 @@ async function init({ base }) {
   py.runPython(BOOT);
   rpc = py.globals.get("_rpc");
   await restoreData();
-  const info = JSON.parse(rpc("info", "{}"));
+  const info = /** @type {RuntimeInfo} */ (JSON.parse(rpc("info", "{}")));
   info.load_ms = Math.round(performance.now() - t0);
   info.version_manifest = manifest.version;
   try {
@@ -556,14 +590,14 @@ async function init({ base }) {
     info.taocore = { kernel: null, reason: String(/** @type {any} */ (err)?.message || err) };
   }
   progress(100, T("就绪"));
-  const compile = pyc || !files["taochronos.zip"]?.sha256 ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
+  const compile = pyc || !pkg.checked ? null : () => setTimeout(() => keepBytecode(pycKey), 1000);
   if (rest) setTimeout(() => indexRest(/** @type {CorpusFile} */ (meta).sha256, compile), 0);
   else compile?.();
   return info;
 }
 
-self.onmessage = async (e) => {
-  const { id, method, params } = e.data || {};
+listen(async (/** @type {MessageEvent<WorkerRequest>} */ e) => {
+  const { id, method, params } = /** @type {WorkerRequest} */ (e.data || {});
   try {
     let result;
     if (method === "init") {
@@ -576,10 +610,10 @@ self.onmessage = async (e) => {
       const local = /** @type {Record<string, ((params: any) => Promise<unknown>) | undefined>} */ ({ data_add: addData, data_remove: removeData, data_clear: clearData })[method];
       result = local ? await local(params || {}) : JSON.parse(rpc(method, JSON.stringify(params || {})));
     }
-    self.postMessage({ id, result });
+    self.postMessage(/** @satisfies {WorkerReply} */ ({ id, result }));
   } catch (err) {
     if (method === "init") ready = null;
     const msg = String(/** @type {any} */ (err)?.message || err);
-    self.postMessage({ id, error: msg.includes("Traceback") ? msg.split("\n").filter(Boolean).slice(-3).join(" ") : msg });
+    self.postMessage(/** @satisfies {WorkerReply} */ ({ id, error: msg.includes("Traceback") ? msg.split("\n").filter(Boolean).slice(-3).join(" ") : msg }));
   }
-};
+});
