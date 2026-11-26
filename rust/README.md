@@ -65,6 +65,15 @@ path (Python 3.11's plain sum and 3.12's compensated one); the module, run under
 the Python path; whole searches with what they gave before TaoCore.  `cargo deny --locked check` reads `Cargo.lock`
 against RustSec's advisories and `deny.toml`'s rules (crates.io only, permissive licences, nothing yanked).
 
+## Measuring
+
+The ADR's numbers come from warm searches on the 要籍语料, three ways interleaved — before TaoCore, by the Python
+definitions, on the kernel — with every result compared (made there from `corpus/web` when the store is missing):
+
+```bash
+PYTHONPATH=src python rust/bench.py /tmp/taocore-bench
+```
+
 ## Bumping
 
 * **The compiler**: `rust-toolchain.toml`'s `channel`, the Rust stage of `cloud/corpus/Dockerfile` (its tag and digest,
