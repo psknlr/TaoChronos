@@ -856,3 +856,13 @@ test("a ledger that cannot be reached is never in a visitor's way, and what it m
   assert.deepEqual(brought.map((b) => [b.events.length, b.lost]), [[1, 2]]);
   assert.equal(ledger.get("lost"), 2);
 });
+
+test("a visitor may ask what is held of them, and be forgotten, before the registry has been written to at all", async () => {
+  const { call } = site({ watch: true, ledger: true, cf: CF });
+  const cookie = cookieOf(await open(call)); // nothing drained yet: the registry has no tables
+  const me = await (await call(`${PAGE}/api/activity/me`, { headers: { ...BROWSER, Cookie: cookie } })).json();
+  assert.deepEqual([me.state, isVisitor(me.visitor), me.held], ["valid", true, null]);
+  const gone = await post(call, "/api/activity/forget", {}, { Cookie: cookie });
+  assert.equal(gone.status, 200);
+  assert.equal((await gone.json()).forgotten, false);
+});

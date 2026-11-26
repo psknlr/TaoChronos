@@ -72,9 +72,14 @@ export const TABLES = [
   "CREATE TABLE IF NOT EXISTS deletion_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, what TEXT NOT NULL, by TEXT NOT NULL, rows TEXT NOT NULL)",
 ];
 
-/** The tables, made when they are not there (a statement each: D1 runs them as one transaction). */
+// the databases this isolate has made sure of (a binding is one object for as long as the isolate lives)
+const made = new WeakSet();
+
+/** The tables, made when they are not there (a statement each: D1 runs them as one transaction) — once an isolate. */
 export async function ensure(db) {
+  if (made.has(db)) return;
   await db.batch(TABLES.map((sql) => db.prepare(sql)));
+  made.add(db);
 }
 
 // ------------------------------------------------------------------ what an event is reduced to

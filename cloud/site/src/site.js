@@ -500,7 +500,8 @@ async function activity(request, env, deps, url, L, cors, address) {
   if (what === "me") {
     if (!get) return json({ error: "GET" }, 405, { ...cors, Allow: "GET" });
     const who = await L.identify();
-    return json({ v: 1, ids: L.cfg.ids, state: who.state, visitor: who.visitor, held: who.visitor ? await known(L.db, who.visitor).catch(() => null) : null }, 200, cors);
+    const held = who.visitor ? await ensure(L.db).then(() => known(L.db, who.visitor)).catch(() => null) : null;
+    return json({ v: 1, ids: L.cfg.ids, state: who.state, visitor: who.visitor, held }, 200, cors);
   }
   if (request.method !== "POST") return json({ error: "POST" }, 405, { ...cors, Allow: "POST" });
   const text = await readText(request, 1024);
@@ -526,7 +527,8 @@ async function activity(request, env, deps, url, L, cors, address) {
   if (what === "forget") {
     const who = await L.identify();
     L.mark = { type: "visitor_choice", route: "/api/activity/forget", more: { detail: "forget" } };
-    const done = who.visitor ? await forget(L.db, who.visitor, { by: "self", now: L.now }) : { found: false };
+    // (a registry switched on a moment ago may have no tables yet: they are made first)
+    const done = who.visitor ? await ensure(L.db).then(() => forget(L.db, who.visitor, { by: "self", now: L.now })) : { found: false };
     // the cookie goes, and none is made again: someone who asked to be forgotten is not counted anew the next day
     return json({ v: 1, ledger: true, ids: L.cfg.ids, state: "off", visitor: null, pass: null, expires: null, forgotten: Boolean(done.found) }, 200,
       { ...cors, "Set-Cookie": L.cfg.ids === "off" ? clearCookie() : setCookie(OFF, L.cfg.visitorDays) });
