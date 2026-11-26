@@ -109,6 +109,13 @@ excerpts.  Two steps choose them:
   nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled
   once after the first visit's indexing), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`),
   and the store's counts come with the store.
+* **Searches on a compiled kernel** — TaoCore ([ADR 0036](adr/0036-taocore.md), [`rust/`](../rust/README.md)): what a
+  search computes over its candidates, BM25 of the query's tokens and the hashed n-gram cosines, runs in a WebAssembly
+  module of no imports (`runtime/taocore.wasm`, 45 KB) that the worker fetches beside the archives, instantiates (in the
+  worker: the page's own policy compiles no WebAssembly) and hands to Python as `_taocore_wasm`.  The same numbers as
+  Python's own, bit for bit, three times faster on a warm search (Pyodide, the 13 measured queries: 12.2 s → 4.1 s);
+  Python checks the module against its definitions before its first use, and computes in Python where it does not load
+  or is refused (the runtime's info says which: `taocore`, `wasm` or `python (…why)`).
 * **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
   info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.
@@ -934,15 +941,17 @@ taochronos web build -o _site --pyodide cdn # without Pyodide: the page loads it
 python -m http.server -d _site 8000
 ```
 
-The site (about 26 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package as the browser can import it:
+The site (about 32 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package as the browser can import it:
 the modules reachable from what the page's worker imports — not the server, the command line, the build, the evaluation
 suites or the corpus pipeline), `runtime/home.zip` (the browser's profiles, domain packs, the demonstration corpus,
 catalogs with the 要籍 list, agents, skills; the lexicon harvested from the full corpus is left out, and so are the gold
 sets and every record), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 13.3 MB;
 built from `corpus/web` by the build, the same bytes for the same pack; `TAOCHRONOS_WEB_XZ_PRESET` trades size for build
-time, the tests use 1), `runtime/boot.json` (the runtime's info and catalogs, for the conversation to start while it
-loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by content in IndexedDB, and the corpus
-once indexed), `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and
+time, the tests use 1), `runtime/taocore.wasm` (TaoCore's module, committed as `rust/crates/taocore-wasm/taocore.wasm`
+and rebuilt byte for byte by CI: the build needs no Rust), `runtime/boot.json` (the runtime's info and catalogs, for the
+conversation to start while it loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by
+content in IndexedDB — only bytes that are what the manifest names: a download cut short is used once and fetched anew —
+and the corpus once indexed), `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and
 SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are deterministic.  Every path is relative.
 
 **What may ship is written down, and the build enforces it** ([`distribution-policy.yaml`](../distribution-policy.yaml),

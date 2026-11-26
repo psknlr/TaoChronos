@@ -108,6 +108,12 @@ the full-text search and the study layer's own queries of the store (`row_filter
 past view cannot read a later text
 ([ADR 0010](adr/0010-speed-cruxes-and-research-value.md)).
 
+A search over a large corpus ranks its candidates itself, by BM25 and by hashed n-gram vectors
+(`plugins/retrieval/taocore.py`, `LocalIndexes`): on a compiled kernel where one is present — TaoCore ([`rust/`](../rust/README.md),
+a CPython extension or the browser's WebAssembly module) — and by the Python definitions otherwise, the same numbers bit
+for bit; only that facade may import a kernel (governance's `native_module` rule)
+([ADR 0036](adr/0036-taocore.md)).
+
 Every YAML file the harness reads is parsed once per content (`protocol/yamlio.py`): the parsed value is kept under the
 SHA-256 of the file's bytes in `$TAOCHRONOS_CACHE` (`off` disables it; else the XDG cache), so an edited file is simply
 another key and a stale entry cannot be read.

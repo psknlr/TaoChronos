@@ -13,6 +13,7 @@ substituted file fails the install).  They are universal: one file serves Linux,
 | `litellm.txt` | runtime + `litellm` | the LiteLLM provider, kept apart: its tree is 59 packages |
 | `ingest.txt` | runtime + `pdf` + `parquet` | the 東亜医学協会 PDF and Hugging Face Parquet ingesters |
 | `audit.txt` | pip-audit (`audit.in`) | the audit workflow, which reads every file here against the advisories |
+| `native.txt` | maturin (`native.in`): what builds TaoCore's CPython extension, its own distribution (`rust/crates/taocore-py`) | CI's `native` job and the full corpus's image; taochronos itself never needs it |
 
 A local install that matches CI:
 
