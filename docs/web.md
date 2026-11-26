@@ -1115,6 +1115,12 @@ committed with them, deleted only once held, a deployment checked (and a refused
 service's host answers from told in the log, never the deployment's failure).  The site build writes
 `site.json` only when given a relay, carries the texts' attribution, and never a conversation record or a key.
 
+**Types.**  The JavaScript is type-checked as it is, with no build: a file whose first line is `// @ts-check` is read by
+`tsc` under strict, its types written in JSDoc, and what reaches the page from the chat runtime — its answers, the
+messages to and from its worker — declared in `tools/typecheck/types/`, outside `web/`, which the site copies whole.
+CI runs it (`ci.yml`, `typecheck`); [tools/typecheck/README.md](../tools/typecheck/README.md) says how to run it, how to
+opt a file in, and why JSDoc rather than TypeScript files.
+
 ## Limits
 
 * In the browser the corpus is the 要籍语料: 533 of the 535 key works, the first whole, the others in chapters spread

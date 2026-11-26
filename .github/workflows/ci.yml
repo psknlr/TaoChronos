@@ -125,3 +125,25 @@ jobs:
         run: |
           docker build --target base -f cloud/corpus/Dockerfile -t taochronos-base .
           docker run --rm taochronos-base python -c "import _taocore; from taochronos.plugins.retrieval import taocore; s = taocore.status(); print(s); assert s['kernel'] == 'native', s"
+
+  # tsc over the JavaScript as it is, typed in JSDoc: the files whose first line is `// @ts-check`, under strict;
+  # nothing is built or written (tools/typecheck/README.md).  One program for each place the code runs.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      # typescript and the Workers' types exactly as tools/typecheck/package-lock.json has them, without install scripts
+      - name: Install the type checker from its lockfile
+        working-directory: tools/typecheck
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: The page (web/js, with a browser page's globals)
+        run: tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.web.json
+      - name: The page's module workers (worker.js and unpack-worker.js with what they import, with a worker's globals)
+        run: tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.worker.json
+      - name: The Workers (relay/src, cloud/site/src and security/, with workerd's globals)
+        run: tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.workers.json

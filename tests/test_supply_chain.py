@@ -1,8 +1,9 @@
 """What the repository installs and runs, pinned (docs/adr/0026-pinned-supply-chain-and-enforced-policies.md): every
 GitHub Action by its commit, every checkout without the token where its job pushes nothing; every Python package from a
 hashed lockfile that still fits pyproject.toml, whose lower bounds stay above the published advisories; every Worker
-deployed with the wrangler its lockfile names, installed without install scripts; the full corpus's image on a base
-pinned by digest, run by an unprivileged user, its version made of everything it copies."""
+deployed with the wrangler its lockfile names, installed without install scripts, the type checker locked as exactly,
+and every npm lockfile kept current by Dependabot; the full corpus's image on a base pinned by digest, run by an
+unprivileged user, its version made of everything it copies."""
 
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
 LOCKS = sorted((ROOT / "requirements").glob("*.txt"))
 WORKERS = ["relay", "cloud/site", "cloud/corpus"]
+TOOLS = ["tools/typecheck"]  # installed only to check the code (CI's typecheck job), and pinned all the same
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 # the first release of each from which no published advisory applies (requirements/README.md, 2026-10-28)
 FLOORS = {"setuptools": "84.1.0", "wheel": "0.46.2", "litellm": "1.103.1", "pytest": "9.0.3", "pyarrow": "23.0.1", "pypdf": "6.21.2"}
@@ -172,6 +174,35 @@ def test_wrangler_runs_only_as_installed_from_a_lockfile_without_install_scripts
             first = next((i for i, r in enumerate(runs) if "npx --no -- wrangler" in r), None)
             if first is not None:
                 assert any("npm ci --ignore-scripts" in r for r in runs[:first]), f"{path.name} {job_name}: wrangler before its install"
+
+
+@pytest.mark.parametrize("tool", TOOLS)
+def test_each_tool_is_locked_to_exact_versions_with_every_package_checked(tool):
+    package = json.loads((ROOT / tool / "package.json").read_text(encoding="utf-8"))
+    lock = json.loads((ROOT / tool / "package-lock.json").read_text(encoding="utf-8"))
+    wanted = package["devDependencies"]
+    assert wanted and not package.get("dependencies"), f"{tool}: what it installs is a dev dependency"
+    for name, version in wanted.items():
+        assert re.fullmatch(r"\d+\.\d+\.\d+", version), f"{tool}: {name} {version!r} is a range, not a version"
+    assert lock["lockfileVersion"] == 3 and lock["packages"][""]["devDependencies"] == wanted
+    packages = {k: v for k, v in lock["packages"].items() if k and not v.get("link")}
+    for name, version in wanted.items():
+        assert packages[f"node_modules/{name}"]["version"] == version, f"{tool}: {name} is not the version package.json names"
+    for key, entry in packages.items():
+        assert entry.get("integrity", "").startswith("sha512-"), f"{tool}: {key} has no integrity hash"
+        assert entry.get("resolved", "").startswith("https://registry.npmjs.org/"), f"{tool}: {key} comes from elsewhere"
+    for script in package.get("scripts", {}).values():
+        assert "npx" not in script, f"{tool}: {script!r} would fetch what its lockfile does not pin"
+
+
+def test_every_npm_lockfile_is_checked_here_and_kept_current():
+    """A new npm directory is pinned like the others (WORKERS or TOOLS above) and Dependabot proposes its updates."""
+    found = {p.parent.relative_to(ROOT).as_posix() for pattern in ("*/package-lock.json", "*/*/package-lock.json")
+             for p in ROOT.glob(pattern) if "node_modules" not in p.parts}
+    assert found == set(WORKERS) | set(TOOLS)
+    updates = _load(ROOT / ".github" / "dependabot.yml")["updates"]
+    npm = {d.strip("/") for u in updates if u["package-ecosystem"] == "npm" for d in u.get("directories") or [u["directory"]]}
+    assert npm == found, "a directory with an npm lockfile that Dependabot does not keep current, or the reverse"
 
 
 def test_the_image_is_pinned_unprivileged_and_versioned_by_all_it_copies():

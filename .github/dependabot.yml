@@ -12,9 +12,10 @@ updates:
       actions:
         patterns: ["*"]
 
-  # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26)
+  # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26); and the
+  # type checker (tools/typecheck): typescript, and the Workers' types, within the range wrangler names as its peer
   - package-ecosystem: npm
-    directories: ["/relay", "/cloud/site", "/cloud/corpus"]
+    directories: ["/relay", "/cloud/site", "/cloud/corpus", "/tools/typecheck"]
     schedule:
       interval: weekly
     groups:
