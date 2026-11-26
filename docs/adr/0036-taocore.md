@@ -50,8 +50,11 @@ Those rules were applied before anything was built.  Seven investigations, each 
 1. **TaoCore** in a new `rust/` workspace ([rust/README.md](../../rust/README.md)): `taocore`, the kernel — the
    characters read, BM25 in two steps, BLAKE2b-64 n-gram vectors, CPython's own summation; no dependency, no `unsafe`;
    `taocore-py`, a CPython extension (PyO3, abi3: one wheel for Python 3.11 and up); `taocore-wasm`, a module of no
-   imports with a C ABI (45 KB), and no wasm-bindgen — its glue and its version-locked command line buy nothing for a
+   imports with a C ABI (50 KB), and no wasm-bindgen — its glue and its version-locked command line buy nothing for a
    caller that is Python.  **One call per route per search**, not one per passage (a crossing costs microseconds).
+   And the full-text index's tokens (`store.grams`) for the browser's first visit, which indexes the 要籍语料 in the
+   visitor's browser: measured there, SQLite's insert was 43% of that indexing, `grams` 27%, `normalize_text` 21%;
+   the kernel makes a chunk's tokens at once (`taocore.grams_many`), the same strings.
 2. **The same numbers by construction.**  What differs by platform stays in Python: idf's logarithm (`math.log`, the
    kernel's BM25 takes the weights the caller made from its df), the average length (Python's int / int) and which sum
    `sum()` does (detected from the interpreter's own behaviour, passed in).  Ties are broken by the candidate's place,
@@ -90,21 +93,34 @@ Those rules were applied before anything was built.  Seven investigations, each 
 4. **The worker keeps only what the manifest names.**  It kept whatever arrived under the manifest's SHA-256 — a
    download cut short was reused on every later visit.  Now bytes are kept, and a kept copy used, only when their hash
    is the manifest's; TaoCore's module is refused outright otherwise.
-5. **The hotspots outside retrieval** are fixed in Python first (`Lexicon.match`, the lineage builder's per-passage
-   work, the G3 gate's per-claim matching), with outputs proved identical; and **the JavaScript is typed with JSDoc
-   checked by `tsc`** (`tools/typecheck`, file by file under `strict`), not converted to TypeScript.  Both are their own
-   commits, with their measurements.
+5. **The hotspots outside retrieval, in Python** — each output proved identical (every 要籍语料 passage, the research
+   scopes, the searches):
+   * `Lexicon.match` tries only the lengths of the surfaces that begin where it stands (82–91% of positions begin
+     none): 4.4 times faster; the searches that target a sense 1.25–1.56 times faster.
+   * the lineage builder and the G3 gate keep a passage's text work for every pair or claim it is in: a research
+     run's lineage 1.57 times faster on the web scope (2.47 on the demonstration corpus), G3 7.5 times, claim
+     extraction 1.42 times; a whole web research run 1.20 times (demo 1.58).
+   * `ClaimHypergraph` builds the indexes nothing reads until one is read (5.3 ms → 0.23 ms for 1 909 claims) —
+     where the proposal would have ported it.
+6. **The JavaScript typed with JSDoc checked by `tsc`** (`tools/typecheck`; a file opts in with `// @ts-check` and is
+   checked under `strict`), not converted to TypeScript: nothing is built or emitted, the site ships `web/` as it is.
+   The RPC between the page and its worker is declared once (`tools/typecheck/types/runtime.d.ts`); of 18 seeded
+   protocol bugs the check catches 17, against 2 without the annotations.
 
 ### Declined, and why
 
+* **Three crates** (tao-text, tao-retrieval, tao-vector): one kernel of some 700 lines, because a search's two routes
+  read one batch of texts — split, each crate's binding would take the texts across once more — and one ABI is one
+  thing to keep in step.
 * **WebAssembly in the Workers**: measured to cost more than it saves (above); the D1 backup stays JavaScript.
 * **Go**: nothing measured asks for a second service language.
-* **Porting the graph and validation layers**: not where the time is; a drop-in port of the hypergraph was 1.5 times
-  faster, not building its unread indexes 2.4 times.
+* **Porting the graph and validation layers**: not where the time is; a drop-in port of the hypergraph measured 1.5
+  times faster where not building its unread indexes measured 2.4 (done, above), and the gates' cost was a lexicon scan
+  repeated per claim (done, above).
 * **The logarithm in the kernel** (a correctly rounded one shared by every platform): it would change today's scores on
   every platform; parity with each platform's own Python was asked for, and kept.
 * **A PyO3 wheel for Pyodide** (wasm32-emscripten): a nightly compiler with a custom sysroot, a wheel tied to Pyodide's
-  ABI, 0.2–0.5 MB; the raw module does the same work at 45 KB.
+  ABI, 0.2–0.5 MB; the raw module does the same work at 50 KB.
 * **Signing beyond the build's own check**: what the site serves is named by SHA-256 in its manifest, the module is
   rebuilt and compared by CI, and the image pins every input; artifact attestations would add a key and an Action for
   no reader who checks them today.
@@ -121,8 +137,9 @@ Those rules were applied before anything was built.  Seven investigations, each 
 | Pyodide 0.28.2 (Node 22) | before 12 195 ms · Python 9 890 ms (1.23×) · module 4 064 ms (**3.00×**) | all 13 |
 | Chromium 158, the built site under its CSPs | e.g. 桂枝汤 445 → 130 ms, 黄芪补气 708 → 152, 麻黄汤的方源 273 → 55 (two browsers at once on 4 vCPUs: indicative) | all 10 queries, scores too |
 
-The extension reached the ceiling the profile set (3.3×).  The module is 45 571 bytes (0.15% of a first visit); the
-wheel 232 KB, built in about 25 s.  In Chromium a missing module, a missing loader and a corrupt module each left a
+The extension reached the ceiling the profile set (3.3×).  The first visit's indexing in Pyodide: the works the first
+answer waits for 5.3 s → 4.5 s, the whole 14.9 s → 12.6 s, the same index.  The module is 50 178 bytes (0.17% of a
+first visit); the wheel 232 KB, built in about 25 s.  In Chromium a missing module, a missing loader and a corrupt module each left a
 runtime that answered in Python; a module corrupted on its first download was not kept, and the next visit used it.
 Parity (`tests/test_taocore.py`): the extension gives the Python definitions' scores bit for bit on the test corpus's 265
 texts, 51 BM25 queries and 8 dense ones, under three embedder shapes and both sums (CPython 3.11, 3.12, 3.13); the module,
@@ -134,8 +151,10 @@ before TaoCore.
 * **Phones, Firefox and Safari** were not measured; Chrome and Node were.
 * **The first search of a visit** keeps most of its cost (claim extraction for up to 600 passages, passage fetches):
   keeping claims extracted ahead would move it, not a kernel.
-* **`Lexicon.match` in the kernel**: fixed in Python first; it is the next candidate if it stays hot.
-* **The first visit's indexing** (19 s in Pyodide): not measured where its time goes.
+* **`Lexicon.match` in the kernel**: fixed in Python first (4.4×); the next candidate if it stays hot, with the lineage
+  builder's per-pair work (now about 72% of a build: `IntertextAnalyzer.features`, difflib three times a pair).
+* **`normalize_text` in the kernel**: 21% of the first visit's indexing in Pyodide, but a table the domain pack loads;
+  carrying it across is a change of its own.
 * **The image is built by CI and by the deployment**, not here (no Docker daemon where this was written).
 * **A Python floor of 3.12** would let the kernel drop its plain sum; 3.11 stays supported.
 * A profile finding outside this work: 阴阳毒 is searched as 阴阳 by the alias reading — a relevance question.

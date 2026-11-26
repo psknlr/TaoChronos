@@ -111,11 +111,12 @@ excerpts.  Two steps choose them:
   and the store's counts come with the store.
 * **Searches on a compiled kernel** — TaoCore ([ADR 0036](adr/0036-taocore.md), [`rust/`](../rust/README.md)): what a
   search computes over its candidates, BM25 of the query's tokens and the hashed n-gram cosines, runs in a WebAssembly
-  module of no imports (`runtime/taocore.wasm`, 45 KB) that the worker fetches beside the archives, instantiates (in the
+  module of no imports (`runtime/taocore.wasm`, 50 KB) that the worker fetches beside the archives, instantiates (in the
   worker: the page's own policy compiles no WebAssembly) and hands to Python as `_taocore_wasm`.  The same numbers as
   Python's own, bit for bit, three times faster on a warm search (Pyodide, the 13 measured queries: 12.2 s → 4.1 s);
-  Python checks the module against its definitions before its first use, and computes in Python where it does not load
-  or is refused (the runtime's info says which: `taocore`, `wasm` or `python (…why)`).
+  the first visit's full-text tokens are made there too (its indexing 15% shorter).  Python checks the module against
+  its definitions before its first use, and computes in Python where it does not load or is refused (the runtime's
+  info says which: `taocore`, `wasm` or `python (…why)`).
 * **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
   info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.

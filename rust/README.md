@@ -1,12 +1,13 @@
 # TaoCore
 
 What a search computes over its candidates — BM25 of the query's tokens and the hashed character n-gram cosines of
-`src/taochronos/plugins/retrieval/index.py` — compiled: **the same numbers, bit for bit**, several times faster.  Why,
+`src/taochronos/plugins/retrieval/index.py` — compiled: **the same numbers, bit for bit**, several times faster; and the
+full-text index's tokens (`store.grams`) the browser's first visit indexes the 要籍语料 with, the same strings.  Why,
 what was measured and what was left out: [ADR 0036](../docs/adr/0036-taocore.md).
 
 | Crate | What | Reaches Python as |
 |---|---|---|
-| `crates/taocore` | the kernel: the characters read, BM25 in two steps, BLAKE2b-64 n-gram vectors, CPython's own `sum()`; no dependency, no `unsafe` | — |
+| `crates/taocore` | the kernel: the characters read, BM25 in two steps, BLAKE2b-64 n-gram vectors, CPython's own `sum()`, the full-text tokens; no dependency, no `unsafe` | — |
 | `crates/taocore-py` | the CPython extension (PyO3, abi3: one wheel for Python 3.11 and up) | `import _taocore` |
 | `crates/taocore-wasm` | the browser's module: wasm32, no imports, a C ABI; committed as `taocore.wasm` | `import _taocore_wasm` (the runtime worker registers it: `web/js/taocore.js`) |
 
