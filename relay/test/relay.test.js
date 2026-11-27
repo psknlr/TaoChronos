@@ -887,14 +887,15 @@ test("a record's numbers and short words are within what a turn can be; a day's 
     model: "any words a sender likes: 张三 13800138000", runtime: "Browser!", corpus: "c d", images: 1e9, redacted: -1,
     tools: [{ name: "classics.search", ms: -5, round: 1e9, status: "OK ok", at: 1e13 }],
     requests: [{ round: 1, attempt: 1, status: 99999, input: 1e10, output: 7, sent: 12.5 }], citations: { total: 1e6, ok: 2 } });
-  assert.deepEqual([odd.rounds, odd.ms, odd.turn, odd.usage, odd.status, odd.model, odd.runtime, odd.corpus, odd.images, odd.redacted],
-    [undefined, undefined, undefined, {}, undefined, undefined, undefined, undefined, undefined, undefined]);
+  assert.deepEqual([odd.rounds, odd.ms, odd.turn, odd.usage, odd.status, odd.runtime, odd.corpus, odd.images, odd.redacted],
+    [undefined, undefined, undefined, {}, undefined, undefined, undefined, undefined, undefined]);
+  assert.equal(odd.model, "any words a sender likes: 张三 13800138000"); // a model's name is the visitor's own setting: text, and whoever sums it names none but a name
   assert.deepEqual([odd.tools[0], odd.requests[0], odd.citations], [{ name: "classics.search", ok: false }, { round: 1, attempt: 1, output: 7, sent: 12.5 }, { ok: 2 }]);
   const honest = normalizeRecord({ ...turn, rounds: 3, model: "meta-llama/Llama-3.1:8b v2", status: "stopped" });
   assert.deepEqual([honest.rounds, honest.ms, honest.turn, honest.usage, honest.status, honest.model, honest.runtime, honest.corpus],
     [3, 12345, 1, { input: 1200, output: 180 }, "stopped", "meta-llama/Llama-3.1:8b v2", "browser", "canon"]);
-  const said = normalizeFeedback({ ...rated, turn: -3, model: "<i>m</i>", runtime: "R T" });
-  assert.deepEqual([said.turn, said.model, said.runtime], [undefined, undefined, undefined]);
+  const said = normalizeFeedback({ ...rated, turn: -3, runtime: "R T", corpus: "c|d" });
+  assert.deepEqual([said.turn, said.runtime, said.corpus], [undefined, undefined, undefined]);
   // a day's records are bounded by what they weigh — a visitor's own, and all visitors' together — for they go into the
   // repository: a count alone let one visitor add 29 MiB a day, and all of them anything at all
   let t = Date.UTC(2026, 8, 28, 12, 0, 0);

@@ -1179,8 +1179,6 @@ const str = clipped;
 const num = (v, most = 1e12) => (typeof v === "number" && v >= 0 && v <= most ? v : undefined);
 // a short word of the page's own (a status, a way a request ended): kept as a count's name, so never a sender's words
 const short = (v, n) => (typeof v === "string" && v.length <= n && /^[a-z][a-z0-9_-]*$/.test(v) ? v : undefined);
-// a model's name, as the ledger takes one (normalizeTurn): letters, digits and what a name is written with
-const MODEL = /^[A-Za-z0-9][A-Za-z0-9 ._:/-]{0,79}$/;
 const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
 const list = (v, n, each) => (Array.isArray(v) ? v.slice(0, n).map((x) => each(obj(x) || {})) : undefined);
 
@@ -1199,8 +1197,9 @@ export function normalizeRecord(r) {
     started: str(r.started, 40), finished: str(r.finished, 40), ms: num(r.ms, 864e5), rounds: num(r.rounds, 1000), resumed: num(r.resumed, 1000),
     question: question || "", images: num(r.images, 100), answer: str(r.answer, 20000), redacted: num(r.redacted, 1e5),
     status: short(r.status, 20), error: str(r.error, 500),
-    model: typeof r.model === "string" && MODEL.test(r.model) ? r.model : undefined, provider: str(r.provider, 80),
-    runtime: short(r.runtime, 40), corpus: short(r.corpus, 40), app: str(r.app, 40),
+    // (a model's name stays as the visitor's settings have it: it names a count only for the default service's own,
+    // where whoever sums it takes none but a name — security/activity.py)
+    model: str(r.model, 80), provider: str(r.provider, 80), runtime: short(r.runtime, 40), corpus: short(r.corpus, 40), app: str(r.app, 40),
     tools: list(r.tools, 40, (t) => ({
       name: str(t.name, 80), ok: t.ok === true, ms: num(t.ms), args: str(t.args, 300),
       id: str(t.id, 64), round: num(t.round, 1000), status: short(t.status, 20), at: num(t.at), wait: num(t.wait), compute: num(t.compute),
@@ -1245,8 +1244,7 @@ export function normalizeFeedback(r) {
   if (!id || rating === undefined) return null;
   const out = {
     v: 1, kind: "feedback", id, conversation: str(r.conversation, 64), turn: num(r.turn, 1e5), rating, given: str(r.given, 40),
-    model: typeof r.model === "string" && MODEL.test(r.model) ? r.model : undefined, provider: str(r.provider, 80),
-    runtime: short(r.runtime, 40), corpus: short(r.corpus, 40), app: str(r.app, 40),
+    model: str(r.model, 80), provider: str(r.provider, 80), runtime: short(r.runtime, 40), corpus: short(r.corpus, 40), app: str(r.app, 40),
   };
   if (rating) { // taken back: nothing more is kept
     Object.assign(out, {
