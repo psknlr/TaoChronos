@@ -23,8 +23,8 @@ LOCKS = sorted((ROOT / "requirements").glob("*.txt"))
 WORKERS = ["relay", "cloud/site", "cloud/corpus"]
 TOOLS = ["tools/typecheck"]  # installed only to check the code (CI's typecheck job), and pinned all the same
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-# the first release of each from which no published advisory applies (requirements/README.md, 2026-10-28)
-FLOORS = {"setuptools": "84.1.0", "wheel": "0.46.2", "litellm": "1.103.1", "pytest": "9.0.3", "pyarrow": "23.0.1", "pypdf": "6.21.2"}
+# the first release of each from which no published advisory applies (requirements/README.md; pypdf's of 2026-11-27)
+FLOORS = {"setuptools": "84.1.0", "wheel": "0.46.2", "litellm": "1.103.1", "pytest": "9.0.3", "pyarrow": "23.0.1", "pypdf": "6.21.4"}
 
 
 def _runs(workflow: dict) -> list[tuple[str, dict, dict]]:
