@@ -160,6 +160,12 @@ AI 与云的凭据——`/.openai/credentials.json`、`/.anthropic/config.json`�
 连同一次取回的对话记录也不提交）；**写**时一条一行，U+0085、U+2028、U+2029 写成 JSON 自己的转义（JSON 允许字符串里原样带着它们，
 而 `str.splitlines` 把它们当换行）；**读**时只按换行符分行，不是对象的行跳过。
 
+取回是一页一页的，一页既按条数、也按分量封顶（`sentinel.js` 的 `pageEnd`：存着的 JSON 至多 400 万字符；第一条再重也给）。
+Durable Object 的一次调用最多交回 32 MiB，而带着一个 Latin-1 以外字符的字符串在这条路上每个字符占两个字节：一个地址一天
+可发的 500 条对话记录（每条 47 KB）凑成的一页交不出来，取回就每次都失败（HTTP 500），连带整个收集。收集器遇到交不出的一页
+（5xx）会把页缩小再要。请求头的值在 Workers 里按 UTF-8 读出，所以指纹里的各个请求头也经 `clipped()`——此前一条带着
+生僻字的 User-Agent 在长度上限处被截成两半，一个探测路径的 GET 就够留下半个字。
+
 Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 ≥ 400、被拒绝或 shadow 的请求各写一行结构化日志（字段：`tag`、`route`、`status`、`score`、`reasons`、
 `who`、`ip`（仅被标记时）、`ua`、`asn`、`cc`、`colo`、`path`、`proto`、`tls`、`ray`），在 Cloudflare 控制台 Workers → 该 Worker → Logs 里按字段筛选。免费计划保留 3 天。
 
