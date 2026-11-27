@@ -38,6 +38,7 @@ SEPARATOR = "\x1f"  # between a batch's texts: no character the indexes read
 MODES = ("auto", "off", "require", "shadow")
 OFF = ("python", "0", "false", "no", "none", "disabled")  # what one may write meaning off, read as off
 MAX_NGRAM = 42  # the longest n-gram the kernel hashes (one BLAKE2b block)
+MAX_DIM = 1 << 20  # the largest dimension the kernel gives a vector (taocore::MAX_DIM); the embedder's is 512
 # which summation this Python's sum() does over floats: compensated (CPython 3.12 and later) or plain (3.11)
 COMPENSATED = sum([1e100, 1.0, -1e100]) == 1.0
 
@@ -331,7 +332,7 @@ class LocalIndexes:
 
     def _dense_kernel(self, kern: Any, text: str, k: int) -> Ranked:
         e = self.embedder
-        if type(e) is not HashingEmbedder or e.dim < 1 or not all(1 <= n <= MAX_NGRAM for n in e.ngram):
+        if type(e) is not HashingEmbedder or not 1 <= e.dim <= MAX_DIM or not all(1 <= n <= MAX_NGRAM for n in e.ngram):
             raise Unsuitable("an embedder the kernel does not compute")
         if k < 0:
             raise Unsuitable("a negative k: Python's slice, which drops from the end")

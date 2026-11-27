@@ -78,9 +78,10 @@ export async function loadTaoCore(bytes) {
     if (n < 0) throw new Error("taocore: the module refused its input");
     return { places: Array.from(new Uint32Array(x.memory.buffer, places, n)), scores: Array.from(new Float64Array(x.memory.buffer, scores, n)) };
   };
-  /** Room for k results, never more than there are documents to rank (the module's memory never shrinks).
+  /** How many results to ask of the module: k, never more than there are documents to rank (the module's memory never
+   * shrinks), and none for a k of none — as the definitions give none.
    * @param {number} k @param {number} most */
-  const room = (k, most) => Math.max(Math.min(k, most), 1);
+  const wanted = (k, most) => Math.max(0, Math.min(Math.trunc(Number(k)) || 0, most));
 
   /** @param {number} id @param {number} count the batch's documents @returns {Batch} */
   const batch = (id, count) => ({
@@ -99,9 +100,9 @@ export async function loadTaoCore(bytes) {
     bm25(idf, avgdl, k1, b, k) {
       try {
         const [p, len] = put(idf);
-        const n = room(k, count);
-        const places = take(4 * n), scores = take(8 * n);
-        return ranked(places, scores, x.tc_bm25(id, p, len / 8, avgdl, k1, b, n, places, scores));
+        const want = wanted(k, count);
+        const places = take(4 * Math.max(want, 1)), scores = take(8 * Math.max(want, 1)); // (room for one at the least)
+        return ranked(places, scores, x.tc_bm25(id, p, len / 8, avgdl, k1, b, want, places, scores));
       } finally {
         giveBack();
       }
@@ -109,9 +110,9 @@ export async function loadTaoCore(bytes) {
     dense(docs, query, dim, ngram, compensated, threshold, k) {
       try {
         const [d, dl] = put(docs), [q, ql] = put(query), [g, gl] = put(ngram);
-        const n = room(k, dl / 4);
-        const places = take(4 * n), scores = take(8 * n);
-        return ranked(places, scores, x.tc_dense(id, d, dl / 4, q, ql, dim, g, gl / 4, compensated, threshold, n, places, scores));
+        const want = wanted(k, dl / 4);
+        const places = take(4 * Math.max(want, 1)), scores = take(8 * Math.max(want, 1));
+        return ranked(places, scores, x.tc_dense(id, d, dl / 4, q, ql, dim, g, gl / 4, compensated, threshold, want, places, scores));
       } finally {
         giveBack();
       }

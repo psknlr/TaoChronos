@@ -32,6 +32,10 @@ pub const SEPARATOR: char = '\u{1f}';
 /// The longest n-gram the embedder hashes here: 42 characters of 3 bytes each fill one BLAKE2b block.
 pub const MAX_NGRAM: usize = MAX_MESSAGE / 3;
 
+/// The largest dimension a vector is given here (16 MB for a query's and a document's): the embedder's is 512, and a
+/// caller that says more than this is refused before anything of that size is asked of the allocator.
+pub const MAX_DIM: usize = 1 << 20;
+
 /// The characters the indexes read (index.py's `_KEEP`): U+3400–U+D7FF and U+E000–U+FAFF.  All are in the Basic
 /// Multilingual Plane, so a `u16` holds each, and each is three bytes in UTF-8.
 #[inline]
@@ -48,7 +52,7 @@ pub enum Error {
     Token(String),
     /// BM25 scores asked before the query was counted, or with as many weights as tokens
     Weights { expected: usize, found: usize },
-    /// a vector of no dimension
+    /// a vector of no dimension, or of one above [`MAX_DIM`]
     Dimension,
     /// an n-gram size of 0, or above [`MAX_NGRAM`]
     Ngram(usize),
@@ -66,7 +70,7 @@ impl std::fmt::Display for Error {
             Error::Weights { expected, found } => {
                 write!(f, "{found} weights for {expected} counted tokens")
             }
-            Error::Dimension => write!(f, "a vector needs a dimension"),
+            Error::Dimension => write!(f, "a vector needs a dimension, of {MAX_DIM} at the most"),
             Error::Ngram(n) => write!(f, "n-grams of {n} characters are not hashed here"),
             Error::Document(d) => write!(f, "no document {d} in the batch"),
             Error::Utf8 => write!(f, "the bytes are not UTF-8"),
@@ -232,7 +236,9 @@ impl Docs {
     /// `count` texts, separated by [`SEPARATOR`].  (No text, and `count` 0, is no document; no text and `count` 1 is
     /// one empty document.)
     pub fn parse(texts: &str, count: usize) -> Result<Docs, Error> {
-        let mut docs = Docs { chars: Vec::with_capacity(texts.len() / 3), ends: Vec::with_capacity(count) };
+        // (room for the texts there can be — one more than the separators at the most — whatever `count` says)
+        let mut docs =
+            Docs { chars: Vec::with_capacity(texts.len() / 3), ends: Vec::with_capacity(count.min(texts.len() + 1)) };
         if count == 0 {
             return if texts.is_empty() { Ok(docs) } else { Err(Error::Count { expected: 0, found: 1 }) };
         }
@@ -473,7 +479,7 @@ pub struct Embedding {
 
 impl Embedding {
     pub fn new(dim: usize, ngram: &[usize], sum: Sum) -> Result<Embedding, Error> {
-        if dim == 0 {
+        if dim == 0 || dim > MAX_DIM {
             return Err(Error::Dimension);
         }
         if let Some(&n) = ngram.iter().find(|&&n| n == 0 || n > MAX_NGRAM) {
@@ -637,6 +643,9 @@ mod tests {
         assert_eq!(Batch::new("", 0).map(|b| b.len()), Ok(0));
         assert_eq!(Batch::new("", 1).map(|b| b.len()), Ok(1));
         assert!(Batch::from_utf8(&[0xFF], 1).is_err());
+        // a count that is not the texts' is refused, and no room is made for what it says
+        assert_eq!(Batch::new("a\u{1f}b", usize::MAX).err(), Some(Error::Count { expected: usize::MAX, found: 2 }));
+        assert!(Docs::parse("a\u{1f}b", usize::MAX / 2).is_err());
     }
 
     #[test]
@@ -678,6 +687,10 @@ mod tests {
         assert!(Embedding::new(512, &[0], Sum::Compensated).is_err());
         assert!(Embedding::new(512, &[MAX_NGRAM + 1], Sum::Compensated).is_err());
         assert!(Embedding::new(64, &[2, 4], Sum::Plain).is_ok());
+        // a dimension beyond any embedder's is refused before a vector of it is made
+        assert!(Embedding::new(MAX_DIM, &[1], Sum::Compensated).is_ok());
+        assert_eq!(Embedding::new(MAX_DIM + 1, &[1], Sum::Compensated).err(), Some(Error::Dimension));
+        assert_eq!(Embedding::new(usize::MAX, &[1], Sum::Plain).err(), Some(Error::Dimension));
     }
 
     #[test]

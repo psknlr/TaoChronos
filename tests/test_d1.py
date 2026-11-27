@@ -656,7 +656,7 @@ def test_the_workers_search_ranks_with_the_servers_constants():
     assert "hit.score += w / (60 + rank + 1)" in (ROOT / "src/taochronos/plugins/retrieval/hybrid.py").read_text(encoding="utf-8")
     node = shutil.which("node")
     if node:  # queryTokens itself, on what tries the edges
-        samples = ["桂", "桂枝汤", "abc", "", "桂 枝,汤", "豈更車", "\ue3e7缺字", "한글桂枝", "𠀀桂𪚥枝", "汤汤汤", "\u3400\ufaff\ufb00"]
+        samples = ["桂", "桂枝汤", "abc", "", "桂 枝,汤", "\uf900\uf901\uf902", "\ue3e7缺字", "한글桂枝", "𠀀桂𪚥枝", "汤汤汤", "\u3400\ufaff\ufb00"]
         script = (f"import {{ queryTokens }} from {json.dumps(SEARCH.as_uri())};"
                   f"console.log(JSON.stringify({json.dumps(samples)}.map(queryTokens)));")
         got = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, check=True).stdout

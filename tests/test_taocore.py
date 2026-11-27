@@ -64,7 +64,7 @@ def corpus() -> tuple[list[str], list[str]]:
 
 def queries() -> list[list[str]]:
     rng = random.Random(20261126)
-    asked = [query_tokens(q) for q in ("桂枝汤", "消渴", "太阳病头痛发热", "汗", "阴阳", "麻黄汤主之", "不存在的词语", "汤汤", "豈更")]
+    asked = [query_tokens(q) for q in ("桂枝汤", "消渴", "太阳病头痛发热", "汗", "阴阳", "麻黄汤主之", "不存在的词语", "汤汤", "\uf900\uf901")]
     asked.append(query_tokens("桂枝") * 3)  # a token asked more than once counts each time
     asked.append(query_tokens("桂枝") + ["汤"] + query_tokens("消渴"))  # a character among bigrams (several surfaces)
     pool = "".join(texts())
@@ -191,6 +191,17 @@ TOKEN_EDGES = ["", "。", "桂", "桂枝汤", "桂枝，汤。", "，桂", "abc 
                "桂\ud800枝", "汤汤汤", "\u33ff\u3400\u9fff\ua000\uf8ff\uf900\ufaff\ufb00", "\x1e桂\x1e"]
 
 
+def test_the_queries_meant_for_an_edge_reach_it():
+    """The query written for the compatibility ideographs was their unified look-alikes after the text was written by
+    number: it hit nothing, and no parity test counted or scored a token of U+F900–U+FAFF.  By number too, it hits."""
+    ids, all_texts = corpus()
+    compat = query_tokens("\uf900\uf901")
+    assert compat == ["\uf900\uf901"] and compat in queries()[:20]  # within what every way of computing is asked
+    local = LocalIndexes(ids, all_texts, dense_places(len(ids)), HashingEmbedder())
+    hits = local._bm25_python(compat, 5)
+    assert hits and "\uf900" in all_texts[ids.index(hits[0][0])]
+
+
 def test_the_extension_makes_the_full_text_tokens_the_store_makes():
     kern = native()
     every = [*TOKEN_EDGES, *texts()]
@@ -222,6 +233,17 @@ def test_the_extension_refuses_what_is_not_its_input():
         batch.dense([0], b"x", 0, [1], True, 0.05, 5)
     with pytest.raises(ValueError):
         batch.dense([0], b"x", 512, [43], True, 0.05, 5)
+    # what it is told of a size is not what it makes room by: a count that is not the texts', a dimension beyond any
+    # embedder's (these asked the allocator for it before they were refused — or the process ended)
+    with pytest.raises(ValueError):
+        _taocore.Batch("桂\x1f枝".encode(), 2**40)
+    with pytest.raises(ValueError):
+        batch.dense([0], b"x", taocore.MAX_DIM + 1, [1], True, 0.05, 5)
+    places, scores = batch.dense([0], "桂".encode(), taocore.MAX_DIM, [1], True, 0.05, 5)  # the largest it takes
+    assert places == [0] and abs(scores[0] - 3 ** -0.5) < 1e-12  # one character of the document's three
+    local = LocalIndexes(["a"], ["桂枝汤"], [0], HashingEmbedder(dim=taocore.MAX_DIM + 1))
+    with pytest.raises(taocore.Unsuitable):  # and such an embedder is the definitions' to compute
+        local._dense_kernel(kern, "桂", 5)
     assert kern.name == "native"
 
 
@@ -248,6 +270,13 @@ for (const c of input.cases) {
   out.push(r);
 }
 const tokens = core.grams(enc.encode(input.grams.join("\u001f")), input.grams.length).split("\u001f");
+// k = 0 is no result, and a k that is no number none either (the definitions' slice [:0])
+const zero = core.batch(enc.encode("桂枝汤\u001f桂枝"), 2);
+zero.count(enc.encode("桂枝"));
+const none = [zero.bm25(f64([0.5]), 2.5, 1.4, 0.75, 0), zero.dense(u32([0, 1]), enc.encode("桂枝"), 512, u32([1, 2]), 1, 0.05, 0),
+              zero.bm25(f64([0.5]), 2.5, 1.4, 0.75, NaN), zero.bm25(f64([0.5]), 2.5, 1.4, 0.75, -3)].map((r) => r.places.length + r.scores.length);
+const some = [zero.bm25(f64([0.5]), 2.5, 1.4, 0.75, 1).places.length, zero.bm25(f64([0.5]), 2.5, 1.4, 0.75, 7).places.length];
+zero.free();
 let refused = 0;  // what the module must not take
 for (const bad of [() => core.batch(enc.encode("a\u001fb"), 3), () => core.batch(new Uint8Array([0xff]), 1)]) {
   try { bad(); } catch { refused++; }
@@ -261,7 +290,7 @@ for (const bad of [() => one.count(enc.encode("桂枝汤")), () => one.bm25(f64(
 for (let i = 0; i < 6; i++) core.batch(enc.encode("x"), 1);  // the module keeps the last few batches: one pushed out is refused
 try { one.count(enc.encode("桂")); } catch { refused++; }
 try { core.grams(enc.encode("a\u001fb"), 3); } catch { refused++; }
-writeFileSync("out.json", JSON.stringify({ out, refused, tokens }));
+writeFileSync("out.json", JSON.stringify({ out, refused, tokens, none, some }));
 """
 
 
@@ -297,6 +326,7 @@ def test_the_browser_module_ranks_as_the_definitions_do(tmp_path):
     assert run.returncode == 0, run.stderr
     got = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
     assert got["refused"] == 8
+    assert got["none"] == [0, 0, 0, 0] and got["some"] == [1, 2]  # k = 0: none (the loader once gave one); k: at most k
     assert got["tokens"] == [grams(t) for t in token_texts]  # the full-text tokens, every one
     for case, w, g in zip(cases, want, got["out"]):
         if "bm25" in w:
@@ -340,6 +370,15 @@ let places = x.tc_alloc(4), scores = x.tc_alloc(8);  // room for one result
 const bm25 = (k, p = places, s = scores) => x.tc_bm25(id, idf, 1, 2.0, 1.4, 0.75, k, p, s);
 Object.assign(said, { one: bm25(1), three: bm25(3), wrapped: bm25(2 ** 30 + 1), stray: bm25(1, 64, 128),
                       textStray: x.tc_batch(16, 9, 1), textPast: x.tc_batch(t, tl + 64, 3) });
+// a count that is not the texts', a dimension beyond any embedder's: refused, and no memory made for what they say
+const pages = () => x.memory.buffer.byteLength / 65536;
+const before = pages();
+const dense = (dim) => x.tc_dense(id, docs, 1, q, ql, dim, sizes, 1, 1, 0.05, 1, places, scores);
+const docs = x.tc_alloc(4), sizes = x.tc_alloc(4);
+new Uint32Array(x.memory.buffer, docs, 1).set([0]);
+new Uint32Array(x.memory.buffer, sizes, 1).set([1]);
+Object.assign(said, { count: x.tc_batch(t, tl, 2 ** 28), countMore: x.tc_batch(t, tl, 2 ** 31), dim: dense(2 ** 28), dimMost: dense(2 ** 20 + 1),
+                      grew: pages() - before < 16, after: dense(512), batchAfter: x.tc_batch(t, tl, 3) > 0 });
 x.tc_free(places, 4);
 said.freed = bm25(1);
 x.tc_free(places, 4);  // twice: nothing
@@ -365,7 +404,9 @@ def test_the_module_reads_and_writes_only_within_what_it_gave(tmp_path):
     assert run.returncode == 0, run.stderr
     said = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
     assert said == {"batch": True, "counted": 1, "overstated": -1, "one": 1, "three": -1, "wrapped": -1, "stray": -1,
-                    "textStray": 0, "textPast": 0, "freed": -1, "notFreed": 1}
+                    "textStray": 0, "textPast": 0, "freed": -1, "notFreed": 1,
+                    # a count of 2^28 once grew the module's memory by a gigabyte, a dimension of 2^28 trapped it for good
+                    "count": 0, "countMore": 0, "dim": -1, "dimMost": -1, "grew": True, "after": 1, "batchAfter": True}
 
 
 def _wasm(names: list[str]) -> bytes:
@@ -605,9 +646,10 @@ def test_k_is_never_more_room_than_candidates_and_a_negative_one_is_pythons():
     kern = native()
     ids, all_texts = corpus()
     local = LocalIndexes(ids, all_texts, dense_places(len(ids)), HashingEmbedder())
-    for k in (10**9, len(ids), len(ids) + 1):
+    for k in (0, 1, 10**9, len(ids), len(ids) + 1):
         assert bits(local._bm25_kernel(kern, ["桂枝", "枝汤"], k)) == bits(local._bm25_python(["桂枝", "枝汤"], k))
         assert bits(local._dense_kernel(kern, "桂枝汤", k)) == bits(local._dense_python("桂枝汤", k))
+    assert local._bm25_kernel(kern, ["桂枝", "枝汤"], 0) == [] == local._dense_kernel(kern, "桂枝汤", 0)  # k = 0: none
     with pytest.raises(taocore.Unsuitable):
         local._bm25_kernel(kern, ["桂枝"], -1)
     with pytest.raises(taocore.Unsuitable):
@@ -642,14 +684,14 @@ class LoaderStandIn:
 
             def bm25(self, idf, avgdl, k1, b, k):
                 assert isinstance(idf, bytes) and (k1, b) == (1.4, 0.75)
-                places, scores = inner.bm25(list(array("d", idf)), avgdl, k1, b, k)
+                places, scores = inner.bm25(list(array("d", idf)), avgdl, k1, b, max(0, min(k, count)))  # the loader's wanted()
                 return SimpleNamespace(places=js(places), scores=js(scores))
 
             def dense(self, docs, query, dim, ngram, compensated, threshold, k):
                 assert isinstance(docs, bytes) and isinstance(query, bytes) and isinstance(ngram, bytes)
                 assert compensated in (0, 1) and type(compensated) is int and threshold == 0.05
                 places, scores = inner.dense(list(array("I", docs)), query, dim, list(array("I", ngram)), bool(compensated),
-                                             threshold, k)
+                                             threshold, max(0, min(k, len(docs) // 4)))
                 return SimpleNamespace(places=js(places), scores=js(scores))
 
             def free(self):
@@ -678,5 +720,9 @@ def test_the_browser_adapter_speaks_the_loaders_language():
             assert bits(local._bm25_kernel(kern, query, 40)) == bits(local._bm25_python(query, 40)), query
         for text in DENSE_TEXTS:
             assert bits(local._dense_kernel(kern, text, 40)) == bits(local._dense_python(text, 40)), text
+    local = LocalIndexes(ids, all_texts, dense_places(len(ids)), HashingEmbedder())
+    for k in (0, 1, 3, 10**9):  # asked of the module as the loader asks: none for none, never more than the candidates
+        assert bits(local._bm25_kernel(kern, ["桂枝", "枝汤"], k)) == bits(local._bm25_python(["桂枝", "枝汤"], k))
+        assert bits(local._dense_kernel(kern, "桂枝汤", k)) == bits(local._dense_python("桂枝汤", k))
     every = [*TOKEN_EDGES, *all_texts]
     assert taocore._grams_kernel(kern, every) == [grams(t) for t in every]

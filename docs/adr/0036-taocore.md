@@ -150,7 +150,7 @@ Those rules were applied before anything was built.  Seven investigations, each 
 The table is one run each, on a 4-vCPU machine shared with other work: other runs gave 3.1–3.3× natively (the
 definitions 1.4–1.5×) and 2.9–3.0× in Pyodide (1.2×) — about the ceiling the profile set (3.3×).  The first visit's
 indexing in Pyodide: the works the first answer waits for 5.3 s → 4.5 s, the whole 14.9 s → 12.6 s, the same index.  The
-module is 52 322 bytes (0.18% of a first visit); the wheel 232 KB, built in about 25 s.  In Chromium a missing module, a
+module is 52 628 bytes (0.18% of a first visit); the wheel 232 KB, built in about 25 s.  In Chromium a missing module, a
 missing loader and a corrupt module each left a runtime that answered in Python; a module corrupted on its first
 download was not kept, and the next visit used it.  Parity (`tests/test_taocore.py`): the extension gives the Python
 definitions' scores bit for bit on the test corpus's 265 texts, 51 BM25 queries and 8 dense ones, under three embedder
