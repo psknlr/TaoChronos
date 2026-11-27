@@ -48,6 +48,35 @@ def test_a_memo_holds_so_many_texts_and_characters_and_no_long_text():
     assert len(memo) == 1 and memo.get("z" * 40) == 2
 
 
+def test_a_memo_shared_by_threads_keeps_its_bounds_and_one_value_for_a_text():
+    """The analyzers are shared by the server's threads: a text several of them worked at once has one value while it
+    is kept, and however their puts fall no more characters are held than the bound, counted as they are."""
+
+    def together(work) -> None:
+        start = threading.Barrier(8)
+        threads = [threading.Thread(target=lambda k=k: (start.wait(), work(k))) for k in range(8)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    memo: TextMemo[object] = TextMemo(texts=100, chars=5_000)
+    given: list[object] = []
+    together(lambda k: given.append(memo.put("shared", object())))
+    assert len(set(map(id, given))) == 1 and memo.get("shared") is given[0]  # the first kept, handed to all eight
+
+    most: list[int] = []
+
+    def fill(k: int) -> None:
+        for i in range(3_000):
+            memo.put(f"{k}:{i}".ljust(40, "x"), i)
+            if i % 50 == 0:
+                most.append(sum(map(len, list(memo._kept))))
+
+    together(fill)
+    assert max(most) <= 5_000 and memo._held == sum(map(len, memo._kept)) <= 5_000 and len(memo) <= 100
+
+
 def test_a_callers_long_text_is_prepared_as_ever_and_not_kept(harness):
     """study.reuse and the pair form prepare the caller's own texts, of any length: those are worked each time, as
     before the passages' work was kept, and only a passage's length is kept."""
