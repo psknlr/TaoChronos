@@ -20,7 +20,7 @@ from packaging.version import Version
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
 LOCKS = sorted((ROOT / "requirements").glob("*.txt"))
-WORKERS = ["relay", "cloud/site", "cloud/corpus"]
+WORKERS = ["relay", "cloud/site", "cloud/corpus", "cloud/api", "cloud/console"]
 TOOLS = ["tools/typecheck"]  # installed only to check the code (CI's typecheck job), and pinned all the same
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 # the first release of each from which no published advisory applies (requirements/README.md; pypdf's of 2026-11-27)

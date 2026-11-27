@@ -1,0 +1,61 @@
+# 道乃久开发者接口 — api.impf.ai: the developer API and the organisations' accounts, a Worker written in Rust
+# (rust/platform/api; docs/adr/0038-accounts-keys-and-credits.md; README.md here is the API's own documentation).
+# Built by rust/platform/build.sh (workers-rs, with every tool pinned) and deployed by .github/workflows/api.yml, which
+# binds the full corpus's Worker (CORPUS) when the account has it, as cloud/site/deploy.sh does — without it every paid
+# call is answered 503 and nothing is reserved.
+name = "taochronos-api"
+main = "../../rust/platform/api/build/worker/shim.mjs"
+compatibility_date = "2025-09-01"
+workers_dev = false
+preview_urls = false
+
+[[routes]]
+pattern = "api.impf.ai"
+custom_domain = true
+
+[vars]
+# credits a call costs, of a live key (a test key's calls cost none; they are counted against TEST_CALLS_PER_DAY).  The
+# prices' version (a digest of them) is kept with every reservation and charge: a price changed later rewrites none
+PRICE_EVIDENCE_SEARCH = "10"
+PRICE_CITATIONS_VERIFY = "2"
+# per key a minute (exact, in the organisation's object; the edge's KEY_LIMIT below is a coarser first gate), in flight
+# per key and per organisation, and the test keys' calls per organisation a day
+KEY_RATE_PER_MINUTE = "60"
+KEY_CONCURRENCY = "2"
+ORG_CONCURRENCY = "4"
+TEST_CALLS_PER_DAY = "100"
+# a reservation nobody settles lapses after this (released, not charged); the corpus is given at most
+# CORPUS_TIMEOUT_SECONDS, well inside it.  The corpus runs one instance for the site and the API alike
+# (docs/adr/0037-what-a-call-may-cost.md): ORG_CONCURRENCY bounds what one organisation can take of it
+HOLD_SECONDS = "120"
+CORPUS_TIMEOUT_SECONDS = "60"
+IDEMPOTENCY_HOURS = "24"
+MAX_KEYS = "50"
+# sha256 (hex) of the owner's token for /admin/… (organisations, keys, credits).  Empty: the owner's endpoints are off.
+# The token itself is kept nowhere here: register its sha256 as the repository variable API_ADMIN_TOKEN_SHA256
+ADMIN_TOKEN_SHA256 = ""
+
+# one object an organisation, named by its id: its keys, credits and calls in flight (SQLite).  The console's Worker
+# (cloud/console) binds this class too (script_name = "taochronos-api")
+[[durable_objects.bindings]]
+name = "ACCOUNT"
+class_name = "Account"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Account"]
+
+# the edge's own gates before any object is asked: per address (servers call from few addresses; a flood from one is
+# refused here) and per key
+[[ratelimits]]
+name = "IP_LIMIT"
+namespace_id = "7321"
+simple = { limit = 600, period = 60 }
+
+[[ratelimits]]
+name = "KEY_LIMIT"
+namespace_id = "7322"
+simple = { limit = 120, period = 60 }
+
+[observability]
+enabled = true

@@ -1,0 +1,35 @@
+# What the platform's Workers may depend on (cargo-deny; .github/workflows/audit.yml checks it each week and on every
+# change to Cargo.lock): crates from crates.io only, by version, none with a published advisory (RustSec), none yanked —
+# TaoCore's rules (../deny.toml), with three differences, each for a reason:
+#
+#   licences   BSD-3-Clause too: the curves' constant-time core (`subtle`, `curve25519-dalek`, `ed25519-dalek`) is under
+#              it, and no sound ECDSA or Ed25519 implementation in Rust is without it (and `matchit`, workers-rs's
+#              router, is MIT and BSD-3-Clause); none that the graph does not hold
+#   versions   two releases of `syn` are allowed: both are build-time proc-macro dependencies (curve25519-dalek's derive
+#              and strum's on 2, wasm-bindgen's and the rest on 3) and neither is in a Worker's module
+#   graph      the Workers' target (wasm32) and the tests' (the host) are both read
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+
+[licenses]
+version = 2
+allow = ["MIT", "Apache-2.0", "Unicode-3.0", "BSD-3-Clause"]
+confidence-threshold = 0.9
+
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+allow-wildcard-paths = true
+skip = [{ crate = "syn@2", reason = "build-time only: curve25519-dalek-derive and strum_macros are on syn 2, the rest on 3" }]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

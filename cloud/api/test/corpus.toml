@@ -1,0 +1,4 @@
+# the stand-in corpus (corpus.js) for cloud/api/test/run.sh, under the corpus Worker's own name
+name = "taochronos-corpus"
+main = "corpus.js"
+compatibility_date = "2025-09-01"

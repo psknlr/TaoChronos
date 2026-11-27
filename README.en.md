@@ -692,6 +692,14 @@ sources' licences) are not published with the site: they reach it through the se
 for 道乃久 to analyse ([your own data](docs/mydata.md), [ADR 0022](docs/adr/0022-the-users-own-data.md)): it is made
 anonymous as it is read, never sent to the site's servers, and a conversation touching it is never recorded.
 
+**Developer API and account console** ([ADR 0038](docs/adr/0038-accounts-keys-and-credits.md); two Cloudflare Workers
+written in Rust, `rust/platform/`): `api.impf.ai` serves the full corpus's evidence search (`POST /v1/evidence/search`)
+and citation verification (`POST /v1/citations/verify`) to API keys, with an organisation's credits reserved before a
+call, settled after it, charged only when the tool ran, and idempotent retries ([cloud/api/README.md](cloud/api/README.md));
+`console.impf.ai` registers with an emailed code, signs in with passkeys, keeps recovery codes and sessions, and makes
+and revokes an organisation's keys ([cloud/console/SETUP.md](cloud/console/SETUP.md)).  Codes are derived, never
+stored; sessions, grants and keys are kept as digests only.
+
 ## 8. Evaluation and quality
 
 `taochronos eval` runs on the demo corpus; with the corpus store, the deep-discovery and task-specification suites also check the real corpus and the research-value layer runs blind on it (~18 min for all suites once the caches are built, ~11 of them research value). The gold sets were built by the authors for the demo corpus and used
@@ -816,6 +824,8 @@ src/taochronos/            protocol/ kernel/ capabilities/ science/ verification
                            deep discovery: stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            task specification: punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  computational collation: anchored alignment · variant units · variant impact · stemma and contamination · TEI
+rust/platform/             the developer API and the account console (Rust, workers-rs): core (identity, passkeys, keys, credits), api (api.impf.ai), console (console.impf.ai)
+cloud/api/ cloud/console/  their deployment configuration, end-to-end tests and documentation
 tests/                     349 tests (fixtures/: source format samples and the study corpus; web_mock.py: scripted model providers for the web client)
 docs/                      study, task specification, architecture, agents, discovery, evaluation, data, ADRs, roadmap
 ```

@@ -21,6 +21,7 @@ assets:
     - web                       # the client: a browser cannot run what it is not sent
     - corpus/web                # the 要籍语料: public-domain texts in openly licensed transcriptions (its ATTRIBUTION.md)
     - corpus/demo               # the demonstration corpus
+    - rust/platform/console/public  # the account console's page: what a browser runs of console.impf.ai (its Worker serves it)
   restricted:
     - src                       # the package: only the modules the browser can import are published (site.package)
     - profiles                  # only the browser's profiles are published (site.home)

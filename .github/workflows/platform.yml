@@ -1,0 +1,110 @@
+name: platform
+
+# 道乃久开发者接口与账户控制台 — rust/platform's two Workers, in Rust: the developer API (cloud/api: api.impf.ai) and the
+# account console (cloud/console: console.impf.ai) — docs/adr/0038-accounts-keys-and-credits.md.  Built with every tool
+# pinned (rust/platform/build.sh: worker-build and wasm-bindgen from crates.io by their lockfiles, esbuild from
+# wrangler's), the API run as built against a stand-in corpus (cloud/api/test/run.sh), then each deployed only once the
+# owner has set what it needs (cloud/api/README.md, cloud/console/SETUP.md):
+#   the API      repository variable API_ADMIN_TOKEN_SHA256 — the sha256 of the owner's token for /admin/…; the token
+#                itself is kept nowhere (as STORE_TOKEN_SHA256 is)
+#   the console  repository secret ACCOUNT_SECRET (32+ characters), after the API (it binds its Account class);
+#                optional: variables CONSOLE_REGISTRATION ("open"), CONSOLE_TRIAL_CREDITS, TURNSTILE_SITE_KEY with the
+#                secret TURNSTILE_SECRET
+# and the repository secrets every deployment needs: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.  Until they are set,
+# this workflow builds and tests, and deploys nothing.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "rust/platform/**"
+      - "rust/rust-toolchain.toml"
+      - "cloud/api/**"
+      - "cloud/console/**"
+      - ".github/workflows/platform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: The pinned toolchain
+        working-directory: rust
+        run: rustup toolchain install --no-self-update
+      - name: The core's tests (identity, passkeys, keys, credits)
+        working-directory: rust/platform
+        run: cargo test --locked -p tao-platform
+      # wrangler, and the esbuild worker-build bundles with, exactly as each lockfile has them; no install script runs
+      - name: Install wrangler from the lockfiles
+        run: |
+          (cd cloud/api && npm ci --ignore-scripts --no-audit --no-fund)
+          (cd cloud/console && npm ci --ignore-scripts --no-audit --no-fund)
+      - name: Install worker-build and wasm-bindgen, pinned (crates.io, --locked)
+        run: rust/platform/build.sh --install
+      - name: Build both Workers
+        run: rust/platform/build.sh api && rust/platform/build.sh console
+      - name: The developer API as built, end to end, against a stand-in corpus (local workerd)
+        run: cloud/api/test/run.sh
+      - name: What may be deployed?
+        id: ready
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_SHA: ${{ vars.API_ADMIN_TOKEN_SHA256 }}
+          ACCOUNT_SECRET: ${{ secrets.ACCOUNT_SECRET }}
+        run: |
+          api=0; console=0
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::warning::nothing is deployed until CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set"
+          elif [ -z "$ADMIN_SHA" ]; then
+            echo "::warning::the API is not deployed until the variable API_ADMIN_TOKEN_SHA256 is set (cloud/api/README.md)"
+          else
+            api=1
+            secret="$(printf '%s' "$ACCOUNT_SECRET" | tr -d '[:space:]')"
+            if [ "${#secret}" -ge 32 ]; then console=1
+            else echo "::warning::the console is not deployed until the secret ACCOUNT_SECRET (32+ characters) is set (cloud/console/SETUP.md)"; fi
+          fi
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "console=$console" >> "$GITHUB_OUTPUT"
+      - name: Deploy the developer API (api.impf.ai)
+        if: steps.ready.outputs.api == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          API_ADMIN_TOKEN_SHA256: ${{ vars.API_ADMIN_TOKEN_SHA256 }}
+          WRANGLER_SEND_METRICS: "false"
+        run: bash cloud/api/deploy.sh
+      - name: Deploy the account console (console.impf.ai), then give it its secrets
+        if: steps.ready.outputs.console == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_SECRET: ${{ secrets.ACCOUNT_SECRET }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          CONSOLE_REGISTRATION: ${{ vars.CONSOLE_REGISTRATION }}
+          CONSOLE_TRIAL_CREDITS: ${{ vars.CONSOLE_TRIAL_CREDITS }}
+          WRANGLER_SEND_METRICS: "false"
+        run: bash cloud/console/deploy.sh
+      - name: Check what was deployed answers
+        if: steps.ready.outputs.api == '1'
+        env:
+          CONSOLE: ${{ steps.ready.outputs.console }}
+        run: |
+          for i in 1 2 3 4 5 6; do curl -fsS -A "taochronos-deploy/1" https://api.impf.ai/v1 && break; sleep 10; done
+          echo
+          if [ "$CONSOLE" = "1" ]; then
+            for i in 1 2 3 4 5 6; do curl -fsS -A "taochronos-deploy/1" https://console.impf.ai/auth/config && break; sleep 10; done
+          fi

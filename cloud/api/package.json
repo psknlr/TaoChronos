@@ -1,0 +1,12 @@
+{
+  "name": "taochronos-api",
+  "private": true,
+  "type": "module",
+  "description": "道乃久开发者接口: api.impf.ai, a Worker in Rust (rust/platform/api; see README.md)",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.153.0"
+  }
+}

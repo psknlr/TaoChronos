@@ -14,7 +14,7 @@ updates:
 
   # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26)
   - package-ecosystem: npm
-    directories: ["/relay", "/cloud/site", "/cloud/corpus"]
+    directories: ["/relay", "/cloud/site", "/cloud/corpus", "/cloud/api", "/cloud/console"]
     schedule:
       interval: weekly
     groups:
@@ -55,4 +55,14 @@ updates:
       interval: weekly
     groups:
       crates:
+        patterns: ["*"]
+
+  # the platform's Workers in Rust (rust/platform/Cargo.lock: workers-rs, the curves, serde) — apart from TaoCore's, as
+  # their workspaces are; wasm-bindgen moves with the CLI rust/platform/build.sh pins (it says so if they part)
+  - package-ecosystem: cargo
+    directory: /rust/platform
+    schedule:
+      interval: weekly
+    groups:
+      platform:
         patterns: ["*"]

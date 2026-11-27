@@ -594,6 +594,12 @@ Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本�
 用户可上传自己的资料请道乃久分析（[我的资料](docs/mydata.md)、[ADR 0022](docs/adr/0022-the-users-own-data.md)）：资料读取时即脱敏，
 不发送到网站的服务器，涉及资料的对话不发送记录。
 
+**开发者接口与账户控制台**（[ADR 0038](docs/adr/0038-accounts-keys-and-credits.md)；以 Rust 编写的两个 Cloudflare Worker，`rust/platform/`）：
+`api.impf.ai` 以 API 密钥提供全量语料的证据检索（`POST /v1/evidence/search`）与引文核验（`POST /v1/citations/verify`），
+按组织计额度、先预留后结算、只在工具确实运行时扣费，支持幂等重试（[cloud/api/README.md](cloud/api/README.md)）；
+`console.impf.ai` 以邮箱验证码注册、通行密钥（passkey）登录、恢复码、会话管理，并创建与撤销组织的 API 密钥
+（[cloud/console/SETUP.md](cloud/console/SETUP.md)）。验证码由密钥派生、不存储；会话、令牌、密钥都只存摘要。
+
 ## 八、评测与质量保证
 
 `taochronos eval` 在演示语料上运行；有全量语料库时，深层发现 2.0 与任务规格的套件同时在真实语料上核查，研究价值层在全量语料上盲测（缓存建好后全部套件约 18 分钟，其中研究价值约 11 分钟）。金标准由作者为演示语料构建并在开发中使用，**只作回归测试，不是无偏基准**
@@ -708,6 +714,8 @@ src/taochronos/            protocol/ kernel/ capabilities/ science/ verification
                            深层发现：stemma · intertext · stratigraphy · cases · argument · senses · fragments
                            任务规格：punctuation · clause · glosses · commentary · disputes · pairs · schools · names · chain · schemas
   plugins/classics/collation/  计算校勘：锚点对齐 · 异文单元 · 异文分级 · 谱系与污染 · TEI
+rust/platform/             开发者接口与账户控制台（Rust · workers-rs）：core 身份、通行密钥、密钥与额度；api（api.impf.ai）；console（console.impf.ai）
+cloud/api/ cloud/console/  两者的部署配置、端到端测试与文档
 tests/                     349 个测试（fixtures/ 含各来源格式样例与治学合成语料；web_mock.py 为网页端的模拟模型服务）
 docs/                      治学、任务规格、架构、智能体、发现、评测、数据、ADR、路线图
 ```
