@@ -85,7 +85,10 @@ and its report no longer names a folder of the server's disk.
 * A call within the limits behaves as before: the same results (the searches' result hashes on the full corpus are
   compared before and after each deployment), the same schemas shown to a model.
 * A call outside them fails where it used to work slowly: a search for more than 100 hits, a text of more than 20,000
-  characters, a list of more than 60. The command line calls the study functions themselves and is not bounded.
+  characters, a list of more than 60. The command line is not bounded: its study commands call the study functions
+  themselves, and where it calls a tool (`taochronos search -k 300`) it does so under the kernel's own identity, which
+  is asked for the right types and no more — the machine and the time are the caller's own, and no agent, tool or
+  plugin can take that identity (governance: `privileged_identity`).
 * Measured after, every tool at the limits of each of its arguments in turn (1,941 calls over 90 tools on the
   demonstration corpus, the same on the 要籍语料 as a store of 168,278 passages): the slowest call took 1.05 s on the
   first and 14 s on the second, and that one is a tool's own work with its default arguments (a taboo survey of every

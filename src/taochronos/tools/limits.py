@@ -64,6 +64,8 @@ BY_NAME: dict[str, dict[str, Any]] = {
     "tokens": {"maxItems": 5000},
     # the terms the schools are compared on: each is a reading of the corpus
     "probes": {"maxItems": 12, "items": {"maxLength": 200}},
+    # the columns of one's own table, by name: as many as a table may have (userdata.formats.MAX_COLUMNS)
+    "columns": {"maxItems": 200, "items": {"maxLength": 200}},
 }
 
 # where a tool uses a name otherwise

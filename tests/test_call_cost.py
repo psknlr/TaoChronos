@@ -81,6 +81,10 @@ def test_every_argument_of_every_tool_has_a_limit_and_a_model_is_shown_none(rt):
                     assert limit["items"]["maxLength"] <= TEXT_CHARS, (spec.name, name)
         assert not any(w in json.dumps(spec.input_schema) for w in LIMIT_WORDS), spec.name  # the schema itself is as it was
     assert seen > 300
+    # a table of one's own may have 200 columns, and a call may name them all
+    from taochronos.plugins.userdata.formats import MAX_COLUMNS
+
+    assert rt.h.tools.get("mydata.read").limits["columns"]["maxItems"] == MAX_COLUMNS == rt.h.tools.get("mydata.describe").limits["columns"]["maxItems"]
     for name in ("taochronos_research", "taochronos_ask", "taochronos_session", "taochronos_catalog", "taochronos_call"):
         props = rt._schema(name)["properties"]
         assert all(any(w in p for w in LIMIT_WORDS) for k, p in props.items() if "enum" not in p and _kinds(p) != ["object"]), name
@@ -134,6 +138,14 @@ def test_a_call_beyond_its_limits_is_refused_before_the_tool_runs(rt, within):
     assert not direct.ok and "> maximum 999" in direct.error
     with pytest.raises(Exception, match="maxLength"):
         rt.research_arguments({"question": "消" * (TEXT_CHARS + 1)})
+    # …but the person at the command line, whose machine and time it is (taochronos search -k 300): the kernel's own
+    # identity, which no agent, tool or plugin can take, is asked for the right types and no more
+    from taochronos.kernel.policy import Actor
+
+    own = rt.h.scheduler.execute(ToolCall("classics.search", {"query": "桂枝汤", "k": 300}), actor=Actor.kernel())
+    assert own.ok and own.result["hits"]
+    assert not rt.h.scheduler.execute(ToolCall("classics.search", {"query": "桂枝汤", "k": "300"}), actor=Actor.kernel()).ok
+    assert not rt.h.scheduler.execute(ToolCall("classics.search", {"query": "桂枝汤", "k": 300}), actor=rt.actor).ok
     # within them, as before — a tool's own calls of another too (the statistician ranks among the first 5000)
     assert rt.call("analysis.concept_drift", {"term": "消渴", "permutations": 999, "seed": 3})["ok"]
     assert rt.call("analysis.link_prediction", {"k": 5000})["ok"]

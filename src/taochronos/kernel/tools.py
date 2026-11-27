@@ -388,7 +388,10 @@ class ToolScheduler:
                 reason = f"{actor.id} lacks permission '{permission}' for the argument '{argument}' of tool {spec.name}"
                 emit(EventType.TOOL_DENIED, {"tool": spec.name, "reason": reason})
                 return ToolOutcome(call_id, spec.name, False, error=reason)
-        errors = validate(arguments, spec.checked)
+        # how large an argument may be is asked of every caller but the kernel's own identity — the person at the
+        # command line (taochronos search -k 500), whose machine and whose time it is, and which no agent, tool or
+        # plugin can take (governance: privileged_identity)
+        errors = validate(arguments, spec.input_schema if actor.principal == "kernel" else spec.checked)
         if errors:
             return ToolOutcome(call_id, spec.name, False, error="invalid arguments: " + "; ".join(errors[:5]))
 
