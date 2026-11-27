@@ -27,6 +27,12 @@ if ! [[ "$name" =~ ^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$ ]]; then
   echo "::error::ACTIVITY_DB_NAME is not a D1 database name ($name): deployed without the activity ledger"
   exit 0
 fi
+# the full corpus's D1 backup owns the names taochronos-d1-<k>: its import deletes and remakes them with a new store
+# (taochronos.chat.d1 reset), and the site binds each as a backup database.  The ledger's registry is never one of them
+if [[ "$name" == taochronos-d1-* ]]; then
+  echo "::error::ACTIVITY_DB_NAME ($name) begins as the D1 backup's databases do (taochronos-d1-…): choose another name. Deployed without the activity ledger"
+  exit 0
+fi
 api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database"
 call() { curl -A "${UA:-taochronos-deploy/1}" -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$@"; }
 # the database's id, by its exact name (the API's search is by part of a name)

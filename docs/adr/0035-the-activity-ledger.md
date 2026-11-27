@@ -193,9 +193,13 @@ what the site says of itself:
   opened.  The older numbers stay as they were written.
 * A visitor finds a new field under 设置 → 数据 (访问统计: the switch, their id, the deletion) and a sentence more in 关于
   — once the site has a ledger, and not before — and no count of anyone's, their own included.
-* Cost, on Workers Paid: one object request for the events of two seconds of an instance and one a drain; D1 rows
-  written per event and read per sum (thousands a day at this site's size, against 25 billion read and 50 million
-  written a month included); with the archive, an object an hour a Worker.
+* Cost, on Workers Paid: one object request for the events of two seconds of an instance and one a drain; in D1,
+  measured, some 15 rows read and 5 written for an event as it is applied, and the day's sums made again hourly by
+  each Worker — the day's events read some seven times over each time (they were made again every five minutes at
+  first: 2 to 23 million rows read a day at 50 to 300 visitors).  At 300 visitors a day (5,900 events) that is some
+  2 million rows read and 40,000 written a day, against 25 billion read and 50 million written a month included.
+  On the Free plan's 5 million rows read and 100,000 written a day, shared with the D1 backup's import, it would be a
+  large part of the day: the ledger is for Workers Paid.  With the archive, an object an hour a Worker.
 * **For the owner, to switch it on**:
   1. Create the repository secret **`ACTIVITY_KEY`** (`openssl rand -hex 32`).  It must stay what it is: with another
      key every browser is a new visitor, and the ledger's history breaks there.

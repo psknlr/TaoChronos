@@ -76,11 +76,11 @@ export class Limiter extends DurableObject {
     await this.ledgerDrain.arm(now);
   }
 
-  /** A conversation record taken in for a turn (POST /v1/logs). */
-  async recorded(act, key, info) {
+  /** A conversation record taken in for a turn (POST /v1/logs); counted: of the default service's own turn. */
+  async recorded(act, key, info, counted = false) {
     if (!this.ledgerDrain.on) return;
     const now = Date.now();
-    turnRecorded(this.ledger, act, key, info, now, this.ledgerConfig);
+    turnRecorded(this.ledger, act, key, info, now, this.ledgerConfig, counted);
     await this.ledgerDrain.arm(now);
   }
 
@@ -211,7 +211,7 @@ export default {
       ledger: {
         settle: (outcome) => limiter().settle(outcome),
         finished: (act, key, info) => limiter().finished(act, key, info),
-        recorded: (act, key, info) => limiter().recorded(act, key, info),
+        recorded: (act, key, info, counted) => limiter().recorded(act, key, info, counted),
         logged: (act) => limiter().logged(act),
         health: () => limiter().ledgerHealth(),
       },

@@ -47,6 +47,14 @@ from typing import Any, Callable, Iterator
 
 SCHEMA = 1
 PREFIX = "taochronos-d1"  # the databases: taochronos-d1-0, -1, …; bound to the site's Worker as D1_0, D1_1, …
+
+
+def backup_number(name: str) -> int | None:
+    """Which of the backup's databases a D1 database of the account is, by its name — taochronos-d1-<k> — or None: not
+    one of them, whatever its name begins with (a database another part of the site named taochronos-d1-… is not the
+    backup's to bind, and above all not its to delete)."""
+    head, _, k = name.rpartition("-")
+    return int(k) if head == PREFIX and k.isascii() and k.isdigit() else None
 MAX_SQL_BYTES = 100_000  # D1: a statement's SQL (here: its SQL and its values together, to be safe)
 MAX_PARAMS = 100  # D1: bound parameters per statement
 STATEMENT_BYTES = 90_000  # what a statement is filled to (a margin under MAX_SQL_BYTES)
@@ -753,7 +761,7 @@ class ApiTarget:
         """A new store: the old databases are deleted and made anew (deleting writes no rows; the site is deployed again
         with the new databases' ids)."""
         for name, uuid in self.databases().items():
-            if name.startswith(f"{PREFIX}-"):
+            if backup_number(name) is not None:
                 self._request("DELETE", f"/d1/database/{uuid}")
                 self.log(f"deleted D1 database {name}")
         self.ids.clear()
@@ -1011,7 +1019,7 @@ def _target(args: Any, databases: int | None) -> Any:
         target = ApiTarget(account, token, log=lambda m: print(m, flush=True))
         if databases is None:  # the databases that are there
             have = target.databases()
-            target.ids = {int(n.rsplit("-", 1)[1]): u for n, u in have.items() if n.startswith(f"{PREFIX}-") and n.rsplit("-", 1)[1].isdigit()}
+            target.ids = {backup_number(n): u for n, u in have.items() if backup_number(n) is not None}
         else:
             target.ensure(databases)
         return target

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -319,6 +320,32 @@ class FakeCloudflare:
             con.close()
 
 
+def test_the_backups_databases_are_its_numbered_ones_and_the_ledgers_registry_never_one(tmp_path):
+    """The backup owns the names taochronos-d1-<k>: its import deletes and remakes them with a new store, and the site's
+    deployment binds each as a backup database.  A database named in that style for something else is neither bound as
+    one (cloud/site/deploy.sh) nor may the activity ledger's registry be named so (security/bind-ledger.sh refuses it
+    before it asks Cloudflare anything): it was bound twice, and deleted at the next reset with all it held."""
+    deploy = (ROOT / "cloud" / "site" / "deploy.sh").read_text(encoding="utf-8")
+    assert 're.fullmatch(r"taochronos-d1-[0-9]+", d["name"])' in deploy and '.startswith("taochronos-d1-")' not in deploy
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("bash is not installed")
+    tools = tmp_path / "bin"
+    tools.mkdir()
+    (tools / "curl").write_text(f"#!/bin/sh\necho called >> {tmp_path / 'curl.log'}\nexit 22\n", encoding="utf-8")
+    (tools / "curl").chmod(0o755)
+    config = tmp_path / "wrangler.deploy.toml"
+    for name, refused in (("taochronos-d1-activity", True), ("taochronos-d1-7", True), ("taochronos-activity", False)):
+        config.write_text('name = "x"\n', encoding="utf-8")
+        (tmp_path / "curl.log").unlink(missing_ok=True)
+        env = {**os.environ, "PATH": f"{tools}{os.pathsep}{os.environ['PATH']}", "ACTIVITY_KEY": "k" * 40, "ACTIVITY_DB_NAME": name,
+               "CLOUDFLARE_API_TOKEN": "none", "CLOUDFLARE_ACCOUNT_ID": "none"}
+        run = subprocess.run([bash, str(ROOT / "security" / "bind-ledger.sh"), str(config)], env=env, capture_output=True, text=True, timeout=30)
+        assert run.returncode == 0 and config.read_text(encoding="utf-8") == 'name = "x"\n', run.stdout  # (the stand-in curl: no D1 either)
+        assert ("::error::ACTIVITY_DB_NAME" in run.stdout) is refused, run.stdout
+        assert (tmp_path / "curl.log").exists() is not refused  # refused before Cloudflare is asked anything
+
+
 def test_the_import_speaks_d1s_rest_api(site_store, tmp_path, monkeypatch):
     """ApiTarget (the daily job's way to D1) against the stand-in: the databases found by name across the account's
     pages and made where missing, near the site's readers; a statement a /query with its parameters; the rows written
@@ -368,11 +395,18 @@ def test_the_import_speaks_d1s_rest_api(site_store, tmp_path, monkeypatch):
         with pytest.raises(TargetError, match="no such table") as bad:
             api.query(0, "SELECT * FROM missing")
         assert not bad.value.transient and not bad.value.exhausted
-        # another store: the backup's databases made anew, the account's others untouched
+        # another store: the backup's databases made anew, the account's others untouched — one named in the backup's
+        # style for something else too (the activity ledger's registry, were it named so, was deleted with them)
+        for other in ("taochronos-d1-activity", "taochronos-d1-", "taochronos-d1-1x", "my-taochronos-d1-0"):
+            fake._create(other)
+        assert [d1.backup_number(n) for n in ("taochronos-d1-0", "taochronos-d1-12", "taochronos-d1-activity", "taochronos-d1-", "taochronos-d1-1x",
+                                              "my-taochronos-d1-0", "taochronos-activity")] == [0, 12, None, None, None, None, None]
         before = dict(api.ids)
         api.reset(plan.databases)
         assert sorted(api.ids) == sorted(before) and not set(api.ids.values()) & set(before.values())
         assert sum(1 for n, _ in fake.dbs.values() if n.startswith("another-app-")) == 120
+        assert {n for n, _ in fake.dbs.values() if "taochronos-d1-" in n} == {
+            "taochronos-d1-activity", "taochronos-d1-", "taochronos-d1-1x", "my-taochronos-d1-0", *(f"taochronos-d1-{k}" for k in before)}
         assert status(api, 0) == {}
     finally:
         fake.close()

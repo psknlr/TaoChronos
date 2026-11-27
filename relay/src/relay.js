@@ -1242,9 +1242,11 @@ export function normalizeFeedback(r) {
 async function submit(request, cfg, cors, allowed, deps, s, A) {
   return intake(request, cfg, cors, allowed, deps, s, A, {
     route: "logs", kind: "log", on: cfg.logs, limits: cfg.log, normalize: normalizeRecord, what: "记录",
-    // to the ledger: the turn is archived — and, where the ledger never heard of the turn, counted (ledger.js: recorded).
-    // Told by a keyed digest of the turn's id; the record itself goes to the book, and nothing of it but counts here
-    kept: async (record, model, act) => deps.ledger.recorded(act, await turnKey(record.id, A.lcfg.key), recordInfo(record, model)),
+    // to the ledger: the turn is archived — and, where the ledger never heard of the turn, counted (ledger.js: recorded),
+    // unless it is the default service's own: its question was counted here with its first call, whatever it was known
+    // by.  Told by a keyed digest of the turn's id; the record itself goes to the book, and nothing of it but counts here
+    kept: async (record, model, act) => deps.ledger.recorded(act, await turnKey(record.id, A.lcfg.key), recordInfo(record, model),
+      record.provider === RELAY_PROVIDER),
     off: ["对话记录已关闭", "logs_off"], full: "对话记录暂存已满，这条记录未保存",
     // a record of the default service's own conversation comes from a visitor it answered today; a record of a
     // conversation held with the visitor's own key (another provider) never passed through here, and is taken on its

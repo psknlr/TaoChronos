@@ -298,19 +298,22 @@ export class LedgerCore {
   /**
    * A conversation record the relay took in for a turn: the turn is archived.  A record of a turn the ledger never
    * heard of (a page older than this, asking its own model) is the evidence of its question: counted now (basis:
-   * record), with what the record says of it in counts — never its words.
+   * record), with what the record says of it in counts — never its words.  `counted`: the record is of the default
+   * service's own turn, whose calls the relay let through and whose question it counted with the first — by the
+   * turn's name or, from a page that named none (a tab left open since before the relay knew names), by what was
+   * asked.  A turn not known by this key is then no question more: it was counted once, and would be twice.
    */
-  recorded(base, key, info, now, { turnMs, offset = 8, keep = 0 }) {
+  recorded(base, key, info, now, { turnMs, offset = 8, keep = 0, counted = false }) {
     const turn = this.turn(key, now, turnMs);
     const events = [];
-    if (!turn.asked) {
+    if (!turn.asked && !counted) {
       events.push({ ...base, event_id: `evt_${ulid(now)}`, event_type: "question_submitted", turn_id: turn.turn_id, basis: "record", named: true,
         provider: info.provider ?? null, model: info.model ?? null });
     }
     if (!turn.archived) events.push(update("record_archived", this.source, now, offset, { turn_id: turn.turn_id, ...info }));
     this.sql.exec("UPDATE ledger_turns SET asked = 1, archived = 1 WHERE key = ?", key);
     this.append(events, now, keep);
-    return { turn_id: turn.turn_id, question: !turn.asked, archived: !turn.archived };
+    return { turn_id: turn.turn_id, question: !turn.asked && !counted, archived: !turn.archived };
   }
 
   // ---- reading
@@ -356,7 +359,10 @@ const D1_BATCH = 400;      // events a statement set: a few hundred kilobytes of
 const D1_ROUNDS = 10;      // batches a run at most: the rest a second later
 const PART = 5000;         // events an archive object at most: a busier hour is written in parts
 const GRACE = 90000;       // an hour is written this long after it ended
-const ROLLUP_MS = 300000;  // the days' sums are made again at most this often by a drain (the stats ask for them too)
+// The days' sums are made again at most this often by a drain: hourly.  Making them reads the day's events some seven
+// times over, and every five minutes — as this was — came to 2 to 23 million D1 rows read a day at 50 to 300 visitors,
+// for sums nobody reads between the hours: whoever asks for the stats has them made at that moment (ledger-d1.js)
+const ROLLUP_MS = 3600000;
 
 /**
  * What a Durable Object does to empty its outbox: arm() after it writes (the object's alarm a moment later; the

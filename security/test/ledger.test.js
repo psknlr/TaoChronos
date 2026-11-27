@@ -425,14 +425,17 @@ test("the outbox is drained into the registry a moment after it is written, and 
   assert.equal(core.waiting(), 0);
   assert.equal(db.rows("SELECT COUNT(*) AS n FROM visitors")[0].n, 2);
   assert.deepEqual(metric(db, "2026-11-25", "active"), [["", "", 2]]); // the day's sums were made with it
-  // more within five minutes: applied, and the sums asked for when they are due
+  // more within the hour: applied, and the sums asked for when they are due (an hour after they were last made: making
+  // them reads the whole day's events, and whoever reads the stats has them made at that moment)
   core.append([pageView(V(3), T0 + 60000)], T0 + 60000);
   const again = await drain.run(T0 + 80000);
-  assert.deepEqual([again.applied, again.next], [1, T0 + 21000 + 300000]);
+  assert.deepEqual([again.applied, again.next], [1, T0 + 21000 + 3600000]);
   assert.deepEqual(metric(db, "2026-11-25", "active"), [["", "", 2]]);
-  await drain.run(T0 + 21000 + 300000);
+  await drain.run(T0 + 21000 + 300000); // not yet
+  assert.deepEqual(metric(db, "2026-11-25", "active"), [["", "", 2]]);
+  await drain.run(T0 + 21000 + 3600000);
   assert.deepEqual(metric(db, "2026-11-25", "active"), [["", "", 3]]);
-  const h = core.health(T0 + 400000);
+  const h = core.health(T0 + 21000 + 3600000 + 1000);
   assert.deepEqual([h.waiting, h.appended, h.d1_seq, h.d1_failures ?? 0], [0, 3, 3, 0]);
 });
 

@@ -375,8 +375,13 @@ data/security-logs/
 1. 仓库 Secret **`ACTIVITY_KEY`**：`openssl rand -hex 32`（Settings → Secrets and variables → Actions → Secrets）。**设了就不要再改**：
    换了密钥，每个浏览器都成了新访客，历史从那里断开。
 2. 部署令牌 `CLOUDFLARE_API_TOKEN` 要有 Account · D1 · Edit（用着 D1 备份的话已经有了）。运行 **relay** 与 **site** 两个工作流（或推送到 main）：
-   各自找到或创建 D1 数据库 `taochronos-activity`（`bind-ledger.sh`；仓库变量 `ACTIVITY_DB_NAME` 可改名），绑定为 `ACTIVITY_DB`，再把密钥写进 Worker。
+   各自找到或创建 D1 数据库 `taochronos-activity`（`bind-ledger.sh`；仓库变量 `ACTIVITY_DB_NAME` 可改名——但不能以 `taochronos-d1-` 开头：
+   那是 D1 备份的库名，备份换数据时会把它们整批删掉重建，脚本遇到这样的名字会报错并不绑定），绑定为 `ACTIVITY_DB`，再把密钥写进 Worker。
    表在第一次写入时自己建。
+   **账本是按 Workers Paid 的额度设计的**（[ADR 0023](../docs/adr/0023-workers-paid.md)）。实测的 D1 用量：每条事件写入时约读 15 行、写 5 行；
+   每日合计每小时由每个 Worker 重算一次（读统计接口时也会重算），每次把当天的事件读约七遍。一天 300 位访客（约 5900 条事件）合计约读 200 万行、
+   写 4 万行——Workers Paid 每月含 250 亿行读、5000 万行写，占不到百分之三；免费计划一天只有 500 万行读、10 万行写，还要与 D1 备份的导入共用，
+   会占去一大块：**没有 Workers Paid 就不要开账本**。
 3. 运行 **security** 工作流（`plan`，再 `apply`）：第 3 条规则现在也管 `POST /v1/activity` 的来源。
 4. （可选）仓库变量 `ARCHIVE_BUCKET`：绑定了归档存储桶的 Worker 也把账本的事件存进去（`activity-logs/…`）。注意这是同一个开关——
    对话记录与哨兵事件也会从此存进桶而不再进仓库（[ADR 0023](../docs/adr/0023-workers-paid.md)）。保留多久由桶的生命周期规则定，没有人替你设；建议 400 天。

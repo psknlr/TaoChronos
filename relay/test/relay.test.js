@@ -68,7 +68,7 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     ledger: {
       settle: async (outcome) => ledger.settle(outcome, now(), { offset: 8, keep: lcfg.keep }),
       finished: async (act, key, info) => turnFinished(ledger, act, key, info, now(), lcfg),
-      recorded: async (act, key, info) => turnRecorded(ledger, act, key, info, now(), lcfg),
+      recorded: async (act, key, info, counted) => turnRecorded(ledger, act, key, info, now(), lcfg, counted),
       logged: async (act) => ledgerLogged(ledger, { ...act, ledger: true }, now()),
       health: async () => ledger.health(now()),
     },
@@ -1579,6 +1579,26 @@ test("a record taken in archives its turn in the ledger, and says nothing of who
   // the book has the record whole, as before; nothing in the book says which visitor
   assert.equal(r.book.records(0, 10).items.length, 3);
   assert.ok(!JSON.stringify(r.book.records(0, 10)).includes(visitorOf(3)));
+}));
+
+test("a record of the default service's own turn is never a question more: the relay counted it when it answered", () => quiet(async () => {
+  // a tab left open since before the relay knew turns by name asks without X-Tao-Turn: the question is counted by what
+  // was asked.  Its record then names the turn — a name the ledger never heard — and was counted as a second question,
+  // with its tokens a second time.  And a record that comes after the relay has forgotten the turn (ACTIVITY_TURN_DAYS)
+  const r = withLedger({ upstream: () => usageStream() });
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK))).text();
+  assert.equal((await r.call("/v1/logs", post({ ...turn, id: "m_unnamed" }))).status, 204);
+  await r.settle();
+  const db = await r.registry();
+  const s = await ledgerStats(db, { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([s.totals.questions, s.totals.model_calls_relay, s.questions.by_basis], [1, 1, [["relay", 1]]]);
+  assert.deepEqual(db.rows("SELECT basis FROM question_events"), [{ basis: "relay" }]); // one row: its tokens once
+  assert.equal(r.book.records(0, 10).items.length, 1); // the record itself is kept as ever
+  // a record of a conversation held with the visitor's own model is still the only word of its question
+  assert.equal((await r.call("/v1/logs", post({ ...turn, id: "m_theirs", provider: "deepseek" }))).status, 204);
+  await r.settle();
+  const again = await ledgerStats(await r.registry(), { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([again.totals.questions, [...again.questions.by_basis].sort()], [2, [["record", 1], ["relay", 1]]]);
 }));
 
 test("a turn's end as the page tells it: a question asked of one's own model is counted, in counts and never in words", () => quiet(async () => {

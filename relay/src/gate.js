@@ -87,6 +87,6 @@ export function turnFinished(ledger, act, key, info, now, cfg) {
   return ledger.finished(eventOf(act, act.w || null, now), key, info, now, { turnMs: cfg.turnDays * 86400000, offset: act.offset ?? 8, keep: cfg.keep });
 }
 
-export function turnRecorded(ledger, act, key, info, now, cfg) {
-  return ledger.recorded(eventOf(act, act.w || null, now), key, info, now, { turnMs: cfg.turnDays * 86400000, offset: act.offset ?? 8, keep: cfg.keep });
+export function turnRecorded(ledger, act, key, info, now, cfg, counted = false) {
+  return ledger.recorded(eventOf(act, act.w || null, now), key, info, now, { turnMs: cfg.turnDays * 86400000, offset: act.offset ?? 8, keep: cfg.keep, counted });
 }

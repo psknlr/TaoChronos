@@ -62,7 +62,8 @@ fi
 # The Worker answers from them only when there is no container, and only while they hold that version.
 d1=""
 if listed=$(curl -A "$UA" -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null); then
-  d1=$(python3 -c 'import json,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if d["name"].startswith("taochronos-d1-")]' \
+  # (taochronos-d1-<number> alone: a database named in that style for something else — the ledger's, say — is not one)
+  d1=$(python3 -c 'import json,re,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if re.fullmatch(r"taochronos-d1-[0-9]+", d["name"])]' \
          <<< "$listed" || true)
 else
   echo "the D1 backup: the token may not use D1 (Account · D1 · Edit: cloud/SETUP.md, D1 备份), so none is bound"
