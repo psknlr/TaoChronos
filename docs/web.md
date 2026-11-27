@@ -103,15 +103,15 @@ excerpts.  Two steps choose them:
   questions it answers (`index_store(phase=…, limit=…)`, resumable).  The text of every book is there from the start; only
   the search of the later ones waits, a few seconds.  The page does not show it (the side panel's pill carries it as
   `data-indexing`, for scripts and tests).
-* **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
-  so that a half-kept store is never read; one tab keeps it at a time, and a kept store whose parts do not add up to its
-  size is not read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an http:// page too
-  (`taochronos serve` reached from another machine), so a later visit downloads and indexes nothing: Pyodide, then the
-  kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled once after the first
-  visit's indexing, from the package the manifest names and only from it), the YAML the runtime reads comes parsed with
-  the site (`home.zip`, `.cache/yaml`), and the store's counts come with the store.  An archive is kept only once its
-  SHA-256 is the manifest's: on an http:// page of another machine, where the browser computes none, the archives are
-  downloaded each visit, and TaoCore's module is not used.
+* **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written
+  last, so that a half-kept store is never read; one tab keeps it at a time, under a Web Lock where the browser gives
+  one, and a kept store whose parts do not add up to its size is not read), with the runtime archives.  IndexedDB,
+  unlike the Cache API, is there on an http:// page too (`taochronos serve` reached from another machine), so a later
+  visit downloads and indexes nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's
+  bytecode is kept too (compiled once after the first visit's indexing, from the package the manifest names and only
+  from it), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`), and the store's counts
+  come with the store.  An archive is kept only once its SHA-256 is the manifest's: on an http:// page of another
+  machine, where the browser computes none, the archives are downloaded each visit, and TaoCore's module is not used.
 * **Searches on a compiled kernel** — TaoCore ([ADR 0036](adr/0036-taocore.md), [`rust/`](../rust/README.md)): what a
   search computes over its candidates, BM25 of the query's tokens and the hashed n-gram cosines, runs in a WebAssembly
   module of no imports (`runtime/taocore.wasm`, 50 KB) that the worker fetches beside the archives, instantiates (in the

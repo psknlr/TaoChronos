@@ -676,6 +676,28 @@ test("without the ledger's key the site is what it was: no cookie, nothing writt
   }
 });
 
+test("a visitor who cannot be told is nobody: the page is served all the same", async () => {
+  // the ledger is never in an answer's way: were its key's signature to fail, the page is the page, without a cookie,
+  // and written down for no visitor
+  const { call, settle, events } = site({ watch: true, ledger: true, cf: CF, env: { ACTIVITY_KEY: "a-key-only-this-test-derives-0123456789abcdef" } });
+  const sign = crypto.subtle.sign;
+  crypto.subtle.sign = () => Promise.reject(new Error("no signature now"));
+  let res;
+  try {
+    res = await open(call);
+  } finally {
+    delete crypto.subtle.sign;
+  }
+  assert.equal(crypto.subtle.sign, sign);
+  assert.equal(res.status, 200);
+  assert.match(await res.text(), /道乃久/);
+  assert.equal(res.headers.get("Set-Cookie"), null);
+  await settle();
+  assert.deepEqual(events().map((e) => [e.event_type, e.route, e.status, e.visitor_id]), [["page_view", "/", 200, null]]);
+  // and the next page, once the signature is there again, is given its id
+  assert.match((await open(call)).headers.get("Set-Cookie"), /^__Host-tcv=/);
+});
+
 test("a page a browser opens is written down for a visitor: an id it is given, and is known by when it comes back", async () => {
   const { call, settle, events, advance, env } = site({ watch: true, ledger: true, cf: CF });
   const first = await open(call, { Referer: "https://www.baidu.com/s?wd=%E6%A1%82%E6%9E%9D%E6%B1%A4" });

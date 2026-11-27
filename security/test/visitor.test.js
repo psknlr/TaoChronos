@@ -141,3 +141,22 @@ test("a turn's key and a visitor's name for a day are keyed; without a key a tur
   assert.notEqual(d1, await dayAlias(v, "2026-11-26", KEY)); // another day, another name
   assert.ok(!d1.includes(v.slice(2, 12)));
 });
+
+test("a key that could not be derived is asked for again, not kept as a failure", async () => {
+  // the keys are derived once and kept (keyFor); one failure to derive must not be every later request's
+  const NEW = "a-key-no-other-test-has-derived-0123456789";
+  const sign = crypto.subtle.sign;
+  let failing = true;
+  crypto.subtle.sign = function (...args) { return failing ? Promise.reject(new Error("no signature now")) : sign.apply(this, args); };
+  try {
+    await assert.rejects(mint(NEW, T0), /no signature now/);
+    await assert.rejects(turnKey("m_abc123", NEW), /no signature now/);
+    failing = false;
+    const made = await mint(NEW, T0); // the same key, the same labels: asked for again, and made
+    assert.equal((await readCookie(`${COOKIE}=${made.value}`, NEW, T0)).visitor, made.visitor);
+    assert.match(await turnKey("m_abc123", NEW), /^t[0-9a-f]{32}$/);
+  } finally {
+    delete crypto.subtle.sign;
+  }
+  assert.equal(crypto.subtle.sign, sign);
+});

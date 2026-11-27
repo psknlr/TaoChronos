@@ -74,7 +74,10 @@ function keyFor(secret, label) {
   const at = `${secret}\n${label}`;
   if (!derived.has(at)) {
     if (derived.size > 64) derived.clear();
-    derived.set(at, (async () => hmacKey(await crypto.subtle.sign("HMAC", await hmacKey(encoder.encode(secret)), encoder.encode(`taochronos/ledger/v1/${label}`))))());
+    const made = (async () => hmacKey(await crypto.subtle.sign("HMAC", await hmacKey(encoder.encode(secret)), encoder.encode(`taochronos/ledger/v1/${label}`))))();
+    derived.set(at, made);
+    // one that could not be made is not kept: the next request asks again, where every one after it would have failed
+    made.catch(() => { if (derived.get(at) === made) derived.delete(at); });
   }
   return derived.get(at);
 }

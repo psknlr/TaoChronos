@@ -124,7 +124,13 @@ export async function handle(request, env, deps = {}) {
   const L = lcfg.on && env.ACTIVITY_DB && deps.watch?.activity
     ? { cfg: lcfg, db: env.ACTIVITY_DB, fp, now, deps, led: from, flagScore: scfg.flagScore, offset: usageConfig(env).offset, began: Date.now(), mark: null, who: null }
     : null;
-  if (L) L.identify = (mintable = false) => (L.who ||= identify(request, lcfg, now, { mintable }));
+  // (a visitor who cannot be told is nobody: the page or the call is answered all the same)
+  if (L) {
+    L.identify = (mintable = false) => (L.who ||= identify(request, lcfg, now, { mintable }).catch((err) => {
+      console.error("ledger", "identify", err?.name || "Error");
+      return { state: "none", visitor: null, cookie: null };
+    }));
+  }
   if (s) s.L = L;
   let response;
   try {
