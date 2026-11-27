@@ -34,7 +34,7 @@ from ..kernel.policy import Actor
 from ..kernel.store import MemoryEventStore
 from ..kernel.tools import ToolCall, closest_names, resolve_name
 from ..protocol.base import to_jsonable
-from ..protocol.schema import fit_arguments, signature
+from ..protocol.schema import fit_arguments, signature, whole
 from ..plugins.userdata.formats import ACCEPTED, MAX_BYTES, Unreadable
 from ..plugins.userdata.service import MyData
 from ..plugins.userdata.store import MAX_DATASETS
@@ -215,9 +215,13 @@ class ChatRuntime:
                     return {**self.call(inner, arguments.get("arguments") or {}, max_chars=max_chars), "via": "taochronos_call"}
                 name, arguments = inner, arguments.get("arguments") or {}
             tool = name if name in ENGINE_NAMES else self._resolve(name)
-            arguments, repaired, problem = fit_arguments(arguments if arguments is not None else {}, self._schema(tool), tool=tool)
+            # half a character in what the model wrote (a lone surrogate) is U+FFFD before anything reads it: the call
+            # ended on one where its id is made, and the model was told of an encoding error it could do nothing with
+            arguments, halves = whole(arguments if arguments is not None else {})
+            arguments, repaired, problem = fit_arguments(arguments, self._schema(tool), tool=tool)
             if problem:
                 raise InvalidArguments(problem)
+            repaired = halves + repaired
             if tool in ENGINE_NAMES:
                 result, ok = self._engine_tool(tool, arguments), True
             else:
@@ -338,7 +342,7 @@ class ChatRuntime:
         call of ``taochronos_research`` is read here (:meth:`call`): their form repaired, and :class:`InvalidArguments`
         where they still do not fit, with what the tool takes.  Returns the question and the fields given, as
         :meth:`start_research` takes them."""
-        fitted, _, problem = fit_arguments(arguments if arguments is not None else {}, PARAMETERS["taochronos_research"],
+        fitted, _, problem = fit_arguments(whole(arguments if arguments is not None else {})[0], PARAMETERS["taochronos_research"],
                                            tool="taochronos_research")
         if problem:
             raise InvalidArguments(problem)

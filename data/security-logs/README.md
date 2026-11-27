@@ -22,7 +22,7 @@ Worker 绑定了归档存储桶后（仓库变量 `ARCHIVE_BUCKET`，[ADR 0023](
 | `shape` | 中转的模型调用请求的形状：消息数、字数、是否以系统提示开头（`system`）、系统提示与最后一问的哈希（`sys`、`q`，不含正文）、是否流式、工具数、`max_tokens` 字段名 |
 | `decision` | 当时的模式与结论：`blocked`、`shadow`、`until`（阻断到何时） |
 | `state` | 该访客的累计：请求数 `n`、错误数 `bad`、被标记次数、阻断次数、十秒内与十分钟内的请求数、同一问题的重复数、探测过的路径数、不同 UA 数、最近的 404 路径、网络 |
-| `reports` | `csp` 事件：浏览器上报的违规，每条缩减为 `directive`（指令）、`blocked`（被拦资源的来源）、`document`（页面地址，不含查询串）、`disposition`、`source`（出处文件，不含查询串）、`line`、`status`——不留原文、查询串与页面文字 |
+| `reports` | `csp` 事件：浏览器上报的违规，每条缩减为 `directive`（指令）、`blocked`（被拦资源的来源）、`document`（页面地址，不含查询串）、`disposition`（只有 `enforce` / `report`）、`source`（出处文件，不含查询串）、`line`、`status`（非负整数）——不留原文、查询串与页面文字；别的类型不留，文本里落单的半个字是 U+FFFD |
 
 ## 边缘的记录（`edge/`）
 

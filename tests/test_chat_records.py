@@ -208,3 +208,29 @@ def test_the_command_reads_the_collected_days_and_says_no_word_of_them(tmp_path,
     assert QUESTION not in printed and "桂枝" not in printed and "a.1" not in printed
     assert main(["records", str(tmp_path), "--since", "2026-10-21"]) == 0
     assert json.loads(capsys.readouterr().out)["turns"] == 1
+
+
+def test_a_record_is_one_line_whatever_its_words_hold(tmp_path):
+    """U+2028, U+2029 and U+0085 are ends of lines to ``str.splitlines`` and may be in a question or an answer: a day
+    kept with them as they are (as the collector once wrote them) is read by its line feeds alone — the record whole,
+    and nothing made of its pieces."""
+    ends = "\u0085\u2028\u2029"
+    day = tmp_path / "2026" / "10" / "23.jsonl"
+    day.parent.mkdir(parents=True)
+    answer = f"太阳中风{ends}{{}}{ends}123{ends}桂枝汤主之"  # a piece of it alone would be JSON: an object, a number
+    day.write_text(json.dumps({"n": 1, "received": "2026-10-23T08:00:07Z", **timed(answer=answer)}, ensure_ascii=False) + "\n"
+                   + "123\n[]\n" + json.dumps(old(), ensure_ascii=False) + "\n", encoding="utf-8")
+    got = list(read([tmp_path]))
+    assert len(got) == 2 and got[0]["answer"] == answer  # the record whole; the lines that are no record passed over
+
+
+def test_a_record_that_says_absurd_numbers_leaves_the_summary_what_it_was():
+    """A record is a visitor's to send: its times are summed, and one that said 1e308 made them infinite — a summary
+    that is not JSON.  A number past what a turn can say is not one."""
+    honest = [timed(), timed()]
+    absurd = timed(requests=[{"round": 1, "attempt": 1, "sent": 1e308, "open": -1e308, "first": 1e308, "text": 1e308, "end": 1e308, "finish": "stop"}],
+                   tools=[{"name": "classics.search", "ok": True, "at": 1e308, "ms": 1e308, "wait": 1e308}], hidden=1e308, asleep=-1e308, ms=1e308)
+    got = summary(honest + [absurd])
+    json.dumps(got, allow_nan=False)  # every number of it is one
+    assert got["turns"] == 3 and got["time"]["model"]["max"] == summary(honest)["time"]["model"]["max"]
+    assert answer_after_tools(absurd) is None

@@ -32,6 +32,82 @@ from pathlib import Path
 UA = "taochronos-collector/1"
 PREFIX = {"relay": "/v1/security", "site": "/api/security"}
 
+# What a Worker answers is JSON, and JSON carries two things a file of lines cannot take as they are.  A lone surrogate
+# ("\ud800": half a character — what a text cut in the middle of one leaves, or what a sender put there) cannot be
+# written as UTF-8: a pull stopped on it before its cursor moved, and so at every run after.  It becomes U+FFFD as the
+# answer comes in (_text).  And U+0085, U+2028 and U+2029, which JSON lets a string hold as they are, end a line for
+# str.splitlines and for some editors: a record holding one was several lines to its readers.  They are written as
+# JSON's own escapes (_line) — the same string to whoever parses the line.
+_LONE = re.compile("[\ud800-\udfff]")
+_ENDS = re.compile("[\u0085\u2028\u2029]")
+
+
+def _text(data):
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD.  Walked without recursion:
+    what a Worker kept may be nested deeper than the interpreter's own stack goes (a report kept before its fields were
+    checked), and a walk that stopped there would stop the run on what the parser had read."""
+    if isinstance(data, str):
+        return _LONE.sub("\ufffd", data)
+    waiting = [data]
+    while waiting:
+        box = waiting.pop()
+        if isinstance(box, dict):
+            for key in [k for k in box if isinstance(k, str) and _LONE.search(k)]:
+                box[_LONE.sub("\ufffd", key)] = box.pop(key)
+            inside = list(box.items())
+        elif isinstance(box, list):
+            inside = list(enumerate(box))
+        else:
+            continue
+        for at, value in inside:
+            if isinstance(value, str):
+                if _LONE.search(value):
+                    box[at] = _LONE.sub("\ufffd", value)
+            elif isinstance(value, (dict, list)):
+                waiting.append(value)
+    return data
+
+
+def _line(record: dict) -> str:
+    """A record as one line of JSON: one line to every reader."""
+    return _ENDS.sub(lambda m: f"\\u{ord(m.group()):04x}", json.dumps(record, ensure_ascii=False, sort_keys=True))
+
+
+# A day's file is kept under what GitHub takes: it refuses a push holding a file over 100 MiB, and nothing bounded a
+# day's — four callers' allowance of the largest record made one of 114 MiB, the push was refused, and the same records
+# were pulled into the same file at every run after.  Past PART_BYTES a day goes on in a further part, DD.p02.jsonl,
+# DD.p03.jsonl …: every reader takes a folder's *.jsonl, and a day is told by what a line says, not by its file's name.
+PART_BYTES = 32 * 1024 * 1024
+
+
+def _part(folder: Path, dd: str, n: int) -> Path:
+    return folder / (f"{dd}.jsonl" if n == 1 else f"{dd}.p{n:02d}.jsonl")
+
+
+def _append(folder: Path, dd: str, lines: list[str]) -> None:
+    """A day's lines onto its file: its last part, and a further one wherever a part would pass PART_BYTES."""
+    folder.mkdir(parents=True, exist_ok=True)
+    n = 1
+    while _part(folder, dd, n + 1).exists():
+        n += 1
+    size = _part(folder, dd, n).stat().st_size if _part(folder, dd, n).exists() else 0
+    held: list[str] = []
+
+    def put() -> None:
+        if held:
+            with _part(folder, dd, n).open("a", encoding="utf-8") as f:
+                f.write("\n".join(held) + "\n")
+            held.clear()
+
+    for line in lines:
+        weight = len(line.encode("utf-8")) + 1
+        if size and size + weight > PART_BYTES:
+            put()
+            n, size = n + 1, 0
+        held.append(line)
+        size += weight
+    put()
+
 
 def _request(url: str, *, token: str | None = None, data: dict | None = None, timeout: float = 60) -> tuple[int, dict | str]:
     headers = {"User-Agent": UA, "Accept": "application/json"}
@@ -44,13 +120,13 @@ def _request(url: str, *, token: str | None = None, data: dict | None = None, ti
     req = urllib.request.Request(url, data=body, headers=headers, method="POST" if data is not None else "GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 — the Workers' https addresses
-            raw = r.read().decode("utf-8")
+            raw = r.read().decode("utf-8", "replace")
             status = r.status
     except urllib.error.HTTPError as err:
         raw, status = err.read().decode("utf-8", "replace"), err.code
     try:
-        return status, json.loads(raw)
-    except json.JSONDecodeError:
+        return status, _text(json.loads(raw))
+    except (json.JSONDecodeError, RecursionError):  # not JSON, or nested deeper than anything a Worker keeps
         return status, raw
 
 
@@ -96,8 +172,12 @@ def pull(sources: dict[str, str], out: Path, *, limit: int = 500, pages: int = 4
         state = dict(cursor.get(name) or {})
         last, new = int(state.get("last", 0)), 0
         skipped = None
+        size = limit
         for _ in range(pages):
-            status, page = _request(f"{base}{PREFIX[name]}/export?after={last}&limit={limit}", token=token)
+            status, page = _request(f"{base}{PREFIX[name]}/export?after={last}&limit={size}", token=token)
+            while status >= 500 and size > 1:  # a page the Worker cannot hand out (too heavy for it): asked for again, smaller
+                size = max(1, size // 4)
+                status, page = _request(f"{base}{PREFIX[name]}/export?after={last}&limit={size}", token=token)
             if status in (401, 404):
                 skipped = status
                 break
@@ -109,15 +189,12 @@ def pull(sources: dict[str, str], out: Path, *, limit: int = 500, pages: int = 4
             by_day: dict[str, list[str]] = {}
             for item in page.get("items", []):
                 received = str(item.get("received") or datetime.now(timezone.utc).isoformat())
-                line = json.dumps({"n": item["id"], "received": received, "source": name, **(item.get("event") or {})}, ensure_ascii=False, sort_keys=True)
+                line = _line({"n": item["id"], "received": received, "source": name, **(item.get("event") or {})})
                 by_day.setdefault(received[:10], []).append(line)
                 last = max(last, int(item["id"]))
                 new += 1
             for day, lines in sorted(by_day.items()):
-                path = out / name / day[:4] / day[5:7] / f"{day[8:10]}.jsonl"
-                path.parent.mkdir(parents=True, exist_ok=True)
-                with path.open("a", encoding="utf-8") as f:
-                    f.write("\n".join(lines) + "\n")
+                _append(out / name / day[:4] / day[5:7], day[8:10], lines)
             if not page.get("more"):
                 break
         if skipped == "archive":
@@ -175,7 +252,7 @@ def archive(sources: dict[str, str], day: str, out: Path) -> dict:
                 break
             if status != 200 or not isinstance(page, dict):
                 raise SystemExit(f"the {name} refused the archive: HTTP {status} {str(page)[:300]}")
-            lines += [json.dumps(item, ensure_ascii=False, sort_keys=True) for item in page.get("items", [])]
+            lines += [_line(item) for item in page.get("items", [])]
             cursor = page.get("cursor") or ""
             if not page.get("more") or not cursor:
                 break

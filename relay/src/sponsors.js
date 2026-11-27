@@ -5,6 +5,8 @@
 // never sent back to a browser.  Only the owner reads it, with SPONSOR_SECRET (relay/collect.py sponsors).  The relay
 // never calls a sponsored key itself: the owner reviews each one and decides whether to use it.
 
+import { clipped } from "../../security/sentinel.js";
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -62,7 +64,7 @@ export function hint(key) {
 }
 
 const CONTROL = /[\u0000-\u001f\u007f]/;
-const text = (v, n) => (typeof v === "string" ? v.trim().slice(0, n) : "");
+const text = (v, n) => (typeof v === "string" ? clipped(v.trim(), n) : ""); // cut between characters, no half of one kept (sentinel.js)
 
 /**
  * A sponsorship as the page sends it — {v: 1, agree: true, key, model, provider?, base_url?, note?, contact?} — reduced

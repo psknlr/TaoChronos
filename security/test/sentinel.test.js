@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
-import { anonymous, assess, bodyShape, browserOf, cspReports, DEFAULTS, expectsClientHints, expectsSecFetch, fingerprint, ipKey, isHoneypot, keptPath, ledFrom,
-  logLine, sentinelConfig, serveSecurity, uaClass, WatchCore } from "../sentinel.js";
+import { anonymous, assess, bodyShape, browserOf, clipped, cspReports, DEFAULTS, expectsClientHints, expectsSecFetch, fingerprint, ipKey, isHoneypot, keptPath,
+  keptReport, ledFrom, logLine, pageEnd, sentinelConfig, serveSecurity, uaClass, WatchCore } from "../sentinel.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
 function sqlStore() {
@@ -500,6 +500,77 @@ test("the endpoints: the token for export, ack and summary; csp reports from any
   assert.equal((await serveSecurity(new Request("https://chat-api.impf.ai/v1/security/csp", { method: "POST", body: "{}" }), new URL("https://chat-api.impf.ai/v1/security/csp"),
     { prefix: "/v1/security", token, watch, cfg: cfgOf({ SENTINEL: "off" }), fp: probe, now: T0 })).status, 204);
   assert.equal(w.records().items.length, 20); // the batch above, and nothing from a sentinel that is off
+});
+
+test("what is kept of a string anyone can send is text: cut between characters, with no half of one; a report's fields are of their kinds", async () => {
+  // a character outside the BMP is two units; a unit of the two alone (a lone surrogate) is no text: JSON carries it,
+  // UTF-8 cannot, and the collector that pulled one stopped on it at every run
+  const lone = String.fromCharCode(0xd800), tail = String.fromCharCode(0xdc00), rare = String.fromCodePoint(0x20000), FFFD = "\ufffd";
+  assert.equal(clipped(`ab${rare}cd`, 3), "ab"); // the cut would fall inside the character: it is left out
+  assert.equal(clipped(`ab${rare}cd`, 4), `ab${rare}`);
+  assert.equal(clipped(`x${lone}y`, 9), `x${FFFD}y`);
+  assert.equal(clipped(`${tail}${rare}${lone}`, 9), `${FFFD}${rare}${FFFD}`); // the halves alone, never the pair
+  assert.deepEqual([clipped(7, 3), clipped(null, 3), clipped(["a"], 3), clipped("abc"), clipped("abc", 0), clipped("", 5)], [undefined, undefined, undefined, "abc", "", ""]);
+  for (let n = 0; n <= 8; n++) assert.ok(clipped(`a${rare}${lone}${rare}b`, n).isWellFormed(), `at ${n}`);
+  assert.deepEqual([clipped("abc", -1), clipped("abc", NaN), clipped("abc", 2.9), clipped(`a${rare}`, 2.5)], ["", "", "ab", "a"]); // a limit that is no length keeps nothing
+
+  // a report from anyone: each field of the kind a browser sends, or not kept
+  const hostile = { "csp-report": { "effective-directive": `script-src${lone}`, "blocked-uri": `not a url ${lone}`, "document-uri": `x${lone}`,
+    "source-file": `${"y".repeat(79)}${rare}`, disposition: `enforce${lone}`, "line-number": [[[[1]]]], "status-code": "200" } };
+  assert.deepEqual(cspReports(JSON.stringify(hostile)), [{ directive: `script-src${FFFD}`, blocked: `not a url ${FFFD}`, document: `x${FFFD}`, source: "y".repeat(79) }]);
+  assert.deepEqual(cspReports(JSON.stringify({ "csp-report": { "violated-directive": "img-src", disposition: "report", "line-number": 12, "status-code": 0 } })),
+    [{ directive: "img-src", disposition: "report", line: 12, status: 0 }]);
+  assert.deepEqual(cspReports(JSON.stringify({ "csp-report": { "effective-directive": "img-src", disposition: "ENFORCE", "line-number": -1, "status-code": 1.5 } })), [{ directive: "img-src" }]);
+  assert.deepEqual(cspReports(JSON.stringify({ "csp-report": { "effective-directive": { a: 1 }, "violated-directive": ["x"] } })), []); // no directive in words: not a report
+  let deep = 1;
+  for (let i = 0; i < 2000; i++) deep = [deep]; // deeper than the collector's parser goes
+  assert.deepEqual(cspReports(JSON.stringify([{ type: "csp-violation", body: { effectiveDirective: "font-src", lineNumber: deep, statusCode: deep, disposition: deep, blockedURL: deep } }])),
+    [{ directive: "font-src" }]);
+  assert.deepEqual([keptReport(null), keptReport([]), keptReport({}), keptReport({ directive: "x".repeat(60) })], [null, null, null, { directive: "x".repeat(40) }]);
+
+  // through the endpoint; and an event kept before these checks is handed out reduced by them
+  const w = new WatchCore(sqlStore());
+  const cfg = cfgOf();
+  const token = "export-token-0123456789abcdef";
+  const watch = { observe: (...a) => w.observe(...a), records: (...a) => w.records(...a), remove: (...a) => w.remove(...a), summary: (...a) => w.summary(...a) };
+  const serve = (path, init = {}) => {
+    const req = new Request(`https://chat.impf.ai${path}`, init);
+    return serveSecurity(req, new URL(req.url), { prefix: "/api/security", token, watch, cfg, fp: fingerprint(req, T0), now: T0 });
+  };
+  assert.equal((await serve("/api/security/csp", { method: "POST", headers: { "CF-Connecting-IP": "203.0.113.9" }, body: JSON.stringify(hostile) })).status, 204);
+  w.sql.exec("INSERT INTO events (received, event) VALUES (?, ?)", new Date(T0).toISOString(), JSON.stringify({ v: 1, kind: "csp", who: "w", // as one was kept before
+    reports: [{ directive: "script-src", blocked: `inline${lone}`, disposition: `x${lone}`, line: deep, status: { a: [lone] } }, { directive: 7 }, "junk"] }));
+  w.sql.exec("INSERT INTO events (received, event) VALUES (?, ?)", new Date(T0).toISOString(), JSON.stringify({ v: 1, kind: "csp", who: "w", reports: "none" }));
+  const res = await serve("/api/security/export", { headers: { Authorization: `Bearer ${token}` } });
+  const body = await res.text();
+  assert.ok(!/\\ud[89a-f][0-9a-f]{2}/i.test(body), "no half character is handed out"); // as JSON writes one
+  const page = JSON.parse(body);
+  assert.deepEqual(page.items.map((i) => i.event.reports), [
+    [{ directive: `script-src${FFFD}`, blocked: `not a url ${FFFD}`, document: `x${FFFD}`, source: "y".repeat(79) }],
+    [{ directive: "script-src", blocked: `inline${FFFD}` }],
+    [],
+  ]);
+  assert.equal(page.items[0].event.kind, "csp");
+
+  // a request's own properties: the Workers runtime reads a header's value as UTF-8, so a user agent cut at its limit in
+  // the middle of a character kept half of it — one GET of a scanner's path was enough (Node's Request refuses such a
+  // header: a request as the runtime gives it, by hand)
+  const got = { "user-agent": `${"a".repeat(299)}${rare}`, referer: `not a url ${"r".repeat(69)}${rare}`, "x-requested-with": `x${lone}`, "cf-connecting-ip": "203.0.113.7" };
+  const asRuntime = { url: "https://chat.impf.ai/wp-login.php", method: `GET${"T".repeat(40)}`, headers: { get: (name) => got[name.toLowerCase()] ?? null },
+    cf: { clientAcceptEncoding: `${"e".repeat(199)}${rare}${"e".repeat(5000)}`, asOrganization: `org${lone}`, city: { nested: [lone] }, asn: 4134 } };
+  const seen = fingerprint(asRuntime, T0);
+  assert.deepEqual([seen.ua.length, seen.referer.length, seen.xrw, seen.method.length, seen.enc.length, seen.asOrg, seen.city, seen.asn],
+    [299, 79, `x${FFFD}`, 16, 199, `org${FFFD}`, undefined, 4134]);
+  assert.ok(Object.values(seen).every((v) => typeof v !== "string" || v.isWellFormed()));
+
+  // a page of events is bounded by what it weighs as well as by its rows (pageEnd): the first row whatever it weighs
+  const heavy = new WatchCore(sqlStore());
+  for (let k = 0; k < 30; k++) heavy.sql.exec("INSERT INTO events (received, event) VALUES (?, ?)", new Date(T0).toISOString(), JSON.stringify({ v: 1, kind: "flag", pad: "重".repeat(1000) }));
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 0, 500, 5000), { through: 4, more: true });
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 4, 2, 1e9), { through: 6, more: true });
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 29, 500, 10), { through: 30, more: false });
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 30, 500), { through: 30, more: false });
+  assert.deepEqual([heavy.records(0, 500).items.length, heavy.records(0, 500).more, heavy.records(28, 500).items.map((i) => i.id)], [30, false, [29, 30]]);
 });
 
 test("a violation of both policies is kept as both: what the enforced one refused is not folded into a report", async () => {

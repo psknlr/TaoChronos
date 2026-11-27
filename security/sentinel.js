@@ -109,6 +109,52 @@ export async function readText(request, max) {
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
+// with the u flag a pair of surrogates is one character and matches nothing here: only a half alone does
+const HALF = /[\ud800-\udfff]/gu;
+
+/**
+ * `v` as text of at most `n` UTF-16 units, or undefined when it is not a string: what is kept of a string a request
+ * brought.  Cut between characters — never in the middle of one written as two units (those outside the BMP: rare Han
+ * characters, emoji) — and with no half character in it: a lone surrogate, which such a cut leaves and which any
+ * sender can put in JSON ("\ud800"), is no text.  JSON carries it and UTF-8 cannot: the collector that met one in what
+ * it had pulled stopped there, at every run (relay/collect.py, security/collect.py).  It is U+FFFD here, before
+ * anything is kept.
+ */
+export function clipped(v, n = Infinity) {
+  if (typeof v !== "string") return undefined;
+  const most = n >= 0 ? Math.floor(n) : 0; // a limit that is no length keeps nothing
+  let s = v;
+  if (s.length > most) {
+    const last = s.charCodeAt(most - 1), next = s.charCodeAt(most);
+    s = s.slice(0, last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff ? most - 1 : most);
+  }
+  return s.replace(HALF, "\ufffd");
+}
+
+/**
+ * How many characters of kept JSON a page handed to the collector holds at the most.  A Durable Object's method returns
+ * 32 MiB at the most, and on that way a string with one character outside Latin-1 costs two bytes a character: the 500
+ * records one address may send in a day (47 KB each, in Chinese) were a page the book could not hand out, and the
+ * export failed at every run — with it the whole collection.  A page is bounded by what it weighs as well as by its rows.
+ */
+export const PAGE_CHARS = 4_000_000;
+
+/**
+ * Where a page of `table` after id `after` ends: `limit` rows at the most, and no more than PAGE_CHARS holds — the first
+ * row whatever it weighs.  Weighed in the database (the rows are not read to be counted).  → {through, more}
+ */
+export function pageEnd(sql, table, column, after, limit, most = PAGE_CHARS) {
+  const sizes = sql.exec(`SELECT id, length(${column}) AS n FROM ${table} WHERE id > ? ORDER BY id LIMIT ?`, after, limit + 1).toArray();
+  let chars = 0;
+  let taken = 0;
+  for (const row of sizes.slice(0, limit)) {
+    chars += Number(row.n);
+    if (taken && chars > most) break;
+    taken += 1;
+  }
+  return { through: taken ? Number(sizes[taken - 1].id) : after, more: sizes.length > taken };
+}
+
 const textOf = (content) => {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
@@ -153,10 +199,14 @@ export function fingerprint(request, now = Date.now()) {
   const url = new URL(request.url);
   const cf = request.cf || {};
   const h = (name) => request.headers.get(name);
-  const fp = { ts: new Date(now).toISOString(), method: request.method, host: url.hostname, path: keptPath(url.pathname),
+  const fp = { ts: new Date(now).toISOString(), method: clipped(request.method, 16), host: url.hostname, path: keptPath(url.pathname),
     query: url.search.length > 1 ? url.search.length - 1 : 0 };
-  fp.ip = h("CF-Connecting-IP") || "unknown"; // the edge sets it on every request; anything else is a client's claim
-  for (const [k, name] of CF) if (cf[name] !== undefined && cf[name] !== null && cf[name] !== "") fp[k] = cf[name];
+  fp.ip = clipped(h("CF-Connecting-IP"), 64) || "unknown"; // the edge sets it on every request; anything else is a client's claim
+  // what the edge says of the request: a number, a flag, or text — of which `enc` is the client's own header, whole
+  for (const [k, name] of CF) {
+    const v = typeof cf[name] === "string" ? clipped(cf[name], 200) : cf[name];
+    if (v !== "" && ["string", "number", "boolean"].includes(typeof v)) fp[k] = v;
+  }
   if (!fp.country && h("CF-IPCountry")) fp.country = h("CF-IPCountry");
   const bm = cf.botManagement;
   if (bm && typeof bm === "object") {
@@ -165,12 +215,14 @@ export function fingerprint(request, now = Date.now()) {
       if (bm[name] !== undefined && bm[name] !== null) fp.bot[k] = bm[name];
     }
   }
+  // a header's value is read as UTF-8 here: one cut at its limit in the middle of a character outside the BMP kept half
+  // of it, in the event of any request worth one — a user agent is enough (clipped)
   for (const [k, name, n] of HEADERS) {
-    const v = h(name);
-    if (v) fp[k] = v.length > n ? v.slice(0, n) : v;
+    const v = clipped(h(name) ?? undefined, n);
+    if (v) fp[k] = v;
   }
   if (fp.referer) { // its origin only: a path may carry what a visitor typed
-    try { fp.referer = new URL(fp.referer).origin; } catch { fp.referer = fp.referer.slice(0, 80); }
+    try { fp.referer = new URL(fp.referer).origin; } catch { fp.referer = clipped(fp.referer, 80); }
   }
   if (/%2e%2e|\.\.(?:\/|\\|%2f|%5c)|%00|%252e|%c0%ae/i.test(request.url)) fp.traversal = true;
   fp.uaClass = uaClass(fp.ua);
@@ -640,9 +692,9 @@ export class WatchCore {
   }
 
   records(after = 0, limit = 500) {
-    const rows = this.sql.exec("SELECT id, received, event FROM events WHERE id > ? ORDER BY id LIMIT ?", after, limit + 1).toArray();
-    const more = rows.length > limit;
-    const items = rows.slice(0, limit).map((r) => ({ id: Number(r.id), received: r.received, event: JSON.parse(r.event) }));
+    const { through, more } = pageEnd(this.sql, "events", "event", after, limit); // by its rows, and by what it weighs
+    const rows = this.sql.exec("SELECT id, received, event FROM events WHERE id > ? AND id <= ? ORDER BY id", after, through).toArray();
+    const items = rows.map((r) => ({ id: Number(r.id), received: r.received, event: handedOut(JSON.parse(r.event)) }));
     return { items, last: items.length ? items[items.length - 1].id : after, more };
   }
 
@@ -723,21 +775,51 @@ export function cspReports(text) {
   const j = parse(text, null);
   const bodies = Array.isArray(j) ? j.filter((r) => r && r.type === "csp-violation" && r.body).map((r) => r.body)
     : j && typeof j === "object" ? [j["csp-report"] || j.body || j] : [];
-  const origin = (u) => { if (!u || typeof u !== "string") return undefined; try { return new URL(u).origin; } catch { return u.slice(0, 40); } };
-  const noQuery = (u) => { if (!u || typeof u !== "string") return undefined; try { const x = new URL(u); return x.origin + x.pathname; } catch { return u.slice(0, 80); } };
+  const origin = (u) => { if (!u || typeof u !== "string") return undefined; try { return new URL(u).origin; } catch { return clipped(u, 40); } };
+  const noQuery = (u) => { if (!u || typeof u !== "string") return undefined; try { const x = new URL(u); return x.origin + x.pathname; } catch { return clipped(u, 80); } };
   const out = [];
   for (const b of bodies) {
     if (!b || typeof b !== "object") continue;
     const pick = (camel, hyphen) => b[camel] ?? b[hyphen];
-    const directive = pick("effectiveDirective", "effective-directive") || pick("violatedDirective", "violated-directive");
-    if (!directive) continue;
-    out.push({
-      directive: String(directive).slice(0, 40), blocked: origin(pick("blockedURL", "blocked-uri")), document: noQuery(pick("documentURL", "document-uri")),
+    const effective = pick("effectiveDirective", "effective-directive");
+    const report = keptReport({
+      directive: typeof effective === "string" && effective ? effective : pick("violatedDirective", "violated-directive"),
+      blocked: origin(pick("blockedURL", "blocked-uri")), document: noQuery(pick("documentURL", "document-uri")),
       disposition: pick("disposition", "disposition"), source: noQuery(pick("sourceFile", "source-file")), line: pick("lineNumber", "line-number"),
       status: pick("statusCode", "status-code"),
     });
+    if (report) out.push(report);
   }
-  return out.slice(0, 10).map((r) => JSON.parse(JSON.stringify(r)));
+  return out.slice(0, 10);
+}
+
+const whole = (v) => (Number.isSafeInteger(v) && v >= 0 ? v : undefined);
+
+/** An event as the collector is given it: its reports, if it has any, as they would be kept now (keptReport) — from the
+ * book, and from the archive, where a day may have been written before a report's fields were checked. */
+export function handedOut(event) {
+  if (event && typeof event === "object" && "reports" in event) {
+    event.reports = Array.isArray(event.reports) ? event.reports.map(keptReport).filter(Boolean).slice(0, 10) : [];
+  }
+  return event;
+}
+
+/**
+ * A report as it is kept: each field of the kind a browser sends, or not kept — short text (clipped), one of the two
+ * dispositions, a whole number.  Anyone can post a report, and one used to be kept with whatever its `disposition`,
+ * `line-number` and `status-code` were — of any type and depth, a lone surrogate in them or not — which the collector
+ * then had to read, and could not.  Null without a directive.  Applied again as the events are handed out (records),
+ * so that a report kept before these checks reaches the collector reduced by them.
+ */
+export function keptReport(r) {
+  if (!r || typeof r !== "object" || Array.isArray(r)) return null;
+  const directive = clipped(r.directive, 40);
+  if (!directive) return null;
+  const out = { directive, blocked: clipped(r.blocked, 300), document: clipped(r.document, 300),
+    disposition: r.disposition === "enforce" || r.disposition === "report" ? r.disposition : undefined,
+    source: clipped(r.source, 300), line: whole(r.line), status: whole(r.status) };
+  for (const k of Object.keys(out)) if (out[k] === undefined) delete out[k];
+  return out;
 }
 
 // ------------------------------------------------------------------ Workers Logs

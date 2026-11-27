@@ -37,6 +37,8 @@ class FakeRelay(ThreadingHTTPServer):
         self.second_turns: list[str] = []
         self.sponsors = [{"id": 1, "model": "gpt-6-luna", "hint": "sk-…WXYZ"}]
         self.places: dict | None = None  # what GET /v1/egress says of the model service's host from each place (none: an older relay)
+        self.heaviest: int | None = None  # the most records it can hand out in a page (none: any number): more is a 500
+        self.asked: list[int] = []  # the page sizes its export was asked for
 
     def add(self, received: str, question: str) -> None:
         self.rows.append({"id": self.next_id, "received": received, "record": {"v": 1, "question": question}})
@@ -93,6 +95,9 @@ class _Handler(BaseHTTPRequestHandler):
             more = start + 2 < len(day)
             return self._json(200, {"day": q["day"][0], "items": page, "cursor": str(start + 2) if more else None, "more": more})
         after, limit = int(q.get("after", ["0"])[0]), int(q.get("limit", ["500"])[0])
+        self.server.asked.append(limit)
+        if self.server.heaviest is not None and limit > self.server.heaviest:
+            return self._json(500, {"error": {"message": "默认服务出错了，请稍后再试", "type": "relay_error"}})
         rows = [r for r in self.server.rows if r["id"] > after]
         items = rows[:limit]
         page = {"items": items, "last": items[-1]["id"] if items else after, "more": len(rows) > limit}
@@ -242,3 +247,95 @@ def test_a_relay_that_archives_its_records_gives_the_repository_none_and_reads_a
     relay.archived = None
     with pytest.raises(SystemExit, match="no archive"):
         collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")
+
+
+def test_a_record_holding_what_no_file_of_lines_takes_is_pulled_all_the_same(relay, tmp_path):
+    """A question and an answer are a visitor's words, cut at a limit that counts UTF-16 units: one cut in the middle
+    of a rare character left half of it (a lone surrogate), which JSON carries and UTF-8 cannot — the pull stopped on
+    it before its cursor moved, and so at every run.  And a text may hold U+2028, U+2029 or U+0085, which
+    ``str.splitlines`` takes for ends of lines: the record was several lines to its readers."""
+    out = tmp_path / "data" / "chat-logs"
+    lone, ends = "\ud83d", "\u0085\u2028\u2029"
+    relay.add("2026-09-28T08:00:00Z", f"半个字{lone}")
+    relay.add("2026-09-28T08:01:00Z", f"一行{ends}123{ends}又一行")
+    relay.add("2026-09-28T08:02:00Z", "桂枝汤主治什么？")
+    assert collect.pull(relay.url, out) == {"new": 3, "last": 3}
+    text = (out / "2026" / "09" / "28.jsonl").read_text(encoding="utf-8")
+    assert text.count("\n") == 3 and not any(c in text for c in ends)
+    assert [r["question"] for r in _lines(out / "2026" / "09" / "28.jsonl")] == ["半个字\ufffd", f"一行{ends}123{ends}又一行", "桂枝汤主治什么？"]
+    assert json.loads((out / "cursor.json").read_text())["last"] == 3
+    assert collect.ack(relay.url, 3) == {"acked": 3, "remaining": 0}
+    # and a day read back from the relay's archive
+    relay.archived = [{"n": 1, "received": "2026-10-14T01:00:00Z", "question": f"问{lone}{ends}"}]
+    assert collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")["records"] == 1
+    assert [r["question"] for r in _lines(tmp_path / ".archive" / "2026" / "10" / "14.jsonl")] == [f"问\ufffd{ends}"]
+
+
+def test_a_page_the_relay_cannot_hand_out_is_asked_for_again_smaller(relay, tmp_path):
+    """A page heavier than a Durable Object may return (a relay from before it bounded its pages by what they weigh:
+    a day of one address's largest records) failed the export — at every run, the same page asked for again.  The
+    collector asks for a smaller one, and goes on with that size."""
+    out = tmp_path / "data" / "chat-logs"
+    for k in range(9):
+        relay.add(f"2026-09-28T08:0{k}:00Z", f"问{k}")
+    relay.heaviest = 3
+    assert collect.pull(relay.url, out, limit=40) == {"new": 9, "last": 9}
+    assert relay.asked == [40, 10, 2, 2, 2, 2, 2]  # smaller until it is handed out, then on at that size
+    assert [r["n"] for r in _lines(out / "2026" / "09" / "28.jsonl")] == list(range(1, 10))
+    relay.add("2026-09-28T09:00:00Z", "再问")
+    relay.heaviest = 0  # a relay that fails whatever it is asked: told, as before
+    with pytest.raises(SystemExit, match="refused the export: HTTP 500"):
+        collect.pull(relay.url, out, limit=40)
+    assert json.loads((out / "cursor.json").read_text())["last"] == 9
+
+
+def test_a_days_file_is_kept_under_what_github_takes(relay, tmp_path, monkeypatch):
+    """GitHub refuses a push holding a file over 100 MiB, and a day's records all went into one file: four callers'
+    allowance of the largest record made it 114 MiB, the push was refused, and every run after pulled the same records
+    into the same file.  Past PART_BYTES a day goes on in further parts, which every reader takes with the first."""
+    from taochronos.chat.records import read
+
+    out = tmp_path / "data" / "chat-logs"
+    monkeypatch.setattr(collect, "PART_BYTES", 400)
+    for k in range(12):
+        relay.add(f"2026-09-28T08:{k:02d}:00Z", f"问{k}" + "长" * 30)
+    relay.add("2026-09-29T00:00:01Z", "次日")
+    assert collect.pull(relay.url, out, limit=5) == {"new": 13, "last": 13}  # three pages: a part is gone on with, page after page
+    day = sorted((out / "2026" / "09").glob("28*.jsonl"))
+    assert [p.name for p in day][:3] == ["28.jsonl", "28.p02.jsonl", "28.p03.jsonl"] and len(day) >= 4
+    assert all(p.stat().st_size <= 400 for p in day)
+    assert [r["n"] for p in day for r in _lines(p)] == list(range(1, 13))  # every record once, in order, through the parts
+    assert [r["n"] for r in _lines(out / "2026" / "09" / "29.jsonl")] == [13]
+    relay.add("2026-09-28T23:59:59Z", "当日最后一条" + "长" * 30)
+    collect.pull(relay.url, out)
+    again = sorted((out / "2026" / "09").glob("28*.jsonl"))
+    assert [r["n"] for p in again for r in _lines(p)] == [*range(1, 13), 14] and again[:len(day) - 1] == day[:-1]  # onto the last part, or a further one
+    # one record larger than a part is a part of its own, never refused
+    relay.add("2026-09-30T01:00:00Z", "大" * 2000)
+    collect.pull(relay.url, out)
+    assert [p.name for p in (out / "2026" / "09").glob("30*.jsonl")] == ["30.jsonl"]
+    # the records' reader takes every part: each record once
+    assert sorted(r["n"] for r in read([out])) == list(range(1, 16))
+
+
+def test_the_door_walks_what_is_nested_deeper_than_the_interpreters_stack():
+    """What a Worker kept may be nested deeper than Python's own stack goes (a report kept before its fields were
+    checked): a walk that called itself for each level stopped the run there, on what the parser had read."""
+    lone = "\ud800"
+    deep = inner = []
+    for k in range(50_000):
+        box = {f"k{lone}": [f"x{lone}"]} if k % 2 else [f"y{lone}"]
+        inner.append(box)
+        inner = box[f"k{lone}"] if isinstance(box, dict) else box
+    out = collect._text(deep)
+    levels, node = 0, out
+    while True:
+        strings = [v for v in (node if isinstance(node, list) else list(node) + list(node.values())) if isinstance(v, str)]
+        assert all(lone not in v for v in strings)
+        below = [v for v in (node if isinstance(node, list) else node.values()) if isinstance(v, (list, dict))]
+        if not below:
+            break
+        node, levels = below[0], levels + 1
+    assert levels == 75_000
+    plain = {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"}
+    assert collect._text(plain) == {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"} and collect._text(f"a{lone}") == "a\ufffd" and collect._text(7) == 7

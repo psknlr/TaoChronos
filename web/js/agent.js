@@ -19,7 +19,7 @@ import { dataNote } from "./mydata.js";
 import { ANSWER, compactResult, contextBudget, fitRequest, messageTokens, QUESTION, tokensOf } from "./context.js";
 import { LIMITS, limit, pageClock, pause, until } from "./limits.js";
 import { outputLimit } from "./providers.js";
-import { truncate } from "./util.js";
+import { clip, truncate } from "./util.js";
 import { T } from "./i18n.js";
 
 const OLD_RESULT_CHARS = 2500; // about, of an earlier turn's tool result
@@ -584,7 +584,7 @@ async function execute(tc, ctx) {
     out = { ok: false, error: T("回复在输出上限处被截断，参数可能不完整，没有执行"),
       text: T("ERROR: 这次回复在输出上限处被截断，调用的参数可能不完整，没有执行。请缩短参数重新调用，或分几次调用。") };
   } else if (tc.error) {
-    out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${tc.rawArguments.slice(0, 300)}）` };
+    out = { ok: false, error: tc.error, text: T`ERROR: ${tc.error}（原始参数：${clip(tc.rawArguments, 300)}）` };
   } else {
     const asks = reuse ? lookupOf(tc) : null;
     const key = asks && `${asks}\u0000${ctx.scope?.() ?? ""}`; // on the same runtime and corpus only

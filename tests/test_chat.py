@@ -87,6 +87,21 @@ def test_tools_are_called_by_either_name_and_failures_are_results_not_crashes(rt
         assert not out["ok"] and needle in out["error"] and out["text"].startswith("ERROR:")
 
 
+def test_half_a_character_in_what_a_model_wrote_is_no_reason_for_a_call_to_fail(rt):
+    """A lone surrogate — half of a character written as two units, which JSON carries and which a model, or a text cut
+    in the middle of a rare character, can leave — ended a call where its id is made (a hash of its arguments), with an
+    encoding error the model could do nothing with.  It is U+FFFD before anything reads it, and the call says so."""
+    out = rt.call("classics.search", {"query": "桂枝汤\ud800", "k": 2})
+    assert out["ok"] and out["result"]["hits"] and out["repaired"] == ["$.query: half a character (a lone surrogate) → U+FFFD"]
+    json.dumps(out, ensure_ascii=False).encode("utf-8")  # what the page is sent can be written
+    named = rt.call("classics.search", {"query": "桂枝汤", "k\udc00": 2})
+    assert not named["ok"] and "unknown parameter 'k\ufffd'" in named["error"]
+    via = rt.call("taochronos_call", {"tool": "kg.claims", "arguments": {"terms": ["消渴\ud83d", "桂枝"]}})
+    assert via["ok"] and via["repaired"] == ["$.terms[0]: half a character (a lone surrogate) → U+FFFD"]
+    assert rt.research_arguments({"question": "桂枝汤\ud800的源流"})["question"] == "桂枝汤\ufffd的源流"
+    assert "repaired" not in rt.call("classics.search", {"query": "𠀀桂枝汤", "k": 2})  # a character written as two units, whole: as it is
+
+
 def test_a_models_arguments_are_repaired_where_only_their_form_is_wrong(rt):
     """A number written as text, a list wrapped as {"item": …} (how some models' tool grammars write one), one value where
     a list is expected, a list or an object written as JSON text: the call runs, and says what was repaired."""
@@ -340,6 +355,24 @@ def test_the_server_answers_the_api_and_serves_the_client(server):
     assert hashlib.sha256(kernel).hexdigest() == manifest["files"]["taocore.wasm"]["sha256"]
     resp, _ = request(server, "GET", "/../pyproject.toml")
     assert resp.status == 404
+
+
+def test_the_server_answers_a_body_it_cannot_read(server):
+    """Not JSON — or not UTF-8, an integer longer than the interpreter converts, nested deeper than it goes, no object:
+    each is told so.  The middle three are no ``JSONDecodeError``: they ended the connection without an answer, which
+    the site's Worker takes for the full corpus's container being down."""
+    unreadable = (b"{not json", b'{"name": "\xff"}', b'{"name": "classics.search", "arguments": {"k": ' + b"9" * 5000 + b"}}",
+                  b"[" * 50_000 + b"]" * 50_000, b"[1, 2]", b'"text"')
+    for body in unreadable:
+        resp, raw = request(server, "POST", "/api/call", body)
+        assert resp.status == 400 and json.loads(raw)["error"].startswith("invalid JSON"), body[:40]
+    # half a character in a call's arguments (a lone surrogate, as JSON writes one): the call runs, and says what it repaired
+    resp, raw = request(server, "POST", "/api/call", rb'{"name": "classics.search", "arguments": {"query": "\u6d88\u6e34\ud800"}}')
+    out = json.loads(raw)
+    assert resp.status == 200 and out["ok"] and out["repaired"] == ["$.query: half a character (a lone surrogate) → U+FFFD"]
+    # and in what starts a research run: none reaches the session it keeps
+    resp, raw = request(server, "POST", "/api/research", rb'{"question": "", "note\udc00": "\ud83d"}')
+    assert resp.status == 400 and "\ufffd" in json.loads(raw)["error"] and "\ud83d" not in json.loads(raw)["error"]
 
 
 def test_the_server_admits_only_this_machine_and_the_published_client(server):

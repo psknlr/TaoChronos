@@ -26,7 +26,7 @@ import { answerDangling, budgetNote, buildHistory, lessThinking, retryWait, runT
 import { brief, dataNote, deidLabel, isMine, personal, sizeLabel } from "./js/mydata.js";
 import { feedbackRecord, REASONS } from "./js/records.js";
 import { extractCitations } from "./js/markdown.js";
-import { count, hitNotes, returnedText, withFound } from "./js/util.js";
+import { clip, count, hitNotes, returnedText, truncate, withFound } from "./js/util.js";
 import { fixedReply, IDENTITY_REPLY, isIdentityQuestion, touchesIdentity } from "./js/fixed.js";
 import { ServerRuntime } from "./js/runtime.js";
 import { redact, scrub, toolWord } from "./js/redact.js";
@@ -757,6 +757,15 @@ assert.equal(personal({ messages: [{ role: "assistant", segments: [{ type: "tool
 const fbAnswer = { id: "m_2", role: "assistant", model: "Tao-R1", provider: "impf", recorded: true };
 const fbConv = { id: "c_1", messages: [{ role: "user", text: "一" }, { id: "m_1", role: "assistant" }, { role: "user", text: "桂枝汤？" }, fbAnswer] };
 const now = new Date("2026-10-30T08:00:00Z");
+// a cut by length falls between characters: one written as two units (outside the BMP: rare Han characters, emoji) is
+// whole or left out — half of one is no text (a model service may refuse it; a record that held one could not be written)
+const rare = String.fromCodePoint(0x20000);
+assert.deepEqual([clip(`ab${rare}cd`, 3), clip(`ab${rare}cd`, 4), clip("abc", 9), clip("abc", 0), clip(rare, 1)], ["ab", `ab${rare}`, "abc", "", ""]);
+assert.deepEqual([truncate(`ab${rare}cd`, 4), truncate(`ab${rare}cd`, 5), truncate("abc", 3)], ["ab…", `ab${rare}…`, "abc"]);
+const cutFb = feedbackRecord({ conv: { id: "c", messages: [] }, msg: { id: "m" }, rating: "down", comment: `${"评".repeat(1999)}${rare}`,
+  attach: { question: `${"问".repeat(3999)}${rare}`, answer: `${"答".repeat(11999)}${rare}` } });
+assert.deepEqual([cutFb.comment.length, cutFb.question.length, cutFb.answer.length], [1999, 3999, 11999]);
+assert.ok([cutFb.comment, cutFb.question, cutFb.answer].every((t) => t.isWellFormed()));
 const fb = feedbackRecord({ conv: fbConv, msg: fbAnswer, rating: "down", reasons: ["citation"], comment: "  不对。 ", now,
   runtime: { runtime: "browser", corpus: "canon", app: "0.1.0" } });
 assert.deepEqual(JSON.parse(JSON.stringify(fb)), { v: 1, kind: "feedback", id: "m_2", conversation: "c_1", turn: 2, rating: "down",
@@ -1654,6 +1663,7 @@ assert.ok(told(bodies[1]).every((t) => !t.includes("没有得到结果")) && tol
 assert.ok(lackingNote([{ name: "x", args: { q: "长".repeat(200) }, status: "timeout" }]) // what it asked, cut short
   .includes(`：x {"q":"${"长".repeat(73)}…（超时）。`));
 assert.equal(lackingNote([]), "");
+assert.ok(lackingNote([{ name: "x", args: { q: `${"长".repeat(72)}${String.fromCodePoint(0x20000)}尾` }, status: "timeout" }]).isWellFormed()); // cut between characters
 // the user asks for the answer while a search is held: the model is told once, after the note that asks for the answer;
 // a call it asks for anyway is refused, and not named
 const hurry = new AbortController();

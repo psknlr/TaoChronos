@@ -46,7 +46,7 @@
 // page's name of the turn, which a conversation record carries: the ledger cannot say who asked what.
 
 import { EVENTS, RECORDS, serveArchive } from "../../security/archive.js";
-import { assess, bodyShape, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
+import { assess, bodyShape, clipped, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
 import { ledgerConfig, readPass, turnKey } from "../../security/visitor.js";
 import { normalizeSponsor, sealSponsor, sponsorReady, unseal } from "./sponsors.js";
@@ -91,10 +91,17 @@ export const DEFAULTS = {
   LOG_MAX_BYTES: "65536",
   LOGS_PER_MINUTE: "20",
   LOGS_PER_DAY: "500",
+  // what a day's records may weigh, in bytes as they are sent: of one visitor (8 MiB), and of all together (64 MiB;
+  // 0: no limit).  The records go into the repository, and nothing bounded what a day adds to it: a visitor's 500 a
+  // day are 29 MiB at their largest, and there was no total at all
+  LOG_BYTES_PER_DAY: "8388608",
+  LOG_BYTES_TOTAL_PER_DAY: "67108864",
   LOG_KEEP: "50000",                          // records waiting to be collected at most: beyond, new ones are refused (none dropped)
   FEEDBACK: "on",                             // ratings and written feedback on answers, kept with the records
   FEEDBACK_PER_MINUTE: "10",
   FEEDBACK_PER_DAY: "100",
+  FEEDBACK_BYTES_PER_DAY: "2097152",          // and by weight, as the records: of one visitor (2 MiB), of all (16 MiB)
+  FEEDBACK_BYTES_TOTAL_PER_DAY: "16777216",
   // the second model: GPT-6 Luna through OpenAI, with the Worker's secret OPENAI_API_KEY (offered only when it is set).
   // Its own limits: questions per visitor per day (a question's tool rounds are not counted again) and in all; and,
   // under them, calls and tokens — what bounds a question's rounds, and a client that is not the page
@@ -152,9 +159,10 @@ export function config(env = {}) {
     maxBody: num("MAX_BODY_BYTES"),
     origins: list("ALLOWED_ORIGINS"),
     chat: { perMinute: num("PER_MINUTE"), perDay: num("PER_DAY"), total: num("TOTAL_PER_DAY"), tokensPerDay: num("TOKENS_PER_DAY"), totalTokens: num("TOTAL_TOKENS_PER_DAY") },
-    log: { perMinute: num("LOGS_PER_MINUTE"), perDay: num("LOGS_PER_DAY"), total: 0 },
+    log: { perMinute: num("LOGS_PER_MINUTE"), perDay: num("LOGS_PER_DAY"), total: 0, tokensPerDay: num("LOG_BYTES_PER_DAY"), totalTokens: num("LOG_BYTES_TOTAL_PER_DAY") },
     logs: String(get("LOGS")).toLowerCase() !== "off",
-    rate: { perMinute: num("FEEDBACK_PER_MINUTE"), perDay: num("FEEDBACK_PER_DAY"), total: 0 },
+    rate: { perMinute: num("FEEDBACK_PER_MINUTE"), perDay: num("FEEDBACK_PER_DAY"), total: 0, tokensPerDay: num("FEEDBACK_BYTES_PER_DAY"),
+      totalTokens: num("FEEDBACK_BYTES_TOTAL_PER_DAY") },
     feedback: String(get("FEEDBACK")).toLowerCase() !== "off",
     logMax: num("LOG_MAX_BYTES"),
     keep: num("LOG_KEEP"),
@@ -1162,8 +1170,15 @@ export function reasoningFilter() {
 
 // ------------------------------------------------------------------ records
 const RELAY_PROVIDER = "impf"; // the page's id for the default service (web/js/providers.js)
-const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : undefined);
-const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+// a field of text: its first n units, cut between characters and with no half character left in it (sentinel.js,
+// clipped) — a question or an answer cut at its limit in the middle of a rare character was kept with a lone
+// surrogate, which the collector cannot write
+const str = clipped;
+// a number a record says: none below zero, none past what a turn can be.  A record is a visitor's to send, and its
+// numbers are summed for the owner (security/activity.py): one of -1e308 rounds, or of 1e308 tokens, was kept as it was
+const num = (v, most = 1e12) => (typeof v === "number" && v >= 0 && v <= most ? v : undefined);
+// a short word of the page's own (a status, a way a request ended): kept as a count's name, so never a sender's words
+const short = (v, n) => (typeof v === "string" && v.length <= n && /^[a-z][a-z0-9_-]*$/.test(v) ? v : undefined);
 const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
 const list = (v, n, each) => (Array.isArray(v) ? v.slice(0, n).map((x) => each(obj(x) || {})) : undefined);
 
@@ -1178,20 +1193,22 @@ export function normalizeRecord(r) {
   const question = str(r.question, 4000);
   if (!question && !num(r.images)) return null;
   const out = {
-    v: 1, id: str(r.id, 64), conversation: str(r.conversation, 64), turn: num(r.turn),
-    started: str(r.started, 40), finished: str(r.finished, 40), ms: num(r.ms), rounds: num(r.rounds), resumed: num(r.resumed),
-    question: question || "", images: num(r.images), answer: str(r.answer, 20000), redacted: num(r.redacted),
-    status: str(r.status, 20), error: str(r.error, 500),
-    model: str(r.model, 80), provider: str(r.provider, 80), runtime: str(r.runtime, 40), corpus: str(r.corpus, 40), app: str(r.app, 40),
+    v: 1, id: str(r.id, 64), conversation: str(r.conversation, 64), turn: num(r.turn, 1e5),
+    started: str(r.started, 40), finished: str(r.finished, 40), ms: num(r.ms, 864e5), rounds: num(r.rounds, 1000), resumed: num(r.resumed, 1000),
+    question: question || "", images: num(r.images, 100), answer: str(r.answer, 20000), redacted: num(r.redacted, 1e5),
+    status: short(r.status, 20), error: str(r.error, 500),
+    // (a model's name stays as the visitor's settings have it: it names a count only for the default service's own,
+    // where whoever sums it takes none but a name — security/activity.py)
+    model: str(r.model, 80), provider: str(r.provider, 80), runtime: short(r.runtime, 40), corpus: short(r.corpus, 40), app: str(r.app, 40),
     tools: list(r.tools, 40, (t) => ({
       name: str(t.name, 80), ok: t.ok === true, ms: num(t.ms), args: str(t.args, 300),
-      id: str(t.id, 64), round: num(t.round), status: str(t.status, 20), at: num(t.at), wait: num(t.wait), compute: num(t.compute),
+      id: str(t.id, 64), round: num(t.round, 1000), status: short(t.status, 20), at: num(t.at), wait: num(t.wait), compute: num(t.compute),
     })) || [],
     requests: list(r.requests, 48, (q) => ({
-      round: num(q.round), attempt: num(q.attempt), sent: num(q.sent), open: num(q.open), first: num(q.first), text: num(q.text),
+      round: num(q.round, 1000), attempt: num(q.attempt, 1000), sent: num(q.sent), open: num(q.open), first: num(q.first), text: num(q.text),
       last: num(q.last), end: num(q.end), finish: str(q.finish, 40), failed: str(q.failed, 40), expired: str(q.expired, 20),
-      status: num(q.status), input: num(q.input), output: num(q.output), hidden: num(q.hidden), asleep: num(q.asleep),
-      asks: num(q.asks), via: typeof q.via === "string" && PLACE.test(q.via) ? q.via : undefined, // how many times the service asked the model service, and from where the reply came
+      status: num(q.status, 999), input: num(q.input, 1e9), output: num(q.output, 1e9), hidden: num(q.hidden), asleep: num(q.asleep),
+      asks: num(q.asks, 1000), via: typeof q.via === "string" && PLACE.test(q.via) ? q.via : undefined, // how many times the service asked the model service, and from where the reply came
     })),
     events: list(r.events, 40, (e) => ({ at: num(e.at), what: str(e.what, 40) })),
     hidden: num(r.hidden), asleep: num(r.asleep),
@@ -1200,13 +1217,13 @@ export function normalizeRecord(r) {
   const u = r.usage;
   if (u && typeof u === "object" && !Array.isArray(u)) {
     out.usage = {};
-    for (const k of ["input", "output"]) if (num(u[k]) !== undefined) out.usage[k] = u[k]; // tokens, summed over the turn's rounds
+    for (const k of ["input", "output"]) if (num(u[k], 1e9) !== undefined) out.usage[k] = u[k]; // tokens, summed over the turn's rounds
   }
   const c = r.citations;
   if (c && typeof c === "object" && !Array.isArray(c)) {
     out.citations = {};
-    for (const k of ["total", "ok", "warn", "bad", "pending"]) if (num(c[k]) !== undefined) out.citations[k] = c[k];
-    if (Array.isArray(c.pids)) out.citations.pids = c.pids.filter((p) => typeof p === "string").slice(0, 60).map((p) => p.slice(0, 80));
+    for (const k of ["total", "ok", "warn", "bad", "pending"]) if (num(c[k], 1e5) !== undefined) out.citations[k] = c[k];
+    if (Array.isArray(c.pids)) out.citations.pids = c.pids.filter((p) => typeof p === "string").slice(0, 60).map((p) => str(p, 80));
   }
   return JSON.parse(JSON.stringify(out)); // without the undefined fields
 }
@@ -1226,8 +1243,8 @@ export function normalizeFeedback(r) {
   const rating = RATINGS.has(r.rating) ? r.rating : r.rating === null ? null : undefined;
   if (!id || rating === undefined) return null;
   const out = {
-    v: 1, kind: "feedback", id, conversation: str(r.conversation, 64), turn: num(r.turn), rating, given: str(r.given, 40),
-    model: str(r.model, 80), provider: str(r.provider, 80), runtime: str(r.runtime, 40), corpus: str(r.corpus, 40), app: str(r.app, 40),
+    v: 1, kind: "feedback", id, conversation: str(r.conversation, 64), turn: num(r.turn, 1e5), rating, given: str(r.given, 40),
+    model: str(r.model, 80), provider: str(r.provider, 80), runtime: short(r.runtime, 40), corpus: short(r.corpus, 40), app: str(r.app, 40),
   };
   if (rating) { // taken back: nothing more is kept
     Object.assign(out, {
@@ -1300,14 +1317,20 @@ async function intake(request, cfg, cors, allowed, deps, s, A, how) {
   const a = s ? assess(s.fp, { route, origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
   let gate;
   try {
+    // counted by what it weighs too (its bytes as sent, charged as the limiter charges a call's tokens)
     gate = await deps.gate({ who: await caller(request, deps.now()), kind: how.kind, limits: how.limits, fp: s?.fp, a, cfg: s?.cfg,
-      served: how.served?.(record) });
+      served: how.served?.(record), reserve: new TextEncoder().encode(raw).length });
   } catch (err) {
     console.error("gate", err?.name || "Error");
     return how.lost();
   }
   if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? 204 : gate.reason === "blocked" ? 403 : 429, s.cfg);
   if (!gate.ok && gate.reason === "day" && how.day) return error(429, how.day, "daily_limit", { ...cors, "Retry-After": String(gate.retry || 60) });
+  // the day's weight: a visitor's own, and all visitors' together (said as what it is: the limiter's own words are of model calls)
+  if (!gate.ok && gate.reason === "tokens") return error(429, `今天发来的${what}已达上限，明天再发`, "daily_limit", { ...cors, "Retry-After": String(gate.retry || 60) });
+  if (!gate.ok && (gate.reason === "total_tokens" || gate.reason === "total")) {
+    return error(429, `今天收下的${what}已达上限，明天再收`, "total_limit", { ...cors, "Retry-After": String(gate.retry || 60) });
+  }
   if (!gate.ok) return limited(gate, how.limits, cors, what);
   const id = await deps.logbook.add(JSON.stringify(record), new Date(deps.now()).toISOString(), cfg.keep);
   if (id === null) {
@@ -1367,7 +1390,7 @@ export function normalizeTurn(r) {
     module: MODULES.has(r.module) ? r.module : undefined, turn_index: count(r.turn_index, 100000),
     content_consent: r.consent === true ? true : r.consent === false ? false : undefined, ui_lang: word(r.lang, /^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$/),
   };
-  return { turn: r.turn, pass: typeof r.pass === "string" ? r.pass.slice(0, 120) : "", info: JSON.parse(JSON.stringify(info)) };
+  return { turn: r.turn, pass: str(r.pass, 120) ?? "", info: JSON.parse(JSON.stringify(info)) };
 }
 
 /**

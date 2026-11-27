@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { ACTIVITY, MANIFESTS, readBatch } from "../archive.js";
 import { classify, describe, envelope, EVENT_TYPES, LedgerCore, LedgerDrainer, SCHEMA_VERSION, ulid, verifyArchive } from "../ledger.js";
-import { apply, ensure, forget, known, METRICS, prune, rollup, serveLedgerStats, stats, TABLES } from "../ledger-d1.js";
+import { apply, ensure, forget, known, METRICS, MOST, prune, rollup, serveLedgerStats, stats, TABLES } from "../ledger-d1.js";
 import { fingerprint } from "../sentinel.js";
 import { dayAlias, ledgerConfig } from "../visitor.js";
 import { alarmStorage, bucket, d1, sqlStore } from "./fakes.js";
@@ -343,6 +343,28 @@ test("a day's sums are made again when its rows change, and a group that is gone
   assert.deepEqual(metric(db, "2026-11-24", "questions"), [["relay", "archived", 1]]);
   assert.deepEqual(await rollup(db), []);
   assert.ok(Object.keys(METRICS).length > 30);
+});
+
+test("a day keeps the largest groups of a metric whose names are a sender's to make, and the rest as one", async () => {
+  // a day's sums are kept for good and read by every reading of the counts: a referrer, a language, a tool's or a
+  // model's name of a sender's making was a row each — 20,000 rows from one address's day, which nothing ever removed
+  const events = [];
+  for (let k = 0; k < 300; k++) events.push(pageView(V(k), T0 + k * 1000, { referrer: `https://r${String(k).padStart(3, "0")}.example` }));
+  for (let k = 0; k < 7; k++) events.push(pageView(V(900 + k), T0 + HOUR + k * 1000, { referrer: "https://www.baidu.com" })); // what readers really come from
+  for (let k = 0; k < 3; k++) events.push(pageView(V(950 + k), T0 + 2 * HOUR + k * 1000));
+  const db = await registry(events);
+  const kept = metric(db, "2026-11-25", "referrers");
+  assert.equal(kept.length, MOST.referrers + 1); // the largest, and one group for the rest
+  assert.deepEqual(kept.find((r) => r[0] === "https://www.baidu.com"), ["https://www.baidu.com", "", 7]);
+  assert.deepEqual(kept.find((r) => r[0] === ""), ["", "", 300 - (MOST.referrers - 1)]); // of no name: "other" to its reader
+  assert.equal(kept.reduce((n, r) => n + r[2], 0), 307); // nothing lost of the count
+  // a metric whose names are not a sender's — the places the edge names — is kept whole, as before
+  assert.equal(metric(db, "2026-11-25", "page_views").reduce((n, r) => n + r[2], 0), 310);
+  // and made again the same when the day's rows change
+  await apply(db, [pageView(V(990), T0 + 3 * HOUR, { referrer: "https://www.baidu.com" })]);
+  await rollup(db);
+  assert.deepEqual(metric(db, "2026-11-25", "referrers").find((r) => r[0] === "https://www.baidu.com"), ["https://www.baidu.com", "", 8]);
+  assert.equal(metric(db, "2026-11-25", "referrers").length, MOST.referrers + 1);
 });
 
 test("an id is a visitor once a browser brings it back, and the day it was first seen on is summed again", async () => {

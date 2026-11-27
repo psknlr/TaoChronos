@@ -3,7 +3,7 @@
 // this browser; a new version of the notice asks again.  A record says where its turn's time went (timings).
 
 import { AGENT, PUBLISHER, PUBLISHER_EN } from "./brand.js";
-import { storage, truncate } from "./util.js";
+import { clip, storage, truncate } from "./util.js";
 import { T } from "./i18n.js";
 
 const KEY = "tc.consent";
@@ -71,8 +71,8 @@ export function feedbackRecord({ conv, msg, rating, reasons = [], comment = "", 
     rating, given: now.toISOString(), model: msg.model, provider: msg.provider, runtime: runtime.runtime, corpus: runtime.corpus, app: runtime.app,
   };
   if (rating) {
-    Object.assign(record, { reasons: [...reasons], comment: comment.trim().slice(0, 2000) || undefined, recorded: msg.recorded === true || undefined });
-    if (attach) Object.assign(record, { question: String(attach.question || "").slice(0, 4000), answer: String(attach.answer || "").slice(0, 12000) });
+    Object.assign(record, { reasons: [...reasons], comment: clip(comment.trim(), 2000) || undefined, recorded: msg.recorded === true || undefined });
+    if (attach) Object.assign(record, { question: clip(String(attach.question || ""), 4000), answer: clip(String(attach.answer || ""), 12000) });
   }
   return record;
 }

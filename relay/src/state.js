@@ -2,6 +2,8 @@
 // waiting to be collected into the repository.  Plain classes over a `sql` object with the Durable Object SQL API's
 // shape — exec(query, ...bindings) returning a cursor with toArray() and one() — so that they run under Node in tests.
 
+import { pageEnd } from "../../security/sentinel.js";
+
 export const day = (now) => new Date(now).toISOString().slice(0, 10);
 
 /** The kinds of model call that answer a visitor (the default model's, the second model's): such a call marks its caller
@@ -171,10 +173,11 @@ export class LogBookCore {
     return Number(id);
   }
 
+  /** A page for the collector: `limit` records at the most, and no more than a page may weigh (sentinel.js, pageEnd). */
   records(after = 0, limit = 500) {
-    const rows = this.sql.exec("SELECT id, received, record FROM logs WHERE id > ? ORDER BY id LIMIT ?", after, limit + 1).toArray();
-    const more = rows.length > limit;
-    const items = rows.slice(0, limit).map((r) => ({ id: Number(r.id), received: r.received, record: JSON.parse(r.record) }));
+    const { through, more } = pageEnd(this.sql, "logs", "record", after, limit);
+    const rows = this.sql.exec("SELECT id, received, record FROM logs WHERE id > ? AND id <= ? ORDER BY id", after, through).toArray();
+    const items = rows.map((r) => ({ id: Number(r.id), received: r.received, record: JSON.parse(r.record) }));
     return { items, last: items.length ? items[items.length - 1].id : after, more };
   }
 

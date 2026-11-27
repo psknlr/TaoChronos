@@ -15,6 +15,7 @@ import { gateCall, logged as ledgerLogged, turnFinished, turnRecorded } from "..
 import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, normalizeTurn, openaiBody, placedFetch, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
 import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
+import { PAGE_CHARS, pageEnd } from "../../security/sentinel.js";
 import { UsageCore } from "../../security/usage.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
@@ -786,6 +787,39 @@ test("the collector: token required, records after its cursor, deleted once comm
   assert.equal((await weak.call("/v1/logs/export", { headers: { Authorization: "Bearer short" } })).status, 401);
 });
 
+test("a page of the export is bounded by what it weighs: a day of one address's largest records comes in several pages", () => quiet(async () => {
+  // a Durable Object's method returns 32 MiB at the most, a string of Chinese two bytes a character: 500 records of
+  // 47 KB — what one address may send in a day — were a page the book could not hand out, and the export failed at
+  // every run (in workerd; under Node nothing limits it, so the page is measured here)
+  const r = relay();
+  const big = JSON.stringify(normalizeRecord({ ...turn, question: "问".repeat(4000), answer: "字".repeat(20000),
+    tools: Array.from({ length: 40 }, (_, k) => ({ name: "classics.search", ok: true, ms: 1, args: "参".repeat(300), id: `t${k}` })) }));
+  assert.ok(big.length > 36000);
+  for (let k = 0; k < 250; k++) r.book.add(big, new Date(Date.UTC(2026, 8, 28, 12, 0, k)).toISOString());
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const seen = [];
+  let after = 0;
+  let pages = 0;
+  for (;;) {
+    const res = await r.call(`/v1/logs/export?after=${after}&limit=500`, { headers: auth });
+    const body = await res.text();
+    assert.ok(body.length <= PAGE_CHARS + 200000, `a page of ${body.length} characters`);
+    const page = JSON.parse(body);
+    assert.ok(page.items.length >= 1);
+    seen.push(...page.items.map((i) => i.id));
+    pages += 1;
+    after = page.last;
+    if (!page.more) break;
+    assert.ok(pages < 50);
+  }
+  assert.ok(pages >= 3, `${pages} pages`);
+  assert.deepEqual(seen, Array.from({ length: 250 }, (_, k) => k + 1)); // every record, once, in order
+  // the rows still bound a page of small records, as before; and a record heavier than a page alone is its own page
+  assert.deepEqual([r.book.records(0, 3).items.length, r.book.records(0, 3).more, r.book.records(249, 3).more], [3, true, false]);
+  assert.deepEqual(pageEnd(r.book.sql, "logs", "record", 0, 500, 10), { through: 1, more: true });
+  assert.deepEqual(pageEnd(r.book.sql, "logs", "record", 250, 500, 10), { through: 250, more: false });
+}));
+
 test("with the archive's bucket the records and events go there: the repository's collector is told, and may not delete", () => quiet(async () => {
   const objects = new Map();
   const ARCHIVE = {
@@ -819,6 +853,69 @@ test("with the archive's bucket the records and events go there: the repository'
   const plain = relay();
   assert.equal((await (await plain.call("/v1/logs/export?after=0", { headers: auth })).json()).archive, undefined);
   assert.equal((await plain.call("/v1/logs/archive?day=2026-09-28", { headers: auth })).status, 404);
+}));
+
+test("what a record says is text: cut between characters at its limits, and no half of one is kept or handed to the collector", () => quiet(async () => {
+  // a character outside the BMP is two units, and a limit counts units: an answer cut at its limit in the middle of one
+  // kept a lone surrogate, which JSON carries and no file holds — the collector stopped on it, at every run
+  const lone = String.fromCharCode(0xd800), rare = String.fromCodePoint(0x20000), FFFD = "\ufffd";
+  const cut = normalizeRecord({ ...turn, question: `${"问".repeat(3999)}${rare}`, answer: `${"字".repeat(19999)}${rare}尾`, error: `x${lone}`,
+    tools: [{ name: "classics.search", args: `${"参".repeat(299)}${rare}` }], citations: { pids: [`${"p".repeat(79)}${rare}`, `q${lone}`] } });
+  assert.deepEqual([cut.question.length, cut.answer.length, cut.error, cut.tools[0].args.length, cut.citations.pids],
+    [3999, 19999, `x${FFFD}`, 299, ["p".repeat(79), `q${FFFD}`]]);
+  assert.equal(normalizeRecord({ ...turn, question: `${"问".repeat(3998)}${rare}` }).question.length, 4000); // whole where it fits
+  const said = normalizeFeedback({ ...rated, comment: `${"评".repeat(1999)}${rare}`, question: `问${lone}`, answer: `${lone}${rare}` });
+  assert.deepEqual([said.comment.length, said.question, said.answer], [1999, `问${FFFD}`, `${FFFD}${rare}`]);
+  const given = normalizeSponsor({ v: 1, agree: true, key: "sk-0123456789abcdef", model: `m${lone}`, note: `${"注".repeat(999)}${rare}`, contact: `c${lone}` }).sponsor;
+  assert.deepEqual([given.model, given.note.length, given.contact], [`m${FFFD}`, 999, `c${FFFD}`]); // a sponsorship's words alike
+  // through the door, and out of it
+  const r = relay();
+  assert.equal((await r.call("/v1/logs", post({ ...turn, provider: "openai", model: "gpt-x", question: `半${lone}`, answer: `${"字".repeat(19999)}${rare}` }))).status, 204);
+  assert.equal((await r.call("/v1/feedback", post({ ...rated, comment: `评${lone}` }))).status, 204);
+  const res = await r.call("/v1/logs/export?after=0", { headers: { Authorization: `Bearer ${TOKEN}` } });
+  const body = await res.text();
+  assert.ok(!/\\ud[89a-f][0-9a-f]{2}/i.test(body), "no half character is handed out"); // as JSON writes one
+  const [record, feedback] = JSON.parse(body).items.map((i) => i.record);
+  assert.deepEqual([record.question, record.answer.length, feedback.comment], [`半${FFFD}`, 19999, `评${FFFD}`]);
+}));
+
+test("a record's numbers and short words are within what a turn can be; a day's records are bounded by what they weigh", () => quiet(async () => {
+  // a record is a visitor's to send and its numbers are summed for the owner (security/activity.py): one record of
+  // -1e308 rounds and 1e308 tokens made a day's — and the lifetime's — sums negative or 309 digits long, and its
+  // status and model, any words, were kept as the names of counts
+  const odd = normalizeRecord({ ...turn, rounds: -1e308, ms: 1e308, turn: 2.5e9, usage: { input: 1e308, output: -1.5e300 }, status: "<b>x</b>|y",
+    model: "any words a sender likes: 张三 13800138000", runtime: "Browser!", corpus: "c d", images: 1e9, redacted: -1,
+    tools: [{ name: "classics.search", ms: -5, round: 1e9, status: "OK ok", at: 1e13 }],
+    requests: [{ round: 1, attempt: 1, status: 99999, input: 1e10, output: 7, sent: 12.5 }], citations: { total: 1e6, ok: 2 } });
+  assert.deepEqual([odd.rounds, odd.ms, odd.turn, odd.usage, odd.status, odd.runtime, odd.corpus, odd.images, odd.redacted],
+    [undefined, undefined, undefined, {}, undefined, undefined, undefined, undefined, undefined]);
+  assert.equal(odd.model, "any words a sender likes: 张三 13800138000"); // a model's name is the visitor's own setting: text, and whoever sums it names none but a name
+  assert.deepEqual([odd.tools[0], odd.requests[0], odd.citations], [{ name: "classics.search", ok: false }, { round: 1, attempt: 1, output: 7, sent: 12.5 }, { ok: 2 }]);
+  const honest = normalizeRecord({ ...turn, rounds: 3, model: "meta-llama/Llama-3.1:8b v2", status: "stopped" });
+  assert.deepEqual([honest.rounds, honest.ms, honest.turn, honest.usage, honest.status, honest.model, honest.runtime, honest.corpus],
+    [3, 12345, 1, { input: 1200, output: 180 }, "stopped", "meta-llama/Llama-3.1:8b v2", "browser", "canon"]);
+  const said = normalizeFeedback({ ...rated, turn: -3, runtime: "R T", corpus: "c|d" });
+  assert.deepEqual([said.turn, said.runtime, said.corpus], [undefined, undefined, undefined]);
+  // a day's records are bounded by what they weigh — a visitor's own, and all visitors' together — for they go into the
+  // repository: a count alone let one visitor add 29 MiB a day, and all of them anything at all
+  let t = Date.UTC(2026, 8, 28, 12, 0, 0);
+  const own = { ...turn, provider: "openai", model: "gpt-x", answer: "字".repeat(300) }; // a conversation held with the visitor's own key: taken on its origin alone
+  const weight = new TextEncoder().encode(JSON.stringify(own)).length;
+  const r = relay({ env: { LOG_BYTES_PER_DAY: String(2 * weight), LOG_BYTES_TOTAL_PER_DAY: String(5 * weight), FEEDBACK_BYTES_TOTAL_PER_DAY: "1" }, now: () => t });
+  const from = (ip) => ({ "CF-Connecting-IP": ip });
+  assert.deepEqual([(await r.call("/v1/logs", post(own, from("198.51.100.1")))).status, (await r.call("/v1/logs", post(own, from("198.51.100.1")))).status], [204, 204]);
+  const mine = await r.call("/v1/logs", post(own, from("198.51.100.1"))); // this visitor's day is full: another's is not
+  assert.deepEqual([mine.status, (await mine.json()).error.type], [429, "daily_limit"]);
+  for (const ip of ["198.51.100.2", "198.51.100.2", "198.51.100.3"]) assert.equal((await r.call("/v1/logs", post(own, from(ip)))).status, 204);
+  const full = await r.call("/v1/logs", post(own, from("198.51.100.4"))); // five were taken: the day's weight is reached, whoever sends
+  assert.deepEqual([full.status, (await full.json()).error.type], [429, "total_limit"]);
+  assert.equal((await r.call("/v1/feedback", post(rated, from("198.51.100.5")))).status, 204); // feedback has its own, and the first is always taken
+  assert.equal((await r.call("/v1/feedback", post(rated, from("198.51.100.6")))).status, 429);
+  assert.equal(r.book.records(0, 10).items.length, 6);
+  t += 86400000; // the next day: taken again
+  assert.equal((await r.call("/v1/logs", post(own, from("198.51.100.4")))).status, 204);
+  assert.deepEqual([config({}).log.tokensPerDay, config({}).log.totalTokens, config({}).log.total, config({}).rate.totalTokens, config({ LOG_BYTES_TOTAL_PER_DAY: "0" }).log.totalTokens],
+    [8388608, 67108864, 0, 16777216, 0]);
 }));
 
 test("a full book refuses the next record and keeps every one it took in", () => quiet(async () => {

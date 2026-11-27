@@ -48,6 +48,53 @@ STALE_SECONDS = 3 * 3600  # an event older than this still in an outbox: nothing
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
+# What comes in is JSON, and JSON carries what no file can hold: a lone surrogate ("\ud800": half a character), which
+# cannot be written as UTF-8 and would stop a run where it met one — at every run, once it is in what is asked for
+# again.  It becomes U+FFFD as the answer comes in.
+_LONE = re.compile("[\ud800-\udfff]")
+
+
+def _text(data):
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD.  Walked without recursion:
+    what a Worker kept may be nested deeper than the interpreter's own stack goes (a report kept before its fields were
+    checked), and a walk that stopped there would stop the run on what the parser had read."""
+    if isinstance(data, str):
+        return _LONE.sub("\ufffd", data)
+    waiting = [data]
+    while waiting:
+        box = waiting.pop()
+        if isinstance(box, dict):
+            for key in [k for k in box if isinstance(k, str) and _LONE.search(k)]:
+                box[_LONE.sub("\ufffd", key)] = box.pop(key)
+            inside = list(box.items())
+        elif isinstance(box, list):
+            inside = list(enumerate(box))
+        else:
+            continue
+        for at, value in inside:
+            if isinstance(value, str):
+                if _LONE.search(value):
+                    box[at] = _LONE.sub("\ufffd", value)
+            elif isinstance(value, (dict, list)):
+                waiting.append(value)
+    return data
+
+
+# A file of lines is read by its line feeds alone: U+0085, U+2028 and U+2029, which JSON lets a string hold as they are,
+# end a line for str.splitlines, and a record holding one was several lines — each skipped, or read for something else.
+def _records(path: Path):
+    """The lines of a JSON-lines file that are records (objects); anything else is passed over."""
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            yield r
+
+
 def _request(url: str, *, token: str | None = None, timeout: float = 90) -> tuple[int, dict | str]:
     headers = {"User-Agent": UA, "Accept": "application/json"}
     if token:
@@ -55,12 +102,12 @@ def _request(url: str, *, token: str | None = None, timeout: float = 90) -> tupl
     req = urllib.request.Request(url, headers=headers, method="GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 — the Workers' https addresses
-            raw, status = r.read().decode("utf-8"), r.status
+            raw, status = r.read().decode("utf-8", "replace"), r.status
     except urllib.error.HTTPError as err:
         raw, status = err.read().decode("utf-8", "replace"), err.code
     try:
-        return status, json.loads(raw)
-    except json.JSONDecodeError:
+        return status, _text(json.loads(raw))
+    except (json.JSONDecodeError, RecursionError):  # not JSON, or nested deeper than anything a Worker keeps
         return status, raw
 
 
@@ -307,6 +354,14 @@ def _n(v) -> str:
     return "—" if v is None else f"{int(v):,}"
 
 
+def _name(v: object) -> str:
+    """A name from the registry as the summary writes it.  It may be a sender's making — a referrer, a tool's or a
+    model's name — and the summary is Markdown, which the committed file and the run's page render: written as a code
+    span, with nothing in it that ends the span, the line or a table's cell, it is no link and no markup of theirs."""
+    text = re.sub(r"[`|\s]+", " ", str(v if v is not None else "")).strip()[:80]
+    return f"`{text}`" if text else ""
+
+
 def _share(part, whole) -> str:
     return f"{round(100 * part / whole)}%" if whole else "—"
 
@@ -341,13 +396,13 @@ def summary(w: dict[str, dict], through: date, least: int, pipeline: dict | None
             f"（{_n((ret.get(f'd{n}') or {}).get('back'))}/{_n((ret.get(f'd{n}') or {}).get('cohort'))}）" for n in (1, 7, 30)]
     lines += ["", "## 回来的访客", "", "首次来访后再来：" + "，".join(back) + "。", ""]
     m = w["30"] or {}
-    top = lambda rows, k=8: "，".join(f"{r[0] or '其他'} {_n(r[-1])}" for r in (rows or [])[:k]) or "—"  # noqa: E731
+    top = lambda rows, k=8: "，".join(f"{_name(r[0]) or '其他'} {_n(r[-1])}" for r in (rows or [])[:k]) or "—"  # noqa: E731
     place = lambda p: (f"{p['country']}·{p['region']}" if p.get("region") else p.get("country")) or f"其他 {p.get('folded', '')} 处".strip()  # noqa: E731
     places = "，".join(f"{place(p)} {_n(p.get('visitors'))}" for p in (m.get("places") or [])[:10]) or "—"
     q = m.get("questions") or {}
     lines += ["## 近 30 天", "",
               f"- 地区（按访客）：{places}",
-              f"- 提问的模型：{'，'.join(f'{r[1] or r[0] or chr(8212)} {_n(r[-1])}' for r in (q.get('by_model') or [])[:6]) or '—'}",
+              f"- 提问的模型：{'，'.join(f'{_name(r[1] or r[0]) or chr(8212)} {_n(r[-1])}' for r in (q.get('by_model') or [])[:6]) or '—'}",
               f"- 提问从哪里得知：{top(q.get('by_basis'))}（relay 默认服务亲眼所见 · client 网页自报 · record 只有对话记录）",
               f"- 工具：{top((m.get('features') or {}).get('tools'))}",
               f"- 设备：{top((m.get('audience') or {}).get('devices'))}；浏览器：{top((m.get('audience') or {}).get('browsers'), 6)}",
@@ -418,6 +473,17 @@ def provider_of(p: object) -> str:
     return "custom" if p.startswith("custom") else p if re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,39}", p) else "other"
 
 
+def _count(v: object, most: int) -> int:
+    """A count a record says, as it may be summed: a number from 0 to ``most``, else nothing.  A record is a visitor's
+    to send: one of -1e308 rounds and 1e308 tokens made a day's sums — and every week's, month's and year's that holds
+    the day — negative or 309 digits long."""
+    return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= most else 0
+
+
+MODEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._:/-]{0,79}")
+WORD = re.compile(r"[a-z][a-z0-9_-]{0,19}")
+
+
 def from_records(logs: Path) -> dict[str, dict]:
     """The conversation records committed under data/chat-logs/, by the readers' day they were received on, in
     counts: the questions (a turn once, however often it was taken up again), by whom they were answered, what they took
@@ -425,11 +491,7 @@ def from_records(logs: Path) -> dict[str, dict]:
     turns: dict[str, dict] = {}  # id → the last record of the turn
     feedback: dict[str, dict] = {}
     for f in sorted(logs.glob("*/*/*.jsonl")):
-        for line in f.read_text(encoding="utf-8").splitlines():
-            try:
-                r = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for r in _records(f):
             day = reader_day(str(r.get("received") or ""))
             if not day or not r.get("id"):
                 continue
@@ -453,21 +515,23 @@ def from_records(logs: Path) -> dict[str, dict]:
         provider = provider_of(r.get("provider"))
         bump(day, "questions")
         bump(day, "by_provider", provider)
+        # names of counts are of the known kinds, never a sender's words: a model's name, a status of the page's own
         if provider == "impf" and isinstance(r.get("model"), str) and r["model"]:
-            bump(day, "by_model", r["model"])  # a visitor's own model is their setting: not named
-        bump(day, "by_status", str(r.get("status") or "unknown")[:20])
-        bump(day, "model_calls", n=int(r.get("rounds") or 0))
-        usage = r.get("usage") or {}
-        bump(day, "tokens_in", n=int(usage.get("input") or 0))
-        bump(day, "tokens_out", n=int(usage.get("output") or 0))
-        tools = r.get("tools") or []
-        bump(day, "tool_calls", n=len(tools))
+            bump(day, "by_model", r["model"] if MODEL.fullmatch(r["model"]) else "other")  # a visitor's own model is their setting: not named
+        status = r.get("status")
+        bump(day, "by_status", "unknown" if not status else status if isinstance(status, str) and WORD.fullmatch(status) else "other")
+        bump(day, "model_calls", n=_count(r.get("rounds"), 1000))
+        usage = r.get("usage") if isinstance(r.get("usage"), dict) else {}
+        bump(day, "tokens_in", n=_count(usage.get("input"), 10**9))
+        bump(day, "tokens_out", n=_count(usage.get("output"), 10**9))
+        tools = r.get("tools") if isinstance(r.get("tools"), list) else []
+        bump(day, "tool_calls", n=min(len(tools), 40))
         for tool in tools:
-            name = str((tool or {}).get("name") or "").replace("__", ".")
+            name = str((tool if isinstance(tool, dict) else {}).get("name") or "").replace("__", ".")
             if re.fullmatch(r"[a-z][a-z0-9_.]{1,60}", name):
                 bump(day, "tools", name)
     for fb in feedback.values():
-        bump(fb["day"], "feedback", str(fb["rating"] or "withdrawn"))
+        bump(fb["day"], "feedback", fb["rating"] if fb["rating"] in ("up", "down") else "withdrawn")
     return out
 
 
@@ -496,11 +560,7 @@ def from_edge(edge: Path) -> dict[str, dict]:
     every request to the two hosts, what a Worker saw of them or not."""
     out: dict[str, dict] = {}
     for f in sorted(edge.glob("*/*/*.jsonl")):
-        for line in f.read_text(encoding="utf-8").splitlines():
-            try:
-                e = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for e in _records(f):
             if e.get("kind") != "traffic":
                 continue
             slot = out.setdefault(str(e.get("day")), {})

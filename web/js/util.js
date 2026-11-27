@@ -242,9 +242,17 @@ export function returnedText(text) {
   return text.replace(/"(?:prev|next)":"[^"]*"?/g, "");
 }
 
+/** The first `n` UTF-16 units of `s`, cut between characters: a character written as two units (those outside the BMP —
+ * rare Han characters are, and emoji) is left whole or left out, never half.  A half is no text: a model service may
+ * refuse a request that holds one, and a record that held one could not be written by its collector.
+ * @param {string} s @param {number} n */
+export function clip(s, n) {
+  return s.slice(0, n > 0 && n < s.length && /[\ud800-\udbff]/.test(s[n - 1]) && /[\udc00-\udfff]/.test(s[n]) ? n - 1 : n);
+}
+
 export function truncate(s, n) {
   s = String(s ?? "");
-  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+  return s.length > n ? clip(s, n - 1) + "…" : s;
 }
 
 /** A short label for a passage: its book and place, e.g. 伤寒论·第12条. */

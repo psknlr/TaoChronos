@@ -87,10 +87,13 @@ VISITOR_DAYS = "390"
 ACTIVITY_EVENT_DAYS = "90"
 ACTIVITY_VISITOR_DAYS = "760"
 ACTIVITY_TURN_DAYS = "7"
-# conversation records, sent only by visitors who agreed; "off" stops collecting them
+# conversation records, sent only by visitors who agreed; "off" stops collecting them.  LOGS_PER_DAY: per visitor (500);
+# LOG_BYTES_PER_DAY / LOG_BYTES_TOTAL_PER_DAY: what a day's records weigh, of one visitor (8 MiB) and of all together
+# (64 MiB; 0: no limit) — what a day can add to the repository is bounded
 LOGS = "on"
 # visitors' ratings of answers and what they wrote of them, sent only when they submit, kept with the records; "off"
-# stops collecting them (and the page shows no thumbs).  FEEDBACK_PER_MINUTE / FEEDBACK_PER_DAY: per visitor (10, 100)
+# stops collecting them (and the page shows no thumbs).  FEEDBACK_PER_MINUTE / FEEDBACK_PER_DAY: per visitor (10, 100);
+# FEEDBACK_BYTES_PER_DAY / FEEDBACK_BYTES_TOTAL_PER_DAY: by weight, of one visitor (2 MiB) and of all (16 MiB; 0: no limit)
 FEEDBACK = "on"
 # the second model, offered beside Tao-R1 only when the Worker has the secret OPENAI_API_KEY: OpenAI's GPT-6 Luna, asked
 # for by the page under OPENAI_PUBLIC_MODEL.  OPENAI_QUESTIONS_PER_DAY: questions per visitor per day (a question's tool

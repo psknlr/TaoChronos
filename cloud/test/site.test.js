@@ -698,6 +698,19 @@ test("a visitor who cannot be told is nobody: the page is served all the same", 
   assert.match((await open(call)).headers.get("Set-Cookie"), /^__Host-tcv=/);
 });
 
+test("where a visitor came from is an origin, or it is not noted: a Referer that is no URL goes into no report", async () => {
+  // such a Referer was kept as its first characters, whatever they were — markup of the sender's choosing, which the
+  // owner's summary then wrote out (security/activity.py)
+  const { call, settle, events } = site({ watch: true, ledger: true, cf: CF });
+  await open(call, { Referer: "http://x <a href=https://evil.example>Token expired: sign in again</a>" });
+  await open(call, { Referer: "https://[2001:db8::1]:8443/a/b?c=d", "CF-Connecting-IP": "203.0.113.77" });
+  await open(call, { Referer: "https://Search.Example:8443/path?q=1", "CF-Connecting-IP": "203.0.113.78" });
+  await open(call, { Referer: "ftp://files.example/x", "CF-Connecting-IP": "203.0.113.79" });
+  await settle();
+  assert.deepEqual(events().filter((e) => e.event_type === "page_view").map((e) => e.referrer || null),
+    [null, "https://[2001:db8::1]:8443", "https://search.example:8443", null]);
+});
+
 test("a page a browser opens is written down for a visitor: an id it is given, and is known by when it comes back", async () => {
   const { call, settle, events, advance, env } = site({ watch: true, ledger: true, cf: CF });
   const first = await open(call, { Referer: "https://www.baidu.com/s?wd=%E6%A1%82%E6%9E%9D%E6%B1%A4" });

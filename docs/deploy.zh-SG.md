@@ -438,6 +438,7 @@ git add data/chat-logs && git commit -m "chat-logs: through #$LAST" && git push 
 | 每次回复的长度 | 中转的 `MAX_OUTPUT_TOKENS` | 每次回复 32,768 token（含思考）；在此处截断的回答由网页接着续写（至多两次），记录里截断的回答多了再调高；回复的花费由上面两项每日 token 额度约束 |
 | 网站的每日上限 | 网站的 `API_READS_PER_DAY`、`API_CALLS_PER_DAY`、`API_RESEARCH_PER_DAY` | 每个地址每天 6,000 / 3,000 次，有意放宽；每个地址每天发起 100 次研究（全量语料一次只跑一项，最多 20 项排队） |
 | 待取走的记录 | 中转的 `LOG_KEEP` | 50,000 条；超出后拒收新记录（并写 `logs full`），已收下的不丢 |
+| 一天的记录有多重 | 中转的 `LOG_BYTES_PER_DAY`、`LOG_BYTES_TOTAL_PER_DAY`；`FEEDBACK_BYTES_PER_DAY`、`FEEDBACK_BYTES_TOTAL_PER_DAY` | 记录：每位访客 8 MiB、全体 64 MiB；反馈：2 MiB 与 16 MiB——按发来的字节数计，与每位访客的条数上限（每天 500 与 100）并用：不论谁发，一天能进仓库的量有上限。网站自己的访问量接近全体上限时再调高（0 为不限） |
 | 容器 | `cloud/corpus/wrangler.toml` 的 `SLEEP_AFTER`、`instance_type`、`LOCATION_HINT` | `15m`、`standard-1`、`apac`（适合新加坡与东亚；第一次建立时即固定） |
 
 在 `main` 上修改（经 Pull Request），再部署（Actions 或路线 B）。

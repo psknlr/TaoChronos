@@ -468,6 +468,7 @@ The rules fit the zone's own plan (Free: 5 custom rules, one 10-second rate limi
 | Reply length | `MAX_OUTPUT_TOKENS` (relay) | 32,768 tokens a reply, its reasoning included; the page writes on an answer cut there (twice at most), so raise it only if the records show many cut answers — the day's token budgets above bound what replies cost |
 | Site's daily caps | `API_READS_PER_DAY`, `API_CALLS_PER_DAY`, `API_RESEARCH_PER_DAY` (site) | 6,000 / 3,000 per address, wide on purpose; 100 research runs started per address (the corpus runs one at a time and holds 20 waiting) |
 | Records waiting | `LOG_KEEP` (relay) | 50,000; beyond, new records are refused (`logs full` logged), none dropped |
+| What a day's records weigh | `LOG_BYTES_PER_DAY`, `LOG_BYTES_TOTAL_PER_DAY`; `FEEDBACK_BYTES_PER_DAY`, `FEEDBACK_BYTES_TOTAL_PER_DAY` (relay) | records: 8 MiB a visitor, 64 MiB in all; feedback: 2 MiB and 16 MiB — in bytes as sent, beside the counts a visitor has (500 and 100 a day): what a day adds to the repository is bounded whoever sends it. Raise the totals when the site's own traffic nears them (0: no limit) |
 | Container | `SLEEP_AFTER`, `instance_type`, `LOCATION_HINT` (`cloud/corpus/wrangler.toml`) | `15m`, `standard-1`, `apac` (right for Singapore and East Asia; fixed when first created) |
 
 Change on `main` (a pull request), then deploy (Actions, or Route B).
