@@ -166,6 +166,16 @@ Durable Object 的一次调用最多交回 32 MiB，而带着一个 Latin-1 以�
 （5xx）会把页缩小再要。请求头的值在 Workers 里按 UTF-8 读出，所以指纹里的各个请求头也经 `clipped()`——此前一条带着
 生僻字的 User-Agent 在长度上限处被截成两半，一个探测路径的 GET 就够留下半个字。
 
+**一天的文件有上限**。GitHub 拒收含有超过 100 MiB 文件的推送，而一天的记录原先全写进一个文件：四个地址各发满一天的额度
+（每条 59 KB）就是 114 MiB，推送被拒，此后每次取回的还是同一批、写进同一个文件。现在一天超过 32 MiB 就接着写
+`日.p02.jsonl`、`日.p03.jsonl`……（三个收集器都是；读的时候取所有 `*.jsonl`）；中转一天收下的记录与反馈另按分量设上限
+（按发来的字节数：记录每位访客 8 MiB、全体 64 MiB，反馈 2 MiB 与 16 MiB——`LOG_BYTES_PER_DAY` 等四个变量；条数上限
+照旧）；边缘事件里 API 给出的字符串至多留 400 字符（路径、查询串、User-Agent 有多长全凭发送者）。记录里的数字与短词也只留一轮问答可能有的（`relay.js` 的 `num`、`short`）：它们要被加总成
+`data/activity-analytics/` 里的数，一条写着 -1e308 轮、1e308 个 token 的记录曾让一天的合计（连同所在的周、月、年与总计）
+变成负数或 309 位的数；`activity.py` 自己加总时再按同样的上限过一遍。摘要（`SUMMARY.md`、工作流运行页）里出自访客的名字
+——来源网站、工具名、模型名——一律写成行内代码，来源网站只在它是一个源（origin）时才记；账本的每日合计里，这类名字每天
+只留数量最多的若干组（`ledger-d1.js` 的 `MOST`），其余并作一组。
+
 Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 ≥ 400、被拒绝或 shadow 的请求各写一行结构化日志（字段：`tag`、`route`、`status`、`score`、`reasons`、
 `who`、`ip`（仅被标记时）、`ua`、`asn`、`cc`、`colo`、`path`、`proto`、`tls`、`ray`），在 Cloudflare 控制台 Workers → 该 Worker → Logs 里按字段筛选。免费计划保留 3 天。
 

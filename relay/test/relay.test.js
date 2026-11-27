@@ -879,6 +879,44 @@ test("what a record says is text: cut between characters at its limits, and no h
   assert.deepEqual([record.question, record.answer.length, feedback.comment], [`半${FFFD}`, 19999, `评${FFFD}`]);
 }));
 
+test("a record's numbers and short words are within what a turn can be; a day's records are bounded by what they weigh", () => quiet(async () => {
+  // a record is a visitor's to send and its numbers are summed for the owner (security/activity.py): one record of
+  // -1e308 rounds and 1e308 tokens made a day's — and the lifetime's — sums negative or 309 digits long, and its
+  // status and model, any words, were kept as the names of counts
+  const odd = normalizeRecord({ ...turn, rounds: -1e308, ms: 1e308, turn: 2.5e9, usage: { input: 1e308, output: -1.5e300 }, status: "<b>x</b>|y",
+    model: "any words a sender likes: 张三 13800138000", runtime: "Browser!", corpus: "c d", images: 1e9, redacted: -1,
+    tools: [{ name: "classics.search", ms: -5, round: 1e9, status: "OK ok", at: 1e13 }],
+    requests: [{ round: 1, attempt: 1, status: 99999, input: 1e10, output: 7, sent: 12.5 }], citations: { total: 1e6, ok: 2 } });
+  assert.deepEqual([odd.rounds, odd.ms, odd.turn, odd.usage, odd.status, odd.model, odd.runtime, odd.corpus, odd.images, odd.redacted],
+    [undefined, undefined, undefined, {}, undefined, undefined, undefined, undefined, undefined, undefined]);
+  assert.deepEqual([odd.tools[0], odd.requests[0], odd.citations], [{ name: "classics.search", ok: false }, { round: 1, attempt: 1, output: 7, sent: 12.5 }, { ok: 2 }]);
+  const honest = normalizeRecord({ ...turn, rounds: 3, model: "meta-llama/Llama-3.1:8b v2", status: "stopped" });
+  assert.deepEqual([honest.rounds, honest.ms, honest.turn, honest.usage, honest.status, honest.model, honest.runtime, honest.corpus],
+    [3, 12345, 1, { input: 1200, output: 180 }, "stopped", "meta-llama/Llama-3.1:8b v2", "browser", "canon"]);
+  const said = normalizeFeedback({ ...rated, turn: -3, model: "<i>m</i>", runtime: "R T" });
+  assert.deepEqual([said.turn, said.model, said.runtime], [undefined, undefined, undefined]);
+  // a day's records are bounded by what they weigh — a visitor's own, and all visitors' together — for they go into the
+  // repository: a count alone let one visitor add 29 MiB a day, and all of them anything at all
+  let t = Date.UTC(2026, 8, 28, 12, 0, 0);
+  const own = { ...turn, provider: "openai", model: "gpt-x", answer: "字".repeat(300) }; // a conversation held with the visitor's own key: taken on its origin alone
+  const weight = new TextEncoder().encode(JSON.stringify(own)).length;
+  const r = relay({ env: { LOG_BYTES_PER_DAY: String(2 * weight), LOG_BYTES_TOTAL_PER_DAY: String(5 * weight), FEEDBACK_BYTES_TOTAL_PER_DAY: "1" }, now: () => t });
+  const from = (ip) => ({ "CF-Connecting-IP": ip });
+  assert.deepEqual([(await r.call("/v1/logs", post(own, from("198.51.100.1")))).status, (await r.call("/v1/logs", post(own, from("198.51.100.1")))).status], [204, 204]);
+  const mine = await r.call("/v1/logs", post(own, from("198.51.100.1"))); // this visitor's day is full: another's is not
+  assert.deepEqual([mine.status, (await mine.json()).error.type], [429, "daily_limit"]);
+  for (const ip of ["198.51.100.2", "198.51.100.2", "198.51.100.3"]) assert.equal((await r.call("/v1/logs", post(own, from(ip)))).status, 204);
+  const full = await r.call("/v1/logs", post(own, from("198.51.100.4"))); // five were taken: the day's weight is reached, whoever sends
+  assert.deepEqual([full.status, (await full.json()).error.type], [429, "total_limit"]);
+  assert.equal((await r.call("/v1/feedback", post(rated, from("198.51.100.5")))).status, 204); // feedback has its own, and the first is always taken
+  assert.equal((await r.call("/v1/feedback", post(rated, from("198.51.100.6")))).status, 429);
+  assert.equal(r.book.records(0, 10).items.length, 6);
+  t += 86400000; // the next day: taken again
+  assert.equal((await r.call("/v1/logs", post(own, from("198.51.100.4")))).status, 204);
+  assert.deepEqual([config({}).log.tokensPerDay, config({}).log.totalTokens, config({}).log.total, config({}).rate.totalTokens, config({ LOG_BYTES_TOTAL_PER_DAY: "0" }).log.totalTokens],
+    [8388608, 67108864, 0, 16777216, 0]);
+}));
+
 test("a full book refuses the next record and keeps every one it took in", () => quiet(async () => {
   const r = relay({ env: { LOG_KEEP: "3" } });
   await r.call("/v1/chat/completions", post(PAGE_ASK));

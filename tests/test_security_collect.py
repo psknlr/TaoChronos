@@ -178,3 +178,39 @@ def test_a_page_a_worker_cannot_hand_out_is_asked_for_again_smaller(workers, tmp
     got = collect.pull({"relay": relay.url, "site": site.url}, tmp_path, limit=40)
     assert (got["relay_new"], got["site_new"], got["site_last"]) == (1, 7, 7)
     assert [json.loads(x)["n"] for x in (tmp_path / "site" / "2026" / "10" / "14.jsonl").read_text().splitlines()] == list(range(1, 8))
+
+
+def test_a_days_events_are_kept_under_what_github_takes(workers, tmp_path, monkeypatch):
+    """A day's events go on in further parts past PART_BYTES (a push holding a file over 100 MiB is refused)."""
+    relay, site = workers
+    monkeypatch.setattr(collect, "PART_BYTES", 300)
+    for k in range(9):
+        site.add(f"2026-10-14T02:0{k}:00Z", "flag")
+    assert collect.pull({"site": site.url}, tmp_path)["site_new"] == 9
+    parts = sorted((tmp_path / "site" / "2026" / "10").glob("14*.jsonl"))
+    assert [p.name for p in parts][:2] == ["14.jsonl", "14.p02.jsonl"] and all(p.stat().st_size <= 300 for p in parts)
+    assert [json.loads(x)["n"] for p in parts for x in p.read_text().splitlines()] == list(range(1, 10))
+    assert collect.ack({"site": site.url}, tmp_path)["site_acked"] == 9
+
+
+def test_the_door_walks_what_is_nested_deeper_than_the_interpreters_stack():
+    """What a Worker kept may be nested deeper than Python's own stack goes (a report kept before its fields were
+    checked): a walk that called itself for each level stopped the run there, on what the parser had read."""
+    lone = "\ud800"
+    deep = inner = []
+    for k in range(50_000):
+        box = {f"k{lone}": [f"x{lone}"]} if k % 2 else [f"y{lone}"]
+        inner.append(box)
+        inner = box[f"k{lone}"] if isinstance(box, dict) else box
+    out = collect._text(deep)
+    levels, node = 0, out
+    while True:
+        strings = [v for v in (node if isinstance(node, list) else list(node) + list(node.values())) if isinstance(v, str)]
+        assert all(lone not in v for v in strings)
+        below = [v for v in (node if isinstance(node, list) else node.values()) if isinstance(v, (list, dict))]
+        if not below:
+            break
+        node, levels = below[0], levels + 1
+    assert levels == 75_000
+    plain = {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"}
+    assert collect._text(plain) == {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"} and collect._text(f"a{lone}") == "a\ufffd" and collect._text(7) == 7

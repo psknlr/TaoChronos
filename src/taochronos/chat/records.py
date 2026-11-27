@@ -50,7 +50,9 @@ def read(paths: Iterable[Path]) -> Iterator[dict[str, Any]]:
 
 
 def _n(v: Any) -> float | None:
-    return v if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else None
+    """A number a record says, when it is one a turn can say (a time in milliseconds, a count).  A record is a visitor's
+    to send: one that said 1e308 made the sums of its times infinite, and the summary no longer JSON."""
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and abs(v) <= 1e12 else None
 
 
 def _seconds(values: list[float]) -> dict[str, Any] | None:

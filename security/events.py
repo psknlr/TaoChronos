@@ -76,16 +76,37 @@ ID_PATH = re.compile(r"^(/api/(?:research|session)/)[^/]+")
 # (_line), and a file is read by its line feeds alone (_records).
 _LONE = re.compile("[\ud800-\udfff]")
 _ENDS = re.compile("[\u0085\u2028\u2029]")
+# The most characters kept of a string the API tells.  A path, a query and a user agent are as long as their sender
+# made them (the longest agent kept so far is 364), a day's file is made of them — a group's twice, in its key too —
+# and GitHub refuses a push holding a file over 100 MiB: a day of long ones would be a day never kept, at any run.
+KEPT_CHARS = 400
+# and a day's file goes on in further parts past this: DD.p02.jsonl, DD.p03.jsonl …
+PART_BYTES = 32 * 1024 * 1024
 
 
 def _text(data):
-    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD."""
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD.  Walked without recursion:
+    what a Worker kept may be nested deeper than the interpreter's own stack goes (a report kept before its fields were
+    checked), and a walk that stopped there would stop the run on what the parser had read."""
     if isinstance(data, str):
-        return _LONE.sub("\ufffd", data)
-    if isinstance(data, list):
-        return [_text(v) for v in data]
-    if isinstance(data, dict):
-        return {_text(k): _text(v) for k, v in data.items()}
+        return _LONE.sub("\ufffd", data[:KEPT_CHARS])
+    waiting = [data]
+    while waiting:
+        box = waiting.pop()
+        if isinstance(box, dict):
+            for key in [k for k in box if isinstance(k, str) and _LONE.search(k)]:
+                box[_LONE.sub("\ufffd", key)] = box.pop(key)
+            inside = list(box.items())
+        elif isinstance(box, list):
+            inside = list(enumerate(box))
+        else:
+            continue
+        for at, value in inside:
+            if isinstance(value, str):
+                if len(value) > KEPT_CHARS or _LONE.search(value):  # within KEPT_CHARS too: what a day's file is made of
+                    box[at] = _LONE.sub("\ufffd", value[:KEPT_CHARS])
+            elif isinstance(value, (dict, list)):
+                waiting.append(value)
     return data
 
 
@@ -105,6 +126,36 @@ def _records(path: Path):
             continue
         if isinstance(e, dict):
             yield e
+
+
+def _parts(folder: Path, dd: str) -> list[Path]:
+    """A day's files, in order: DD.jsonl, then DD.p02.jsonl, DD.p03.jsonl …"""
+    found = [folder / f"{dd}.jsonl"] if (folder / f"{dd}.jsonl").is_file() else []
+    while (folder / f"{dd}.p{len(found) + 1:02d}.jsonl").is_file() and found:
+        found.append(folder / f"{dd}.p{len(found) + 1:02d}.jsonl")
+    return found
+
+
+def _write_day(folder: Path, dd: str, lines: list[str]) -> None:
+    """A day's lines written anew, in parts each under PART_BYTES (what was kept of the day before is replaced)."""
+    folder.mkdir(parents=True, exist_ok=True)
+    for old in _parts(folder, dd):
+        old.unlink()
+    n, size, held = 1, 0, []
+
+    def put() -> None:
+        if held:
+            (folder / (f"{dd}.jsonl" if n == 1 else f"{dd}.p{n:02d}.jsonl")).write_text("".join(x + "\n" for x in held), encoding="utf-8")
+            held.clear()
+
+    for line in lines:
+        weight = len(line.encode("utf-8")) + 1
+        if size and size + weight > PART_BYTES:
+            put()
+            n, size = n + 1, 0
+        held.append(line)
+        size += weight
+    put()
 
 
 def kept_path(path: str) -> str:
@@ -284,13 +335,13 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
             kept["skipped"].append(f"{name}: {the_day} before {begin.strftime('%H:%M')} UTC is out of reach ({keeps})")
         return begin
 
-    path = out / day.strftime("%Y") / day.strftime("%m") / f"{day.strftime('%d')}.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # what is kept of the day already, by its key and in its order: a line pulled again is replaced when the new count
-    # is the larger (the day was pulled before it was over), and what is new is added after
+    folder, dd = out / day.strftime("%Y") / day.strftime("%m"), day.strftime("%d")
+    folder.mkdir(parents=True, exist_ok=True)
+    # what is kept of the day already (in all its parts), by its key and in its order: a line pulled again is replaced
+    # when the new count is the larger (the day was pulled before it was over), and what is new is added after
     held: dict[str, dict] = {}
-    if path.is_file():
-        for e in _records(path):
+    for part in _parts(folder, dd):
+        for e in _records(part):
             if e.get("key"):
                 held[e["key"]] = e
     seen = set(held)
@@ -403,7 +454,7 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
                 kept["skipped"].append(f"traffic of {host}: not asked ({str(err)[:160]})")
         kept["security_actions_seen"] = actions  # what the zone reports as 'no action': checked once against what worth() ignores
     if changed:
-        path.write_text("".join(_line(e) + "\n" for e in held.values()), encoding="utf-8")
+        _write_day(folder, dd, [_line(e) for e in held.values()])
     kept["suspects"] = len(suspects(out, write=True))
     return kept
 
@@ -443,7 +494,7 @@ def suspects(out: Path, write: bool = False) -> dict:
     since = (datetime.now(timezone.utc) - timedelta(days=SUSPECT_DAYS)).strftime("%Y-%m-%d")
     by_ip: dict[str, dict] = {}
     for f in sorted(out.glob("*/*/*.jsonl")):
-        day = f"{f.parts[-3]}-{f.parts[-2]}-{f.stem}"
+        day = f"{f.parts[-3]}-{f.parts[-2]}-{f.name[:2]}"  # (a day's further parts are DD.p02.jsonl …)
         if day < since:
             continue
         for e in _records(f):
@@ -497,7 +548,7 @@ def days_to_pull(out: Path, now: datetime) -> list[datetime]:
     not happen (the Actions minutes ran out, a token was unset) are caught up by the next — no further back than
     CATCH_UP_DAYS; yesterday when none is kept, or the last one kept is yesterday or later."""
     yesterday = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    kept = [f"{f.parts[-3]}-{f.parts[-2]}-{f.stem}" for f in out.glob("*/*/*.jsonl")]
+    kept = [f"{f.parts[-3]}-{f.parts[-2]}-{f.name[:2]}" for f in out.glob("*/*/*.jsonl")]
     start = yesterday
     if kept:
         start = min(datetime.strptime(max(kept), "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1), yesterday)

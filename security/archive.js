@@ -50,6 +50,13 @@ export function archiveBody(item, field, extra = {}) {
  * through the last one written, never further.  → {archived, through, more, failed}: more — others wait (drain again
  * soon); failed — a write failed (drain again later; what was written is removed, the rest stays).
  */
+// a conversation's id as the page makes one: the one word of a record that goes into an object's metadata.  A record is
+// a visitor's to send, and what a bucket takes for metadata is its own matter: anything but a plain id (a line break,
+// a control character, any words) is left out of the metadata — it is in the body all the same — so that no record
+// can be one the bucket refuses, which would hold up every record waiting behind it
+const PLAIN_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
+const plainId = (v) => (typeof v === "string" && PLAIN_ID.test(v) ? v : "");
+
 export async function drain(store, bucket, { prefix, field, extra = {}, limit = 100 }) {
   const { items, more } = await store.records(0, limit);
   let through = 0;
@@ -61,7 +68,7 @@ export async function drain(store, bucket, { prefix, field, extra = {}, limit = 
       const sha256 = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body)));
       const put = await bucket.put(archiveKey(prefix, item), body, {
         sha256, httpMetadata: { contentType: "application/json; charset=utf-8" },
-        customMetadata: { received: String(item.received || ""), conversation: String(item[field]?.conversation || "").slice(0, 64) },
+        customMetadata: { received: String(item.received || ""), conversation: plainId(item[field]?.conversation) },
       });
       if (!put) throw new Error("not written");
     } catch (err) {

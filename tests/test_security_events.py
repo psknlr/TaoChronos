@@ -402,3 +402,40 @@ def test_what_the_edge_tells_of_a_request_is_the_senders_and_is_kept_a_line_an_e
                                   "userAgent": agent}, ensure_ascii=False) + "\n7\n", encoding="utf-8")
     ranked = events.suspects(tmp_path / "kept")
     assert (ranked["198.51.100.7"]["blocked"], ranked["198.51.100.7"]["agents"]) == (1, [agent])
+
+
+def test_a_days_edge_events_are_kept_within_what_github_takes(monkeypatch, tmp_path):
+    """A path, a query and a user agent are as long as their sender made them, and a day's file is made of them: GitHub
+    refuses a push holding a file over 100 MiB, so a day of long ones was a day never kept.  A string the API tells is
+    kept to KEPT_CHARS, and a day goes on in further parts past PART_BYTES — read back as one day."""
+    long_agent, long_path = "Mozilla/5.0 " + "长" * 5000, "/" + "p" * 3000
+
+    class Long(FakeAPI):
+        def __call__(self, token: str, q: str, variables: dict) -> dict:
+            data = super().__call__(token, q, variables)
+            for row in data["viewer"]["zones"][0].get("firewallEventsAdaptive") or []:
+                row.update(userAgent=long_agent, clientRequestPath=long_path)
+            return events._text(data)  # as the door hands it on (the tests stand in for query itself)
+
+    api = Long(zone_settings())
+    monkeypatch.setattr(events, "query", api)
+    monkeypatch.setattr(events, "PART_BYTES", 2000)
+    first = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    parts = sorted((tmp_path / "2026" / "10").glob("05*.jsonl"))
+    assert [p.name for p in parts][:2] == ["05.jsonl", "05.p02.jsonl"] and len(parts) >= 3
+    lines = [json.loads(x) for p in parts for x in p.read_text(encoding="utf-8").splitlines()]
+    fw = [e for e in lines if e["kind"] == "firewall"]
+    assert len(fw) == first["events"] == 3 and {len(e["userAgent"]) for e in fw} == {events.KEPT_CHARS} and {len(e["clientRequestPath"]) for e in fw} == {events.KEPT_CHARS}
+    assert max(len(json.dumps(e, ensure_ascii=False)) for e in lines) < 2000  # a line is bounded, whatever was sent
+    again = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)  # the day read back from all its parts
+    assert again["events"] == 0 and sorted((tmp_path / "2026" / "10").glob("05*.jsonl")) == parts
+    assert [json.loads(x) for p in parts for x in p.read_text(encoding="utf-8").splitlines()] == lines
+    # a day told by its parts is still that day: for the suspects, and for the days still to pull
+    today = datetime.now(timezone.utc)
+    folder = tmp_path / "kept" / today.strftime("%Y") / today.strftime("%m")
+    folder.mkdir(parents=True)
+    for name in (f"{today.strftime('%d')}.jsonl", f"{today.strftime('%d')}.p02.jsonl"):
+        (folder / name).write_text(json.dumps({"key": f"fw:{name}", "kind": "firewall", "clientIP": "198.51.100.7", "action": "block"}) + "\n", encoding="utf-8")
+    seen = events.suspects(tmp_path / "kept")["198.51.100.7"]
+    assert (seen["blocked"], seen["first"], seen["last"]) == (2, today.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
+    assert events.days_to_pull(tmp_path, LATER + timedelta(days=3))[0] == DAY + timedelta(days=1)

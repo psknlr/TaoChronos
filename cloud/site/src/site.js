@@ -271,7 +271,9 @@ async function site(request, env, s, L, url, cfg) {
   if (L && page && route !== null) {
     // the ledger's page view, for the visitor the browser's cookie names — or the one it is given now (visitor.js)
     const who = await L.identify(true);
-    const came = fp.referer && /^https?:\/\//.test(fp.referer) && fp.referer !== url.origin && !cfg.origins.includes(fp.referer) ? fp.referer.slice(0, 120) : null;
+    // where the visitor came from: an origin (what fingerprint() makes of a Referer that is a URL), or nothing — one
+    // that is no URL was kept as its first characters, whatever they were, and went as such into the owner's report
+    const came = fp.referer && ORIGIN.test(fp.referer) && fp.referer !== url.origin && !cfg.origins.includes(fp.referer) ? fp.referer : null;
     L.mark = { type: "page_view", route, page: true, a: L.mark?.a || assess(fp, { route: "page", ownPrefix: sentinelConfig(env).ownPrefix }), visitor: who.visitor,
       more: { ...(came ? { referrer: came } : {}), ...(who.state === "new" ? { new_visitor: true } : {}) } };
     if (who.cookie) {
@@ -458,6 +460,8 @@ async function api(request, env, cfg, deps, url, s, from = null, L = null) {
 }
 
 const secondsToMidnight = (now) => Math.ceil((86400000 - (now % 86400000)) / 1000);
+// an origin as a URL gives it: a scheme, a host in letters, digits, dots and hyphens (or a bracketed address), a port
+const ORIGIN = /^https?:\/\/(?:[a-z0-9.-]{1,253}|\[[0-9a-f:.]{2,45}\])(?::\d{1,5})?$/;
 
 // ------------------------------------------------------------------ the activity ledger's endpoints
 const LANG = /^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$/;

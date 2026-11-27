@@ -1977,7 +1977,7 @@ async function recordTurn(conv, msg, diag = null) {
     let body = JSON.stringify(record);
     const size = () => new TextEncoder().encode(body).length;
     while (size() > 60000 && record.answer.length > 400) { // within the relay's limit: the answer is shortened
-      record.answer = record.answer.slice(0, Math.floor(record.answer.length * 0.7));
+      record.answer = clip(record.answer, Math.floor(record.answer.length * 0.7));
       body = JSON.stringify(record);
     }
     // text/plain: a simple request, no preflight (the relay reads the body as JSON whatever its type)
@@ -2081,7 +2081,7 @@ function openFeedback(conv, msg, rating) {
 async function sendFeedback(record) {
   let body = JSON.stringify(record);
   while (new TextEncoder().encode(body).length > 60000 && record.answer?.length > 400) { // within the relay's limit
-    record.answer = record.answer.slice(0, Math.floor(record.answer.length * 0.7));
+    record.answer = clip(record.answer, Math.floor(record.answer.length * 0.7));
     body = JSON.stringify(record);
   }
   try {

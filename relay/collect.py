@@ -1,7 +1,8 @@
 """The repository's side of 道乃久默认服务 (standard library only; run by .github/workflows).
 
   pull     the conversation records the relay holds, after the cursor committed in the repository, appended to
-           data/chat-logs/YYYY/MM/DD.jsonl (by the day, UTC, the relay received them); the cursor moves with them
+           data/chat-logs/YYYY/MM/DD.jsonl (by the day, UTC, the relay received them; a day larger than 32 MiB goes
+           on in DD.p02.jsonl, DD.p03.jsonl …); the cursor moves with them
   ack      the relay deletes what the repository now holds (after the commit is pushed, never before)
   archive  a day of the records the relay archived in its private bucket, into .archive/chat-logs/YYYY/MM/DD.jsonl
            (a local copy to read, never committed: .gitignore)
@@ -44,19 +45,70 @@ _ENDS = re.compile("[\u0085\u2028\u2029]")
 
 
 def _text(data):
-    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD."""
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD.  Walked without recursion:
+    what a Worker kept may be nested deeper than the interpreter's own stack goes (a report kept before its fields were
+    checked), and a walk that stopped there would stop the run on what the parser had read."""
     if isinstance(data, str):
         return _LONE.sub("\ufffd", data)
-    if isinstance(data, list):
-        return [_text(v) for v in data]
-    if isinstance(data, dict):
-        return {_text(k): _text(v) for k, v in data.items()}
+    waiting = [data]
+    while waiting:
+        box = waiting.pop()
+        if isinstance(box, dict):
+            for key in [k for k in box if isinstance(k, str) and _LONE.search(k)]:
+                box[_LONE.sub("\ufffd", key)] = box.pop(key)
+            inside = list(box.items())
+        elif isinstance(box, list):
+            inside = list(enumerate(box))
+        else:
+            continue
+        for at, value in inside:
+            if isinstance(value, str):
+                if _LONE.search(value):
+                    box[at] = _LONE.sub("\ufffd", value)
+            elif isinstance(value, (dict, list)):
+                waiting.append(value)
     return data
 
 
 def _line(record: dict) -> str:
     """A record as one line of JSON: one line to every reader."""
     return _ENDS.sub(lambda m: f"\\u{ord(m.group()):04x}", json.dumps(record, ensure_ascii=False, sort_keys=True))
+
+
+# A day's file is kept under what GitHub takes: it refuses a push holding a file over 100 MiB, and nothing bounded a
+# day's — four callers' allowance of the largest record made one of 114 MiB, the push was refused, and the same records
+# were pulled into the same file at every run after.  Past PART_BYTES a day goes on in a further part, DD.p02.jsonl,
+# DD.p03.jsonl …: every reader takes a folder's *.jsonl, and a day is told by what a line says, not by its file's name.
+PART_BYTES = 32 * 1024 * 1024
+
+
+def _part(folder: Path, dd: str, n: int) -> Path:
+    return folder / (f"{dd}.jsonl" if n == 1 else f"{dd}.p{n:02d}.jsonl")
+
+
+def _append(folder: Path, dd: str, lines: list[str]) -> None:
+    """A day's lines onto its file: its last part, and a further one wherever a part would pass PART_BYTES."""
+    folder.mkdir(parents=True, exist_ok=True)
+    n = 1
+    while _part(folder, dd, n + 1).exists():
+        n += 1
+    size = _part(folder, dd, n).stat().st_size if _part(folder, dd, n).exists() else 0
+    held: list[str] = []
+
+    def put() -> None:
+        if held:
+            with _part(folder, dd, n).open("a", encoding="utf-8") as f:
+                f.write("\n".join(held) + "\n")
+            held.clear()
+
+    for line in lines:
+        weight = len(line.encode("utf-8")) + 1
+        if size and size + weight > PART_BYTES:
+            put()
+            n, size = n + 1, 0
+        held.append(line)
+        size += weight
+    put()
 
 
 def _request(url: str, *, token: str | None = None, data: dict | None = None, origin: str | None = None,
@@ -125,10 +177,7 @@ def pull(relay: str, out: Path, *, limit: int = 500, pages: int = 40) -> dict:
             last = max(last, int(item["id"]))
             new += 1
         for day, lines in sorted(by_day.items()):
-            path = out / day[:4] / day[5:7] / f"{day[8:10]}.jsonl"
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("a", encoding="utf-8") as f:
-                f.write("\n".join(lines) + "\n")
+            _append(out / day[:4] / day[5:7], day[8:10], lines)
         if not page.get("more"):
             break
     if new:

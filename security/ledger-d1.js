@@ -363,6 +363,14 @@ export const METRICS = {
 };
 
 /**
+ * How many groups a day keeps of a metric whose names are a sender's to make — a referrer, a language, a tool's or a
+ * model's name: the largest, and the rest as one group of no name ('' — "other" to whoever reads it).  A day's sums are
+ * kept for good, every reading of the counts reads them, and nothing bounded them: one address's day of turn ends, each
+ * naming twenty tools of its own making, left 20,000 rows that no retention ever removes.
+ */
+export const MOST = { referrers: 50, languages: 50, ui_languages: 50, tools: 100, questions_model: 50, runtimes: 20, rounds: 50, tokens_in: 50, tokens_out: 50 };
+
+/**
  * The sums of the days that changed, made again from their rows (a day's old sums go first: a group that is no longer
  * there must not stay).  At most `limit` days a call, the oldest first.  → the days done.
  */
@@ -372,8 +380,13 @@ export async function rollup(db, { limit = 14 } = {}) {
   for (const { day, at } of results || []) {
     const st = [db.prepare("DELETE FROM daily_metrics WHERE day = ?1").bind(day)];
     for (const [metric, sql] of Object.entries(METRICS)) {
-      st.push(db.prepare(`WITH sums (a, b, c) AS (${sql}) INSERT OR REPLACE INTO daily_metrics (day, metric, k1, k2, value) ` +
-        `SELECT ?1, '${metric}', a, b, c FROM sums WHERE c IS NOT NULL AND a IS NOT NULL`).bind(day));
+      const most = MOST[metric];
+      st.push(db.prepare(most
+        ? `WITH sums (a, b, c) AS (${sql}), ranked AS (SELECT a, b, c, ROW_NUMBER() OVER (ORDER BY c DESC, a, b) AS r FROM sums WHERE c IS NOT NULL AND a IS NOT NULL) ` +
+          "INSERT OR REPLACE INTO daily_metrics (day, metric, k1, k2, value) " +
+          `SELECT ?1, '${metric}', a, b, SUM(c) FROM (SELECT CASE WHEN r <= ${most} THEN a ELSE '' END AS a, CASE WHEN r <= ${most} THEN b ELSE '' END AS b, c FROM ranked) GROUP BY a, b`
+        : `WITH sums (a, b, c) AS (${sql}) INSERT OR REPLACE INTO daily_metrics (day, metric, k1, k2, value) ` +
+          `SELECT ?1, '${metric}', a, b, c FROM sums WHERE c IS NOT NULL AND a IS NOT NULL`).bind(day));
     }
     // only if nothing touched the day meanwhile: else it is done again
     st.push(db.prepare("DELETE FROM ledger_dirty WHERE day = ?1 AND at = ?2").bind(day, at));

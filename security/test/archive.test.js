@@ -87,6 +87,12 @@ test("the records go into the bucket and only then leave the book; a write that 
   assert.equal(b.objects.get("chat-logs/2026/10/14/000000000001.json").body, before);
   // nothing waiting: nothing written, nothing removed
   assert.deepEqual(await drain(again, b, { prefix: RECORDS, field: "record" }), { archived: 0, through: 0, more: false, failed: false });
+  // a conversation's id goes into an object's metadata only when it is a plain id: a record is a visitor's to send, and
+  // one a bucket would refuse for what its metadata holds would hold up every record behind it
+  for (const [k, conversation] of [[6, "a\r\nX-Injected: 1"], [7, "对话 七"], [8, "c:8.ok_-"], [9, 7], [10, undefined]]) book.add(record(k, { conversation }), `2026-10-15T0${k - 5}:00:00.000Z`);
+  assert.deepEqual(await drain(book, b, { prefix: RECORDS, field: "record" }), { archived: 5, through: 10, more: false, failed: false });
+  assert.deepEqual([6, 7, 8, 9, 10].map((k) => b.objects.get(`chat-logs/2026/10/15/${String(k).padStart(12, "0")}.json`).options.customMetadata.conversation), ["", "", "c:8.ok_-", "", ""]);
+  assert.equal(JSON.parse(b.objects.get("chat-logs/2026/10/15/000000000007.json").body).conversation, "对话 七"); // the body holds it all the same
 });
 
 test("a body that does not reach the bucket whole is refused there, and stays in the book", async () => {

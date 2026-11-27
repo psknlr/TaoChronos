@@ -400,3 +400,56 @@ def test_what_a_worker_answers_is_made_text_at_the_door(monkeypatch):
         server.shutdown()
     assert status == 200 and body == {"days": ["2026-11-17"], "place": "x\ufffdy", "k\ufffd": ["\U0001f600", "\ufffd"]}  # a pair is its character
     json.dumps(body, ensure_ascii=False).encode("utf-8")  # and can be written
+
+
+def test_the_sums_from_the_records_are_within_what_a_turn_can_be_and_named_by_no_senders_words(tmp_path):
+    """A record is a visitor's to send (its Origin is all that is asked of one held with an own key).  Its numbers went
+    into the kept sums as they were — one record of -1e308 rounds and 1e308 tokens made a day's sums, and the
+    lifetime's, negative or 309 digits long — and its model and status, any words, became the names of counts."""
+    logs = tmp_path / "chat-logs" / "2026" / "11"
+    logs.mkdir(parents=True)
+    rows = [
+        {"n": 1, "received": "2026-11-17T03:00:00+00:00", "id": "m1", "conversation": "c1", "provider": "impf", "model": "MiniMax-M3", "status": "done", "rounds": 3,
+         "usage": {"input": 9000, "output": 500}, "tools": [{"name": "classics.search"}]},
+        {"n": 2, "received": "2026-11-17T03:01:00+00:00", "id": "m2", "conversation": "c2", "provider": "impf", "model": "any words a sender likes: 张三 13800138000",
+         "status": "<b>x</b>|y", "rounds": -1e308, "usage": {"input": 1e308, "output": -1.5e300}, "tools": "not a list"},
+        {"n": 3, "received": "2026-11-17T03:02:00+00:00", "id": "m3", "conversation": "c3", "provider": "custom-x", "status": 9, "rounds": True, "usage": [1],
+         "tools": [7, {"name": 5}]},
+        {"n": 4, "received": "2026-11-17T03:03:00+00:00", "id": "m4", "conversation": "c4", "provider": "impf", "model": "Tao-R1", "rounds": 1001,
+         "usage": {"input": 10**9 + 1, "output": 10**9}},
+        {"n": 5, "received": "2026-11-17T04:00:00+00:00", "kind": "feedback", "id": "m1", "conversation": "c1", "rating": "<script>"},
+    ]
+    (logs / "17.jsonl").write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    got = activity.from_records(tmp_path / "chat-logs")["2026-11-17"]
+    assert (got["questions"], got["model_calls"], got["tokens_in"], got["tokens_out"], got["tool_calls"]) == (4, 3, 9000, 500 + 10**9, 3)
+    assert got["by_model"] == {"MiniMax-M3": 1, "other": 1, "Tao-R1": 1} and got["by_status"] == {"done": 1, "other": 2, "unknown": 1}
+    assert got["tools"] == {"classics.search": 1} and got["feedback"] == {"withdrawn": 1}
+    assert activity._count(5.9, 10) == 5 and activity._count("5", 10) == 0 and activity._count(float("nan"), 10) == 0 and activity._count(None, 10) == 0
+
+
+def test_a_name_in_the_summary_is_no_markup_of_its_senders(monkeypatch, tmp_path, env):
+    """A referrer, a tool's or a model's name is a sender's to make, and the summary is Markdown that the committed file
+    and the run's page render: a link under words of their choosing was written out as it came.  A name is a code span,
+    with nothing in it that ends the span, the line or a cell."""
+    link = "http://x <a href=https://evil.example>Token expired: sign in again</a>"
+    assert activity._name(link) == f"`{link}`"
+    assert activity._name("a`b|c\nd [x](https://evil.example)") == "`a b c d [x](https://evil.example)`"
+    assert (activity._name(""), activity._name(None), activity._name("x" * 200)) == ("", "", "`" + "x" * 80 + "`")
+
+    class Hostile(Site):
+        def __call__(self, url: str, *, token: str | None = None, timeout: float = 90):
+            status, body = super().__call__(url, token=token, timeout=timeout)
+            if "audience" in body:
+                body["audience"]["referrers"] = [[link, 9], ["[the stats moved](https://evil.example/login) `y`", 5]]
+                body["questions"]["by_model"] = [["impf", "https://evil.example/model", 7]]
+                body["features"]["tools"] = [["www.evil.example", 4]]
+            return status, body
+
+    monkeypatch.setattr(activity, "_request", Hostile())
+    activity.report(SITE, tmp_path / "out", least=3)
+    text = (tmp_path / "out" / "SUMMARY.md").read_text(encoding="utf-8")
+    assert f"- 来源网站：`{link}` 9，`[the stats moved](https://evil.example/login) y` 5" in text
+    assert "- 提问的模型：`https://evil.example/model` 7" in text and "- 工具：`www.evil.example` 4" in text
+    for line in text.splitlines():  # outside a code span: no link, no tag, no bare address of theirs
+        outside = "".join(line.split("`")[0::2])
+        assert "evil.example" not in outside and "<a" not in outside, line

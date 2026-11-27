@@ -222,3 +222,15 @@ def test_a_record_is_one_line_whatever_its_words_hold(tmp_path):
                    + "123\n[]\n" + json.dumps(old(), ensure_ascii=False) + "\n", encoding="utf-8")
     got = list(read([tmp_path]))
     assert len(got) == 2 and got[0]["answer"] == answer  # the record whole; the lines that are no record passed over
+
+
+def test_a_record_that_says_absurd_numbers_leaves_the_summary_what_it_was():
+    """A record is a visitor's to send: its times are summed, and one that said 1e308 made them infinite — a summary
+    that is not JSON.  A number past what a turn can say is not one."""
+    honest = [timed(), timed()]
+    absurd = timed(requests=[{"round": 1, "attempt": 1, "sent": 1e308, "open": -1e308, "first": 1e308, "text": 1e308, "end": 1e308, "finish": "stop"}],
+                   tools=[{"name": "classics.search", "ok": True, "at": 1e308, "ms": 1e308, "wait": 1e308}], hidden=1e308, asleep=-1e308, ms=1e308)
+    got = summary(honest + [absurd])
+    json.dumps(got, allow_nan=False)  # every number of it is one
+    assert got["turns"] == 3 and got["time"]["model"]["max"] == summary(honest)["time"]["model"]["max"]
+    assert answer_after_tools(absurd) is None

@@ -287,3 +287,55 @@ def test_a_page_the_relay_cannot_hand_out_is_asked_for_again_smaller(relay, tmp_
     with pytest.raises(SystemExit, match="refused the export: HTTP 500"):
         collect.pull(relay.url, out, limit=40)
     assert json.loads((out / "cursor.json").read_text())["last"] == 9
+
+
+def test_a_days_file_is_kept_under_what_github_takes(relay, tmp_path, monkeypatch):
+    """GitHub refuses a push holding a file over 100 MiB, and a day's records all went into one file: four callers'
+    allowance of the largest record made it 114 MiB, the push was refused, and every run after pulled the same records
+    into the same file.  Past PART_BYTES a day goes on in further parts, which every reader takes with the first."""
+    from taochronos.chat.records import read
+
+    out = tmp_path / "data" / "chat-logs"
+    monkeypatch.setattr(collect, "PART_BYTES", 400)
+    for k in range(12):
+        relay.add(f"2026-09-28T08:{k:02d}:00Z", f"问{k}" + "长" * 30)
+    relay.add("2026-09-29T00:00:01Z", "次日")
+    assert collect.pull(relay.url, out, limit=5) == {"new": 13, "last": 13}  # three pages: a part is gone on with, page after page
+    day = sorted((out / "2026" / "09").glob("28*.jsonl"))
+    assert [p.name for p in day][:3] == ["28.jsonl", "28.p02.jsonl", "28.p03.jsonl"] and len(day) >= 4
+    assert all(p.stat().st_size <= 400 for p in day)
+    assert [r["n"] for p in day for r in _lines(p)] == list(range(1, 13))  # every record once, in order, through the parts
+    assert [r["n"] for r in _lines(out / "2026" / "09" / "29.jsonl")] == [13]
+    relay.add("2026-09-28T23:59:59Z", "当日最后一条" + "长" * 30)
+    collect.pull(relay.url, out)
+    again = sorted((out / "2026" / "09").glob("28*.jsonl"))
+    assert [r["n"] for p in again for r in _lines(p)] == [*range(1, 13), 14] and again[:len(day) - 1] == day[:-1]  # onto the last part, or a further one
+    # one record larger than a part is a part of its own, never refused
+    relay.add("2026-09-30T01:00:00Z", "大" * 2000)
+    collect.pull(relay.url, out)
+    assert [p.name for p in (out / "2026" / "09").glob("30*.jsonl")] == ["30.jsonl"]
+    # the records' reader takes every part: each record once
+    assert sorted(r["n"] for r in read([out])) == list(range(1, 16))
+
+
+def test_the_door_walks_what_is_nested_deeper_than_the_interpreters_stack():
+    """What a Worker kept may be nested deeper than Python's own stack goes (a report kept before its fields were
+    checked): a walk that called itself for each level stopped the run there, on what the parser had read."""
+    lone = "\ud800"
+    deep = inner = []
+    for k in range(50_000):
+        box = {f"k{lone}": [f"x{lone}"]} if k % 2 else [f"y{lone}"]
+        inner.append(box)
+        inner = box[f"k{lone}"] if isinstance(box, dict) else box
+    out = collect._text(deep)
+    levels, node = 0, out
+    while True:
+        strings = [v for v in (node if isinstance(node, list) else list(node) + list(node.values())) if isinstance(v, str)]
+        assert all(lone not in v for v in strings)
+        below = [v for v in (node if isinstance(node, list) else node.values()) if isinstance(v, (list, dict))]
+        if not below:
+            break
+        node, levels = below[0], levels + 1
+    assert levels == 75_000
+    plain = {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"}
+    assert collect._text(plain) == {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"} and collect._text(f"a{lone}") == "a\ufffd" and collect._text(7) == 7
