@@ -24,8 +24,9 @@ HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff〓□]")
 NOTE = re.compile(r"（[^（）]*）|\([^()]*\)|〔[^〔〕]*〕|【[^【】]*】")  # interlinear notes (夹注)
 FUNCTION_CHARS = set("之乎者也矣焉哉而其以于於所则乃且亦又即若如故夫盖此是斯兮耳尔曰云为")
 _WEAK_CATEGORIES = {"herb", "formula"}  # single-character drug and formula names match everywhere (发, 阴)
-# texts whose Prepared form prepare keeps (kept.TextMemo): a research run's 1,130 compared texts (some 70,000
-# characters) several times over; 40 to 50 bytes a character in the 要籍语料, so some 25 MB at the most
+# texts whose Prepared form prepare keeps (kept.TextMemo): a research run's 1,130 compared texts (some 115,000
+# characters) several times over.  A passage of the 要籍语料 costs 21 to 50 bytes a character, so some 25 MB at the
+# bound; a caller's text in which every character is a term of the lexicon costs 235, so 117 MB at the very most
 PREPARED_KEPT = 4096
 PREPARED_CHARS = 500_000
 

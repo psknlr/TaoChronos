@@ -207,10 +207,13 @@ def test_records_are_kept_and_a_run_the_server_stopped_goes_on_when_asked(tmp_pa
     folder = tmp_path / "jobs"
     jobs = Jobs(gone, lock=threading.Lock(), folder=folder, clock=clock)
     a, b, done = jobs.start("a", {"max_rounds": 1}), jobs.start("b"), jobs.start("c")
-    until(lambda: state(jobs, a) == "running")
+    # (the run has named its session: its thread saves the record as it does, and a save of the test's own beside it
+    # tore the file, or came before the session, one run in twenty on a busy machine)
+    until(lambda: state(jobs, a) == "running" and jobs.view(a)["session"] == "s-a")
     clock.t += 40
-    jobs.records[a]["heartbeat"] = clock.t  # its last heartbeat, 40 s into the run
-    jobs._save(jobs.records[a])
+    with jobs.mu:  # as the heartbeat keeps it
+        jobs.records[a]["heartbeat"] = clock.t  # its last heartbeat, 40 s into the run
+        jobs._save(jobs.records[a])
     assert json.loads((folder / f"{a}.json").read_text(encoding="utf-8"))["state"] == "running"
     (folder / "job_garbled.json").write_text("{", encoding="utf-8")
     (folder / "job_other.json").write_text(json.dumps({"id": "job_else", "state": "queued"}), encoding="utf-8")

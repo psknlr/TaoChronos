@@ -35,8 +35,11 @@ class ClaimHypergraph:
     def __init__(self, claims: Iterable[Claim] = (), year_fn: Callable[[Claim], float | None] | None = None) -> None:
         self.claims: dict[str, Claim] = {}
         self.year_fn = year_fn or (lambda c: c.year())
+        # as add() keeps them — the first of an id — but without its lock: nobody else has this graph yet, there is no
+        # index to keep, and the graph route makes one for every search (the lock is every graph's: a search's graph
+        # is not to wait behind another graph's indexes being built)
         for claim in claims:
-            self.add(claim)
+            self.claims.setdefault(claim.id, claim)
 
     def __getattr__(self, name: str) -> Any:
         """The indexes, built from the claims in the order they were added when one is first read: the graph route

@@ -8,11 +8,13 @@ order.
 
 from __future__ import annotations
 
+import sys
 import threading
 import time
 
 from taochronos.plugins.classics import intertext, reuse
 from taochronos.plugins.classics.kept import LONGEST_KEPT, TextMemo
+from taochronos.plugins.knowledge import hypergraph
 from taochronos.plugins.knowledge.hypergraph import ClaimHypergraph
 from taochronos.verification.gates import GateEvaluator
 
@@ -73,7 +75,12 @@ def test_a_memo_shared_by_threads_keeps_its_bounds_and_one_value_for_a_text():
             if i % 50 == 0:
                 most.append(sum(map(len, list(memo._kept))))
 
-    together(fill)
+    interval = sys.getswitchinterval()
+    sys.setswitchinterval(1e-6)  # the threads change places as often as they can
+    try:
+        together(fill)
+    finally:
+        sys.setswitchinterval(interval)
     assert max(most) <= 5_000 and memo._held == sum(map(len, memo._kept)) <= 5_000 and len(memo) <= 100
 
 
@@ -126,6 +133,24 @@ def test_hypergraph_indexes_built_when_first_read(harness):
         index = getattr(hg, name)
         assert dict(index) == plain[name] and list(index) == list(plain[name]), name
     assert list(hg.claims) == list(dict.fromkeys(c.id for c in claims))
+
+
+def test_a_graph_is_made_without_the_lock_every_graph_shares(harness):
+    """The graph route makes a ClaimHypergraph for every search, and the lock that keeps a shared graph's indexes whole
+    is the process's one: making a graph takes it not at all (it doubled the making, and would have queued every search
+    behind another graph's indexes being built), and keeps the claims as add() does — the first of an id."""
+    claims = harness.capabilities.get("knowledge").claims()
+    made: list[ClaimHypergraph] = []
+    with hypergraph._INDEXING:  # held, as while some graph's indexes are built
+        maker = threading.Thread(target=lambda: made.append(ClaimHypergraph(claims + claims[:5])))
+        maker.start()
+        maker.join(10)
+        assert made, "making a graph waited for the lock"
+    slow = ClaimHypergraph()
+    for c in claims + claims[:5]:
+        slow.add(c)
+    assert list(made[0].claims) == list(slow.claims) and all(made[0].claims[k] is slow.claims[k] for k in slow.claims)
+    assert {n: dict(getattr(made[0], n)) for n in INDEXES} == {n: dict(getattr(slow, n)) for n in INDEXES}
 
 
 def test_hypergraph_indexes_read_by_threads_at_once_are_whole(harness, monkeypatch):

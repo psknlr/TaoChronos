@@ -16,8 +16,9 @@ class TextMemo(Generic[V]):
     """What a text's work came to, kept under the text itself — a changed text is another key, never an older entry —
     and only read by those it is handed to.  Bounded twice, by texts and by the characters they hold: everything is
     dropped when the next would pass either.  A text longer than LONGEST_KEPT is never kept.  The server's threads
-    share one: what is kept is counted under a lock (the bounds hold exactly), and a text two threads worked at once
-    has one value, the first kept."""
+    share one: what is kept is counted under a lock (the bounds hold exactly; reading takes none), a text two threads
+    worked at once has one value, the first kept, and what is dropped is freed after the lock, so that no thread waits
+    for it (a full memo's tens of megabytes take as many milliseconds to free)."""
 
     def __init__(self, texts: int, chars: int) -> None:
         self.texts = texts
@@ -33,20 +34,21 @@ class TextMemo(Generic[V]):
         """Keep ``value`` for ``text`` (unless the text is too long to be), and give back what is kept for it."""
         if len(text) > LONGEST_KEPT:
             return value
+        dropped = None
         with self._lock:
             if text in self._kept:  # another thread worked the same text meanwhile: its value is the text's
                 return self._kept[text]
             if len(self._kept) >= self.texts or self._held + len(text) > self.chars:
-                self._kept.clear()
-                self._held = 0
+                dropped, self._kept, self._held = self._kept, {}, 0  # a new dict: the old one is freed below
             self._kept[text] = value
             self._held += len(text)
+        del dropped
         return value
 
     def clear(self) -> None:
         with self._lock:
-            self._kept.clear()
-            self._held = 0
+            dropped, self._kept, self._held = self._kept, {}, 0
+        del dropped
 
     def __len__(self) -> int:
         return len(self._kept)

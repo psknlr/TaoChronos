@@ -14,7 +14,7 @@ from .kept import TextMemo
 
 PUNCT = set("，。；：、？！“”‘’（）《》…—·「」『』 \n\t,.;:!?()[]")
 # passages whose comparable form compare keeps (_comparable, kept.TextMemo): a research run's 1,130 compared texts (some
-# 70,000 characters) several times over; 38 bytes a character in the 要籍语料, so some 19 MB at the most
+# 115,000 characters) several times over; 14 to 38 bytes a character in the 要籍语料, so some 19 MB at the most
 TEXTS_KEPT = 4096
 TEXTS_CHARS = 500_000
 
