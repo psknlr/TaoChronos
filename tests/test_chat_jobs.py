@@ -311,3 +311,102 @@ def test_a_run_the_server_stopped_mid_way_is_taken_up_from_its_log_after_a_resta
 def test_an_ephemeral_runtime_keeps_its_records_in_memory(tmp_path):
     rt = ChatRuntime.create("full-discovery", home=HOME, data_dir=tmp_path, kind="test", ephemeral=True)
     assert rt.jobs.folder is None
+
+
+def test_a_record_that_cannot_be_written_neither_ends_the_worker_nor_stays_in_the_queue(tmp_path, monkeypatch):
+    """A record with half a character in it (a lone surrogate, which a list written as JSON text could bring past the
+    door) could not be written: the run was queued, its request failed, and when the worker reached it, the worker ended
+    with it.  Twenty such requests filled the queue with runs nobody would ever take: no research run was accepted
+    again until the server was started anew."""
+    runs = Runs()
+    jobs = Jobs(runs, lock=threading.Lock(), folder=tmp_path / "jobs", limit=3)
+    half = [jobs.start("消渴\ud83d的源流", {"books": ["b\udc00"], "focus_terms": ["消渴"]}) for _ in range(3)]
+    until(lambda: state(jobs, half[0]) == "running")
+    kept = json.loads((tmp_path / "jobs" / f"{half[0]}.json").read_text(encoding="utf-8"))  # written, and as text
+    assert kept["question"] == "消渴�的源流" and kept["arguments"]["books"] == ["b�"]
+    assert jobs.view(half[0])["question"] == "消渴�的源流"
+    for _ in half:
+        runs.let("消渴�的源流")
+    until(lambda: state(jobs, half[2]) == "completed")
+
+    # whatever else the keeping of a run raises: that run fails, the worker goes on to the next
+    real, raised = jobs._save, []
+
+    def save(rec):
+        if rec["question"] == "unkept" and rec["state"] == "running":
+            raised.append(rec["id"])
+            raise ValueError("no room, no JSON, whatever")
+        real(rec)
+
+    monkeypatch.setattr(jobs, "_save", save)
+    bad, good = jobs.start("unkept"), jobs.start("kept")
+    runs.let("kept")
+    until(lambda: state(jobs, good) == "completed")
+    view = jobs.view(bad)
+    assert raised == [bad] and view["state"] == "failed" and "ValueError" in view["error"] and bad not in jobs.queue
+    assert jobs.worker.is_alive() and not jobs.queue
+    assert [q for q, _ in runs.seen].count("unkept") == 0  # it never ran: nothing of it was kept
+
+
+def test_a_list_written_as_text_brings_no_half_character_into_a_run(tmp_path):
+    """The whole scenario, through the server's own door: twenty requests whose list is JSON text spelling half a
+    character, then another visitor's ordinary run."""
+    import http.client
+
+    from taochronos.chat.server import ChatServer
+
+    rt = ChatRuntime.create("full-discovery", kind="test", data_dir=tmp_path, home=HOME)
+    assert rt.jobs.folder is not None
+    fields = rt.research_arguments({"question": "消渴的源流", "books": '["shanghanlun\\ud83d"]', "focus_terms": '["\\ud800"]'})
+    assert fields["books"] == ["shanghanlun�"] and fields["focus_terms"] == ["�"]
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=None)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+    def post(body: bytes):
+        conn = http.client.HTTPConnection("127.0.0.1", srv.server_address[1], timeout=60)
+        conn.request("POST", "/api/research", body=body, headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        out = json.loads(resp.read())
+        conn.close()
+        return resp.status, out
+
+    try:
+        poison = b'{"question": "x", "books": "[\\"\\\\ud83d\\"]", "max_rounds": 1}'
+        assert json.loads(poison)["books"] == '["\\ud83d"]'  # the body itself holds no half character: its text spells one
+        seen = [post(poison) for _ in range(J.QUEUE)]
+        assert all(status in (200, 429) for status, _ in seen) and seen[0][0] == 200, seen[:2]
+        jobs = [out["job"] for status, out in seen if status == 200]
+        until(lambda: all(rt.job(j)["state"] in J.ENDED for j in jobs), timeout=240)
+        assert rt.jobs.worker.is_alive() and not rt.jobs.queue
+        assert len(list(rt.jobs.folder.glob("job_*.json"))) == len(jobs) and not list(rt.jobs.folder.glob("*.tmp"))
+        status, out = post(json.dumps({"question": "消渴的认识与治疗在明代以前如何演变？", "focus_terms": ["消渴"], "max_rounds": 1}).encode())
+        assert status == 200, out
+        until(lambda: rt.job(out["job"])["state"] in J.ENDED, timeout=240)
+        assert rt.job(out["job"])["state"] == "completed"
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_what_goes_with_an_ended_runs_record_is_the_servers_to_say(tmp_path):
+    """A server keeps so many ended runs (``keep``), and may say what else goes when a record does (``forget``): the
+    corpus container, whose disk is its image's, lets a run's log and artifacts go with it (chat/cloud.py)."""
+    runs, clock = Runs(), Clock()
+    jobs = Jobs(runs, lock=threading.Lock(), clock=clock, folder=tmp_path / "jobs")
+    assert jobs.keep == J.KEEP and jobs.forget is None
+    gone: list[tuple[str, str]] = []
+    jobs.keep = 2
+    jobs.forget = lambda rec: gone.append((rec["question"], rec["session"]))
+    ids = []
+    for q in ("a", "b", "c", "d"):
+        runs.let(q)
+        ids.append(jobs.start(q))
+        until(lambda: state(jobs, ids[-1]) == "completed")
+        clock.t += 1
+    assert gone == [("a", "s-a"), ("b", "s-b")] and sorted(jobs.records) == sorted(ids[2:])
+    assert sorted(p.stem for p in (tmp_path / "jobs").glob("job_*.json")) == sorted(ids[2:])
+    jobs.forget = lambda rec: 1 / 0  # what a run left could not be removed: its record goes all the same
+    runs.let("e")
+    last = jobs.start("e")
+    until(lambda: state(jobs, last) == "completed")
+    assert sorted(jobs.records) == sorted([ids[3], last]) and jobs.worker.is_alive()

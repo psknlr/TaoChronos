@@ -2108,7 +2108,7 @@ def build_parser() -> argparse.ArgumentParser:
                                                       "casefind, similar, casecompare, modifications, treatments: a case collection "
                                                       "(id, title or work; repeatable)")
     sp.add_argument("--base", help="variants/stemma: the base witness (book id or siglum; default: the one the others carry most)")
-    sp.add_argument("--chapter", help="variants/stemma: collate only locators matching this pattern (e.g. 辨太阳病)")
+    sp.add_argument("--chapter", help="variants/stemma: collate only what stands under a heading holding this text (辨太阳病; several apart by |)")
     sp.add_argument("--max-chars", type=int, help="variants/stemma: longest base to collate (default 60000)")
     sp.add_argument("--root-at", help="stemma: root the tree at this witness (default: midpoint)")
     sp.add_argument("--text-mode", action="store_true", help="variants: the target is a passage text, collate its copies and quotations")

@@ -32,6 +32,8 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Callable
 
+from ..protocol.schema import whole
+
 HEARTBEAT = 5.0       # seconds between a running run's heartbeats
 KEEP_DAYS = 3         # an ended run's record is kept this long
 KEEP = 200            # and so many at most, the latest
@@ -66,6 +68,9 @@ class Jobs:
         self.work = work
         self.lock = lock
         self.limit = limit
+        self.keep = KEEP  # ended runs kept at most
+        # what else goes when an ended run's record does: `forget(record)`, or nothing (its session stays in the store)
+        self.forget: Callable[[dict[str, Any]], None] | None = None
         self.folder = folder
         self.clock = clock
         self.beat = heartbeat
@@ -83,6 +88,8 @@ class Jobs:
         """Queue a run of `question` (its contract's fields in `arguments`); returns its id.  :class:`QueueFull` when as
         many wait as may."""
         now = self.clock()
+        # (what is asked is kept as text that can be written down: a half character in it — whole() — is U+FFFD)
+        question, arguments = whole(question)[0], whole(dict(arguments or {}))[0]
         rec: dict[str, Any] = {"id": "job_" + secrets.token_hex(16), "question": question, "arguments": dict(arguments or {}),
                                "state": "queued", "created": now, "queued_at": now, "started": None, "finished": None,
                                "waited": 0.0, "ran": 0.0, "session": None, "progress": None, "progress_at": None,
@@ -160,7 +167,25 @@ class Jobs:
                 while not self.queue:
                     self.wake.wait()
                 rec = self.records[self.queue[0]]
-            self._run(rec)
+            try:
+                self._run(rec)
+            except Exception as exc:  # the keeping of a run failed, not the run: this one ends, the next has its turn
+                self._drop(rec, f"{type(exc).__name__}: {exc}")
+
+    def _drop(self, rec: dict[str, Any], error: str) -> None:
+        """End a run whose bookkeeping raised (a record that cannot be written, a session that cannot be read): it
+        leaves the queue and is ``failed``.  Without this the worker ended with it, and the run stayed first in the
+        queue — twenty such, and no run was taken again until the server was started anew."""
+        with self.mu:
+            if rec["id"] in self.queue:
+                self.queue.remove(rec["id"])
+            if rec["state"] in ENDED:
+                return
+            try:
+                self._end(rec, "failed", _failure(error), error=error)
+            except Exception:  # not even its end can be kept: it is ended in memory
+                rec.update(state="failed", finished=self.clock(), outcome=_failure(error), error=error, heartbeat=None)
+                self.sessions.pop(rec["id"], None)
 
     def _run(self, rec: dict[str, Any]) -> None:
         stopped: list[bool] = []
@@ -247,9 +272,11 @@ class Jobs:
             self.folder.mkdir(parents=True, exist_ok=True)
             path = self.folder / f"{rec['id']}.json"
             tmp = path.with_suffix(".tmp")
-            tmp.write_text(json.dumps(rec, ensure_ascii=False, default=str), encoding="utf-8")
+            # ("replace": whatever of a record is no text — half a character a run's outcome carried — is written "?"
+            # rather than not written at all)
+            tmp.write_bytes(json.dumps(rec, ensure_ascii=False, default=str).encode("utf-8", "replace"))
             os.replace(tmp, path)
-        except OSError:  # a full disk: the run goes on, kept in memory
+        except (OSError, ValueError):  # a full disk, a record that is no JSON: the run goes on, kept in memory
             pass
 
     def _load(self) -> None:
@@ -276,11 +303,16 @@ class Jobs:
     def _prune(self, now: float) -> None:
         ended = sorted((r for r in self.records.values() if r["state"] in ENDED), key=lambda r: r["finished"] or 0.0)
         old = {r["id"] for r in ended if now - (r["finished"] or 0.0) > KEEP_DAYS * 86400}
-        old |= {r["id"] for r in ended[:max(0, len(ended) - KEEP)]}
+        old |= {r["id"] for r in ended[:max(0, len(ended) - self.keep)]}
         for job_id in old:
-            del self.records[job_id]
+            rec = self.records.pop(job_id)
             if self.folder is not None:
                 try:
                     (self.folder / f"{job_id}.json").unlink()
                 except OSError:
+                    pass
+            if self.forget is not None:
+                try:
+                    self.forget(rec)
+                except Exception:  # what a run left could not be removed: its record is gone all the same
                     pass

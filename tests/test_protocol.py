@@ -124,3 +124,54 @@ def test_coerce_leaves_out_a_parameter_not_set_written_as_null():
     for schema in ({"type": "object"}, {"type": "object", "properties": {}, "additionalProperties": {"type": "integer"}},
                    {"type": "object", "properties": {"b": {"type": "string"}}, "additionalProperties": True}):
         assert coerce({"a": None}, schema) == ({"a": None}, []), schema
+
+
+def test_a_value_has_a_size_as_well_as_a_type():
+    """How large a value may be: a number within its bounds — and a number at all, which NaN is not (JSON text can
+    carry it here) — a text and a list no longer than they may be.  One of hundreds of digits is not written out."""
+    schema = {"type": "object", "properties": {
+        "k": {"type": "integer", "minimum": 1, "maximum": 100}, "year": {"type": "number", "minimum": -5000, "maximum": 5000},
+        "text": {"type": "string", "maxLength": 5}, "names": {"type": "array", "items": {"type": "string", "maxLength": 3}, "maxItems": 2}}}
+    assert not validate({"k": 1, "year": -221.5, "text": "桂枝汤主之", "names": ["桂枝", "芍药"]}, schema)
+    assert not validate({"k": 100, "year": 5000, "text": "", "names": []}, schema)
+    for value, said in [({"k": 0}, "$.k: 0 < minimum 1"), ({"k": 101}, "$.k: 101 > maximum 100"),
+                        ({"k": 10 ** 300}, "$.k: a number of 301 digits > maximum 100"),
+                        ({"year": float("nan")}, "$.year: not a number"), ({"year": float("inf")}, "$.year: inf > maximum 5000"),
+                        ({"year": float("-inf")}, "$.year: -inf < minimum -5000"),
+                        ({"text": "桂枝汤主之也"}, "$.text: 6 characters > maxLength 5"),
+                        ({"names": ["a", "b", "c"]}, "$.names: 3 items > maxItems 2"),
+                        ({"names": ["桂枝汤方"]}, "$.names[0]: 4 characters > maxLength 3")]:
+        assert validate(value, schema) == [said], value
+    assert not validate({"year": float("nan")}, {"type": "object", "properties": {"year": {"type": "number"}}})  # no bound, no say
+
+
+def test_a_value_too_large_is_said_to_be_so_whatever_its_form():
+    """A number written as text is repaired where that makes it valid — and where it is only too large as well: what
+    is then said is its limit, which the model can act on, and not that "1000" is no integer."""
+    from taochronos.protocol.schema import fit_arguments
+
+    schema = {"type": "object", "properties": {"k": {"type": "integer", "minimum": 1, "maximum": 100},
+                                               "names": {"type": "array", "items": {"type": "string"}, "maxItems": 2}}}
+    fixed, repairs, error = fit_arguments({"k": "1000"}, schema, tool="t")
+    assert fixed == {"k": 1000} and repairs == ['$.k: "1000" → 1000'] and error.startswith("invalid arguments: $.k: 1000 > maximum 100 · t takes:")
+    assert fit_arguments({"k": 3000.0}, schema, tool="t")[2].startswith("invalid arguments: $.k: 3000 > maximum 100")
+    assert fit_arguments({"names": '["a", "b", "c"]'}, schema, tool="t")[2].startswith("invalid arguments: $.names: 3 items > maxItems 2")
+    assert fit_arguments({"k": "abc"}, schema, tool="t")[2].startswith("invalid arguments: $.k: expected integer, got str")
+    assert fit_arguments({"k": "50", "names": "a"}, schema, tool="t") == ({"k": 50, "names": ["a"]}, ['$.k: "50" → 50', '$.names: "a" → ["a"]'], None)
+
+
+def test_a_list_written_as_text_is_read_whole():
+    """A list or an object written as JSON text is read into one — and the text can spell half a character
+    (``\\ud800``) though it holds none: what comes out of the reading has none either."""
+    from taochronos.protocol.schema import coerce
+
+    schema = {"type": "object", "properties": {"books": {"type": "array", "items": {"type": "string"}},
+                                               "opts": {"type": "object", "properties": {"name": {"type": "string"}}}}}
+    text = '["shanghanlun\\ud83d", "jinkui"]'
+    assert "\ud83d" not in text
+    fixed, repairs = coerce({"books": text, "opts": '{"name": "\\udc00x", "\\ud800": 1}'}, schema)
+    assert fixed == {"books": ["shanghanlun�", "jinkui"], "opts": {"name": "�x", "�": 1}} and len(repairs) == 2
+    json_text = __import__("json").dumps(fixed, ensure_ascii=False)
+    json_text.encode("utf-8")  # it can be written down
+    deep = "[" * 100000 + "]" * 100000  # nested deeper than the reader goes: left as it is, for validate to say
+    assert coerce({"books": deep}, schema)[0] == {"books": deep}

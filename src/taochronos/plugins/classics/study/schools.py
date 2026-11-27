@@ -436,7 +436,9 @@ class SchoolStudy:
         probes = [self.b.normalize(p) for p in probes if p and len(p.strip()) >= 2]
         group = self.resolve(school) if school else None
         key = self._key([group, cap, window, top, sorted(probes)])
-        path = Path(cache) / f"schools-{key}.json" if cache is not None else None
+        # kept beside the store: the survey and each school's own, which are so many files at the most.  With probes —
+        # a caller's words, of which there is no end — nothing is kept: every new list of them left a file for good
+        path = Path(cache) / f"schools-{key}.json" if cache is not None and not probes else None
         if path is not None and path.exists() and not refresh:
             return json.loads(path.read_text(encoding="utf-8"))
         out = self._one(group, cap=cap, window=window, top=top, probes=probes) if group else \

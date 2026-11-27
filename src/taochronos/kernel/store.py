@@ -164,7 +164,12 @@ class SqliteEventStore(EventStore):
                 self._conn.executemany("INSERT INTO events VALUES (?,?,?,?,?,?,?)", rows)
                 self._conn.execute("COMMIT")
             except Exception:
-                self._conn.execute("ROLLBACK")
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    # the failure has ended the transaction already (a disk with no room): what is raised is the
+                    # failure, not "cannot rollback - no transaction is active", which said nothing of it
+                    pass
                 raise
 
     def read(self, session_id: str, from_seq: int = 1, to_seq: int | None = None) -> list[Event]:

@@ -193,6 +193,14 @@ def test_the_container_answers_only_the_workers_token_and_forwards_no_model_call
         assert status == 403 and "proxy is off" in body["error"]
         status, body = _get(f"{base}/index.html", {"X-TC-Token": "worker-token"})
         assert status == 404
+        # a research run is started in one place here (POST /api/research), and what an ended run left goes with its
+        # record: the disk is the image's (ADR 0037)
+        status, out = _get(f"{base}/api/call", {"X-TC-Token": "worker-token"},
+                           json.dumps({"name": "taochronos_research", "arguments": {"question": "消渴的源流"}}).encode())
+        assert status == 200 and not out["ok"] and "POST /api/research" in out["error"]
+        jobs = servers[0].runtime.jobs
+        assert jobs.keep == cloud.RUNS_KEPT == 60 and jobs.forget is not None
+        assert jobs.forget({"session": None}) is None  # a run that never began left nothing
     finally:
         servers[0].shutdown()
 

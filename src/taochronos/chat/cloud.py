@@ -52,6 +52,9 @@ WARM: list[tuple[str, dict[str, Any]]] = [
 ]
 
 
+RUNS_KEPT = 60  # ended research runs the container keeps (their records, logs and artifacts): the latest
+
+
 def _log(message: str) -> None:
     print(message, file=sys.stderr, flush=True)
 
@@ -230,6 +233,11 @@ def serve(port: int = 8080) -> None:
     if not token:
         raise SystemExit("TAOCHRONOS_TOKEN is not set: the container is started by the site's Worker, which gives it one")
     runtime = ChatRuntime.create("full-corpus", kind="server")
+    # The container's disk is its image's and so much besides (8 GB, the store 2.3 of them), and what a run leaves is
+    # nobody's to keep here: an ended run's record is kept for RUNS_KEPT runs, and its session's log and artifacts
+    # (23 MB a run) go with it.  A server of one's own (taochronos serve) keeps every session, as it did.
+    runtime.jobs.keep = RUNS_KEPT
+    runtime.jobs.forget = lambda record: runtime.forget_session(record["session"]) if record.get("session") else None
     info = runtime.info()  # counted before the port opens: the first request answers at once
     server = ChatServer(("0.0.0.0", port), runtime, web_root=None, proxy=False, token=token)
     _stop_when_asked(server)

@@ -39,3 +39,24 @@ def test_lost_work_reconstruction(harness):
     study = harness.capabilities.get("study")
     assert study.senses("消渴")["occurrences"] > 0
     assert study.fragments("小品方")["count"] >= 0  # the demo corpus quotes no 小品方: an empty reconstruction, no error
+
+
+def test_a_terms_neighbourhood_is_the_same_at_every_start():
+    """Tokens as frequent as one another came out in the order of a set, which the interpreter chooses anew each time
+    it starts: the same question of the same corpus gave another list of frequent words — and another hash of the
+    result — at each start of the server."""
+    import json
+    import subprocess
+    import sys
+
+    code = ("import json; from taochronos.science.sense_evolution import neighbourhood; "
+            "words = [chr(0x4E00 + i) * 2 for i in range(60)]; "
+            "members = [words[i:] + words[:i] for i in range(0, 60, 7)]; "
+            "print(json.dumps(neighbourhood({'a': members, 'b': [w[:1] for w in members]}, ['a', 'b'], top=12), ensure_ascii=False))")
+    seen = []
+    for seed in ("1", "2", "3"):
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120,
+                             env={**__import__("os").environ, "PYTHONHASHSEED": seed})
+        assert out.returncode == 0, out.stderr[-600:]
+        seen.append(json.loads(out.stdout))
+    assert seen[0] == seen[1] == seen[2] and len(seen[0][0]["frequent"]) == 12

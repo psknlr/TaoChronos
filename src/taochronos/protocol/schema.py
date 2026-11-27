@@ -117,6 +117,12 @@ _JSON_TYPES = {
 }
 
 
+def _number(value: Any) -> str:
+    """A number as an error names it: one of hundreds of digits (JSON carries any) is named by its size, not written out."""
+    text = str(value)
+    return text if len(text) <= 24 else f"a number of {len(text.lstrip('-'))} digits"
+
+
 def validate(instance: Any, schema: dict[str, Any], *, root: dict[str, Any] | None = None, path: str = "$") -> list[str]:
     """Validate against the subset of JSON Schema used by TaoChronos. Returns error strings."""
     root = root or schema
@@ -150,10 +156,16 @@ def validate(instance: Any, schema: dict[str, Any], *, root: dict[str, Any] | No
     if "enum" in schema and instance not in schema["enum"]:
         errors.append(f"{path}: {instance!r} not in {schema['enum']}")
     if isinstance(instance, (int, float)) and not isinstance(instance, bool):
-        if "minimum" in schema and instance < schema["minimum"]:
-            errors.append(f"{path}: {instance} < minimum {schema['minimum']}")
-        if "maximum" in schema and instance > schema["maximum"]:
-            errors.append(f"{path}: {instance} > maximum {schema['maximum']}")
+        # (a bound is kept when the number is within it: what is no number — NaN, which JSON text can carry here —
+        # is within none)
+        if instance != instance and ("minimum" in schema or "maximum" in schema):
+            errors.append(f"{path}: not a number")
+        elif "minimum" in schema and instance < schema["minimum"]:
+            errors.append(f"{path}: {_number(instance)} < minimum {schema['minimum']}")
+        elif "maximum" in schema and instance > schema["maximum"]:
+            errors.append(f"{path}: {_number(instance)} > maximum {schema['maximum']}")
+    if isinstance(instance, str) and "maxLength" in schema and len(instance) > schema["maxLength"]:
+        errors.append(f"{path}: {len(instance)} characters > maxLength {schema['maxLength']}")
     if isinstance(instance, dict):
         props = schema.get("properties", {})
         for key in schema.get("required", []):
@@ -169,6 +181,8 @@ def validate(instance: Any, schema: dict[str, Any], *, root: dict[str, Any] | No
     if isinstance(instance, list):
         if "minItems" in schema and len(instance) < schema["minItems"]:
             errors.append(f"{path}: fewer than {schema['minItems']} items")
+        if "maxItems" in schema and len(instance) > schema["maxItems"]:
+            errors.append(f"{path}: {len(instance)} items > maxItems {schema['maxItems']}")
         if "items" in schema:
             for i, item in enumerate(instance):
                 errors.extend(validate(item, schema["items"], root=root, path=f"{path}[{i}]"))
@@ -181,6 +195,7 @@ _NUMBER = re.compile(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?
 # a text that lists several values (「消渴、口渴」) is not one value of a list: it is left for the model to write as a list
 _LIST_MARKS = re.compile(r"[,，、;；\n]")
 WRAPPER = "item"  # how some models' tool grammars write a list, or a value: {"item": […]}, {"item": "消渴"}
+_TOO_LARGE = re.compile(r": (?:.* [<>] (?:minimum|maximum|maxLength|maxItems) |not a number$)")  # what validate says of a limit
 _NO = object()
 
 
@@ -203,6 +218,17 @@ def _unwrap(value: Any) -> Any:
     return value[WRAPPER] if isinstance(value, dict) and len(value) == 1 and WRAPPER in value else value
 
 
+def _written(text: str) -> Any:
+    """What a list or an object written as JSON text says, or ``_NO`` — with no half character in it: the text itself
+    may be whole and spell one (``"[\"\\ud800\"]"``), which then came out of the reading, past the door that had
+    looked at the arguments (:func:`whole`), and into whatever is written down (a research run's record could not be,
+    and stayed in the queue for good)."""
+    try:
+        return whole(json.loads(text))[0]
+    except (ValueError, RecursionError):
+        return _NO
+
+
 def _as(value: Any, t: str) -> Any:
     """``value`` written as JSON type ``t``, where only its form differs from it; ``_NO`` where more than its form does."""
     if t == "array":
@@ -212,19 +238,13 @@ def _as(value: Any, t: str) -> Any:
         if isinstance(value, str):
             text = value.strip()
             if text.startswith("["):
-                try:
-                    parsed = json.loads(text)
-                except ValueError:
-                    return _NO
+                parsed = _written(text)
                 return parsed if isinstance(parsed, list) else _NO
             return [value] if text and not _LIST_MARKS.search(text) else _NO
         return [value] if isinstance(value, (int, float)) and not isinstance(value, bool) else _NO
     if t == "object":
         if isinstance(value, str) and value.strip().startswith("{"):
-            try:
-                parsed = json.loads(value)
-            except ValueError:
-                return _NO
+            parsed = _written(value)
             return parsed if isinstance(parsed, dict) else _NO
         return _NO
     inner = _unwrap(value)  # one value, written inside {"item": …} or as a list of one
@@ -345,7 +365,9 @@ def _coerce(value: Any, schema: Any, root: dict[str, Any], path: str, repairs: l
                 continue
             found = []
             fixed = _enum(_inner(fixed, schema, root, path, found), schema, path, found)
-            if not validate(fixed, schema, root=root, path=path):
+            # (a value whose form is now right and which is only too large is repaired all the same: what is then said
+            # of it is its limit — "1000 > maximum 100" — and not that "1000" is no integer)
+            if all(_TOO_LARGE.search(e) for e in validate(fixed, schema, root=root, path=path)):
                 repairs.append(f"{path}: {_show(value)} → {_show(fixed)}")
                 repairs.extend(r for r in found if not r.startswith(f"{path}: "))
                 return fixed

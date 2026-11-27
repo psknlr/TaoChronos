@@ -24,6 +24,7 @@ step.  What then runs passes the scheduler's gauntlet like any call.
 from __future__ import annotations
 
 import secrets
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -31,6 +32,7 @@ from typing import Any
 
 from .. import AGENT_NAME, __version__
 from ..kernel.policy import Actor
+from ..kernel.session import Session
 from ..kernel.store import MemoryEventStore
 from ..kernel.tools import ToolCall, closest_names, resolve_name
 from ..protocol.base import to_jsonable
@@ -38,7 +40,7 @@ from ..protocol.schema import fit_arguments, signature, whole
 from ..plugins.userdata.formats import ACCEPTED, MAX_BYTES, Unreadable
 from ..plugins.userdata.service import MyData
 from ..plugins.userdata.store import MAX_DATASETS
-from .catalog import (CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, PARAMETERS, catalog_view, chat_schema, family_counts,
+from .catalog import (CHECKED, CODE_MODE, ENGINE_TOOLS, META_TOOLS, NEVER, call_schema, catalog_view, family_counts,
                       llm_tools, offered, tool_entry)
 from .jobs import Jobs
 from .prompt import AGENT_NAME as AGENT_NAME_ZH
@@ -51,6 +53,7 @@ ENGINE_NAMES = {t["name"] for t in ENGINE_TOOLS} | {t["name"] for t in META_TOOL
 MAX_ROUNDS = 6
 # what a research run takes (taochronos_research), as research() and start_research() take it
 RESEARCH_FIELDS = ("question", "focus_terms", "tracks", "max_rounds", "forbidden_assumptions", "holdout_after", "books")
+SESSIONS_KEPT = 4  # the sessions a runtime holds in memory (ChatRuntime._keep)
 
 
 def default_profile(home: str | Path | None = None, data_dir: str | Path | None = None) -> str:
@@ -99,7 +102,11 @@ class ChatRuntime:
         self.code_mode = code_mode
         permissions = CHAT_PERMISSIONS | ({"codemode:exec"} if code_mode else frozenset())
         self.actor = Actor(id="agent:chat", role="chat", principal="agent", permissions=frozenset(permissions), name="chat")
+        # the sessions last run or read, at most SESSIONS_KEPT of them (the one being run always): the others are read
+        # again from the store when asked for (_session)
         self.sessions: dict[str, Any] = {}
+        self._running: set[str] = set()
+        self._sessions = threading.Lock()
         self._research = threading.Lock()  # one research run at a time: a run installs its contract's guards harness-wide
         # the runs a server started in the background (chat/jobs.py), kept on disk where the sessions are
         kept = None if isinstance(harness.store, MemoryEventStore) else Path(harness.data_dir) / "chat" / "jobs"
@@ -178,7 +185,8 @@ class ChatRuntime:
                 + [(t["name"], t["family"]) for t in (*ENGINE_TOOLS, *META_TOOLS)])
 
     def _schema(self, name: str) -> dict[str, Any]:
-        return PARAMETERS[name] if name in PARAMETERS else chat_schema(self.h.tools.get(name))
+        """What a call of ``name`` is read against: its parameters, and how large each may be."""
+        return CHECKED[name] if name in CHECKED else call_schema(self.h.tools.get(name))
 
     def _canonical(self, name: str) -> str:
         """The tool a model's name denotes: the name itself (a mesh tool's model name too), or the one tool offered whose
@@ -194,17 +202,21 @@ class ChatRuntime:
         near = " · ".join(f"{n} {{{signature(self._schema(n), limit=6)}}}" for n in closest_names(name, names))
         raise UnknownTool(f"unknown tool {name!r}; closest: {near}; use taochronos_catalog to see what exists")
 
-    def call(self, name: str, arguments: dict[str, Any] | None = None, *, max_chars: int = 16000) -> dict[str, Any]:
+    def call(self, name: str, arguments: dict[str, Any] | None = None, *, max_chars: int = 16000,
+             inline_research: bool = True) -> dict[str, Any]:
         """Run one tool the model asked for; never raises — a failure is a result the model can read.  A name written in
         another form is the tool's it denotes; arguments are read against the tool's parameters (``fit_arguments``): their
         form repaired where only that was wrong (the outcome's ``repaired`` says how), and a call they still do not fit —
-        a parameter the tool does not take, which it would otherwise ignore — answered with what the tool takes."""
+        a parameter the tool does not take, which it would otherwise ignore, or a value beyond what it may be —
+        answered with what the tool takes.  ``inline_research=False`` (a server others reach): a research run is not
+        made here, inside a call — it is started in the background (:meth:`start_research`), where it waits its turn
+        among at most so many and is counted as a run."""
         started = time.perf_counter()
         tool, ok, result, error, receipt, repaired = name, False, None, None, {}, []
         try:
             name = self._canonical(name)
             if name == "taochronos_call":
-                arguments, _, problem = fit_arguments(arguments if arguments is not None else {}, PARAMETERS[name], tool=name)
+                arguments, _, problem = fit_arguments(arguments if arguments is not None else {}, CHECKED[name], tool=name)
                 if problem:
                     raise InvalidArguments(problem)
                 inner = str(arguments.get("tool") or "")
@@ -212,9 +224,14 @@ class ChatRuntime:
                     raise ValueError("taochronos_call needs {\"tool\": <name>, \"arguments\": {...}}")
                 inner = self._canonical(inner)
                 if inner in ENGINE_NAMES:
-                    return {**self.call(inner, arguments.get("arguments") or {}, max_chars=max_chars), "via": "taochronos_call"}
+                    out = self.call(inner, arguments.get("arguments") or {}, max_chars=max_chars, inline_research=inline_research)
+                    return {**out, "via": "taochronos_call"}
                 name, arguments = inner, arguments.get("arguments") or {}
             tool = name if name in ENGINE_NAMES else self._resolve(name)
+            if tool == "taochronos_research" and not inline_research:
+                raise PermissionError("on this server a research run is not made inside a call: ask for the tool "
+                                      "taochronos_research itself (not through taochronos_call) — the page then starts "
+                                      "it in the background (POST /api/research) and follows it by its job id")
             # half a character in what the model wrote (a lone surrogate) is U+FFFD before anything reads it: the call
             # ended on one where its id is made, and the model was told of an encoding error it could do nothing with
             arguments, halves = whole(arguments if arguments is not None else {})
@@ -329,8 +346,11 @@ class ChatRuntime:
         with self._research:
             engine = self.h.engine()
             session = engine.start(self._goal(question, **fields), session_id=_session_id())
-            self.sessions[session.id] = session
-            engine.run(session)
+            self._keep(session, running=True)
+            try:
+                engine.run(session)
+            finally:
+                self._ran(session)
         return self.summary(session)
 
     def start_research(self, question: str, **fields: Any) -> str:
@@ -342,7 +362,7 @@ class ChatRuntime:
         call of ``taochronos_research`` is read here (:meth:`call`): their form repaired, and :class:`InvalidArguments`
         where they still do not fit, with what the tool takes.  Returns the question and the fields given, as
         :meth:`start_research` takes them."""
-        fitted, _, problem = fit_arguments(whole(arguments if arguments is not None else {})[0], PARAMETERS["taochronos_research"],
+        fitted, _, problem = fit_arguments(whole(arguments if arguments is not None else {})[0], CHECKED["taochronos_research"],
                                            tool="taochronos_research")
         if problem:
             raise InvalidArguments(problem)
@@ -370,16 +390,56 @@ class ChatRuntime:
             session = engine.open(job["session"])  # its log, from the store: the run goes on from its last checkpoint
         else:
             session = engine.start(self._goal(job["question"], **job.get("arguments", {})), session_id=_session_id())
-        self.sessions[session.id] = session
-        attach(session)
-        engine.run(session, stop=stop)
+        self._keep(session, running=True)
+        try:
+            attach(session)
+            engine.run(session, stop=stop)
+        finally:
+            self._ran(session)
         return shape("taochronos_research", True, self.summary(session), duration_ms=(time.time() - started) * 1000)
 
+    def _keep(self, session: Any, *, running: bool = False) -> None:
+        """Hold ``session`` as the latest used, and let go of the ones used longest ago beyond SESSIONS_KEPT.  A session
+        is its whole state (and the copy its replay is checked against): tens of megabytes on the full corpus, which a
+        server that kept every run it ever made had no room for after some dozens of them.  Whatever is let go is in
+        the store, and read from it again when asked for.  The one being run is never let go of: it is read from the
+        store only once nothing writes to it."""
+        with self._sessions:
+            self.sessions.pop(session.id, None)
+            self.sessions[session.id] = session
+            if running:
+                self._running.add(session.id)
+            idle = [sid for sid in self.sessions if sid not in self._running and sid != session.id]
+            for sid in idle[: max(0, len(self.sessions) - SESSIONS_KEPT)]:
+                del self.sessions[sid]
+
+    def _ran(self, session: Any) -> None:
+        with self._sessions:
+            self._running.discard(session.id)
+
+    def forget_session(self, session_id: str) -> None:
+        """Remove what a run left: its session's log in the store and the files it published.  For a server whose
+        data is not anyone's to keep (the corpus container: chat/cloud.py), when the run's record goes — a run's log
+        is some 20 MB and its artifacts 3 MB on the 要籍语料, and nothing took either back."""
+        with self._sessions:
+            if session_id in self._running:
+                return
+            self.sessions.pop(session_id, None)
+        self.h.store.truncate(session_id, 0)
+        root = Path(self.h.artifacts.root)
+        target = (root / session_id).resolve()
+        if target.parent == root.resolve():  # (an id is the runtime's own making; all the same: a folder of the root only)
+            shutil.rmtree(target, ignore_errors=True)
+
     def _session(self, session_id: str) -> Any:
-        session = self.sessions.get(session_id)
+        with self._sessions:
+            session = self.sessions.get(session_id)
         if session is None:
-            session = self.h.engine().open(session_id)  # a session this runtime did not start, from the store
-            self.sessions[session_id] = session
+            # a session this runtime no longer holds, or never started: read from the store — and only read: the
+            # contract's guards are a run's to install (engine.open), not a reader's, who would put an earlier run's in
+            # the place of those of the run going on
+            session = Session.open(self.h.store, session_id)
+        self._keep(session)
         return session
 
     def _evidence_card(self, state: Any, evidence_id: str) -> dict[str, Any] | None:
@@ -472,7 +532,9 @@ class ChatRuntime:
         words, as the evidence ledger's notes say them (``via 国老→甘草（别名录（中醫笈成））``, ``年代存疑（…）``)."""
         from ..engine.workflow import ask
 
-        run = ask(self.h, question, resume=False)
+        # (keep=False: a conversation never takes a run up again, and every new question left its workspace — 170 KB —
+        # on the server's disk for good)
+        run = ask(self.h, question, resume=False, keep=False)
         steps = [{"skill": s.get("skill"), "name": s.get("name"), "agent": s.get("agent"), "status": s.get("status"),
                   "calls": s.get("calls")} for s in run.get("steps", [])]
         sources = citations([s.get("results") for s in run.get("steps", [])], limit=40)

@@ -186,7 +186,9 @@ def neighbourhood(tokens_by_period: dict[str, list[list[str]]], order: list[str]
         if not members:
             continue
         words = [d["token"] for d in distinctive(members, everyone, top=top)]
-        common = [t for t, _ in Counter(t for toks in members for t in set(toks)).most_common(top)]
+        # (the tokens of a context in a fixed order: a set's own order is the interpreter's of the day, and tokens as
+        # frequent as one another came out in it — the same question gave another list at each start of the server)
+        common = [t for t, _ in Counter(t for toks in members for t in sorted(set(toks))).most_common(top)]
         now = set(common)
         out.append({"period": per, "contexts": len(members), "frequent": common, "distinctive": words,
                     "overlap_with_previous": round(len(now & prev) / len(now | prev), 3) if prev else None})

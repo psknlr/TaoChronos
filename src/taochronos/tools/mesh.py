@@ -28,6 +28,7 @@ from ..science import (
 from ..science.temporal import coverage
 from ..verification.provenance import find_quote, provenance_chain
 from .adapters import SenseOracle, author_clusters, binner, claim_year_fn, contradiction_context
+from .limits import limits_for
 from .common import (claim_card, claims_in_scope, find_passage, lineage_in_scope, neighbours, passage_card, scope_ids,
                      scope_passages, term_passages, whole_store)
 
@@ -1366,5 +1367,6 @@ def build_tool_registry(extra: list[ToolSpec] | None = None) -> ToolRegistry:
                  obj({"object_id": S}, ["object_id"]), _inspect, family="validation", permission="classics:read"),
     ]
     for spec in specs + list(extra or []):
+        spec.limits = {**limits_for(spec.name, spec.input_schema), **spec.limits}  # how large its arguments may be
         reg.register(spec)
     return reg

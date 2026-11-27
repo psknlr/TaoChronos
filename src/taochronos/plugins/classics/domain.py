@@ -28,8 +28,15 @@ from ...protocol.documents import YearRange
 from ...protocol.yamlio import load_yaml
 from .aliases import AliasIndex
 from .cruxes import load_cruxes
+from .kept import TextMemo
 from .repairs import TABLE as REPAIRS_TABLE
 from .repairs import ConversionRepairs
+
+# the texts whose normalised form is kept (VariantNormalizer.normalize_text): so many, and so many characters of them —
+# a passage of the full corpus is 60 characters on average (900 at the most), so the count is what bounds the corpus's
+# own texts, as it always did, and the characters what bounds anything else
+NORMALISED_KEPT = 200_000
+NORMALISED_CHARS = 24_000_000
 
 CATEGORY_PRIORITY = [
     "formula",
@@ -246,7 +253,9 @@ class VariantTable:
             src, dst = w["from"].translate(self._table), w["to"].translate(self._table)
             if len(src) == len(dst):
                 w["from"], w["to"] = src, dst
-        self._cache: dict[str, str] = {}
+        # texts normalised once (normalize_text): the corpus's passages — and no long text: a caller's own is of any
+        # length, and 200,000 of those, the only bound there was, are more than any memory holds (kept.TextMemo)
+        self._cache: TextMemo[str] = TextMemo(NORMALISED_KEPT, NORMALISED_CHARS)
         self.fingerprint = hashlib.sha1((self.script.fingerprint + _stable_repr(sorted(combined.items()))
                                          + _stable_repr([(w["from"], w["to"]) for w in self.words])).encode("utf-8")).hexdigest()[:12]
 
@@ -279,10 +288,7 @@ class VariantTable:
         for w in self.words:
             if w["from"] in out:
                 out = out.replace(w["from"], w["to"])
-        if len(self._cache) > 200_000:
-            self._cache.clear()
-        self._cache[text] = out
-        return out
+        return self._cache.put(text, out)
 
 
 # --------------------------------------------------------------------------- lexicon

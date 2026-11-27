@@ -323,6 +323,19 @@ def test_schools_through_tools_and_cli(harness, school_study, capsys, tmp_path):
     assert capsys.readouterr().out.startswith("# 学派：温病学派")
 
 
+def test_a_school_asked_with_probes_leaves_no_file(school_study, tmp_path):
+    """A school's study is kept beside the store under what it was asked with — and the probes are a caller's words:
+    every new list of them left a file there for good."""
+    sc = school_study._schools
+    plain = sc.run("温病", cache=tmp_path)
+    assert [p.name for p in tmp_path.iterdir()] == [f"schools-{sc._key(['温病', 30000, 60, 40, []])}.json"]
+    assert sc.run("温病", cache=tmp_path) == plain  # read from it
+    for probes in (["营分"], ["卫分"], ["营分", "卫分"]):
+        probed = sc.run("温病", probes=probes, cache=tmp_path)
+        assert {row["item"] for row in probed["probes"]} == set(probes) and sc.run("温病", probes=probes, cache=tmp_path) == probed
+    assert len(list(tmp_path.iterdir())) == 1
+
+
 # ------------------------------------------------------------------ 名称 (T9, T24), 传播链 (T15)
 def _write_corpus(root: Path, books: list[tuple[str, str, str, int, str, list[str]]]) -> Path:
     """books: (id, title, author, year, category, passages) → a corpus directory."""

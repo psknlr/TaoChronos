@@ -556,8 +556,9 @@ it: `$.k: null → left out`), and the outcome's `repaired` says how.  A require
 asked for, and the text `"null"` is not taken for it.  A call that still does not fit is answered so that the model can
 correct it in one step: a name no tool has with the three closest tools offered and what they take (`closest_names`),
 never one the model is not offered; a parameter the tool does not take — which the tool would ignore, so that the model
-read an answer to a question it did not ask — or a value that is not of its type with what the tool takes (`study.herb
-takes: name (string, required); items (integer)`).  The meaning of a call is never guessed, and what runs passes the
+read an answer to a question it did not ask — or a value that is not of its type, or beyond what it may be (every
+argument has a limit: `$.k: 500 > maximum 100`; [ADR 0037](adr/0037-what-a-call-may-cost.md)), with what the tool
+takes (`study.herb takes: name (string, required); items (integer)`).  The meaning of a call is never guessed, and what runs passes the
 scheduler's gauntlet as before.  The D1 backup reads calls alike (`backup/catalog.js`, compared with the Python on the
 fixture), suggesting only the tools it serves, and so does a server for a research run it starts in the background
 (`POST /api/research`): one whose arguments do not fit is answered at once (400, with what the tool takes), not started.

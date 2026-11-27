@@ -14,6 +14,7 @@ modern transcribers sometimes restore the original characters, and a substitute 
 from __future__ import annotations
 
 import re
+import threading
 from collections import defaultdict
 from typing import Any
 
@@ -26,6 +27,9 @@ class TabooStudy:
     def __init__(self, base: StudyBase) -> None:
         self.b = base
         self.rules = list(base.data("taboo.yaml").get("rules") or [])
+        # a survey's row of each book, once read (survey): the corpus does not change under a study
+        self._rows: dict[str, dict[str, Any]] = {}
+        self._reading = threading.Lock()
 
     def _formula_names(self) -> set[str]:
         return {self.b.normalize(e.term) for e in self.b.pack.lexicon.by_category("formula")}
@@ -117,17 +121,24 @@ class TabooStudy:
                 "characters": sum(len(t) for t in texts), **v}
 
     def survey(self, book_ids: list[str] | None = None, *, min_chars: int = 20000) -> dict[str, Any]:
-        """Profiles of many books, with the witnesses whose edition postdates their composition."""
+        """Profiles of many books, with the witnesses whose edition postdates their composition.  Every book of the
+        corpus is read through for it — a quarter of a minute on the 要籍语料, minutes on the full corpus — so a book's
+        row is kept once it is read: the survey asked for again (with whatever ``min_chars``) reads nothing, and of
+        two asked for at once the second waits for the first's rows rather than reading the corpus beside it."""
         ids = book_ids or sorted(self.b.corpus.books)
         rows = []
-        for bid in ids:
-            prof = self.profile(bid)
-            if prof["characters"] < min_chars:
-                continue
-            rows.append({k: prof[k] for k in ("book_id", "title", "dynasty", "composition", "source", "characters",
-                                               "edition_floor", "decisive", "edited_after_composition")}
-                        | {"avoided": [r["rule"] for r in prof["rules"] if r["verdict"] == "避讳"],
-                           "not_avoided": [r["rule"] for r in prof["rules"] if r["verdict"] == "未避"]})
+        with self._reading:
+            for bid in ids:
+                row = self._rows.get(bid)
+                if row is None:
+                    prof = self.profile(bid)
+                    row = self._rows[bid] = {
+                        **{k: prof[k] for k in ("book_id", "title", "dynasty", "composition", "source", "characters",
+                                                "edition_floor", "decisive", "edited_after_composition")},
+                        "avoided": [r["rule"] for r in prof["rules"] if r["verdict"] == "避讳"],
+                        "not_avoided": [r["rule"] for r in prof["rules"] if r["verdict"] == "未避"]}
+                if row["characters"] >= min_chars:
+                    rows.append({**row, "avoided": list(row["avoided"]), "not_avoided": list(row["not_avoided"])})
         by_source: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for r in rows:
             by_source[r["source"] or "?"]["books"] += 1

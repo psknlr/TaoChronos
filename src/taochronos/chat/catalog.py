@@ -13,6 +13,9 @@ from __future__ import annotations
 import copy
 from typing import Any
 
+from ..kernel.tools import default_limits, limited
+from ..tools.limits import limits_for
+
 FAMILIES: dict[str, dict[str, str]] = {
     "retrieval": {"label": "检索", "blurb": "全文检索（七路融合，可加时代约束）、段落原文、书目、知识谱系"},
     "study": {"label": "治学", "blurb": "方源考、药性源流、术语源流、经文互见、集注、训诂、句读、版本谱系、医案、学派、今译……"},
@@ -119,6 +122,10 @@ META_TOOLS: list[dict[str, Any]] = [
 
 # the parameters of the engine and the meta-tools, by name: a model's arguments for them are read against these
 PARAMETERS: dict[str, dict[str, Any]] = {t["name"]: t["parameters"] for t in (*ENGINE_TOOLS, *META_TOOLS)}
+# …and against how large each may be (kernel.tools.default_limits, tools.limits): checked beside the schema, as a mesh
+# tool's limits are, and no part of what a model is shown
+CHECKED: dict[str, dict[str, Any]] = {name: limited(schema, default_limits(schema, limits_for(name, schema)))
+                                      for name, schema in PARAMETERS.items()}
 
 
 def llm_name(name: str) -> str:
@@ -162,6 +169,12 @@ def chat_schema(spec: Any) -> dict[str, Any]:
     if "required" in schema:
         schema["required"] = [k for k in schema["required"] if k in schema["properties"]]
     return schema
+
+
+def call_schema(spec: Any) -> dict[str, Any]:
+    """What a chat model's arguments for a mesh tool are read against: its parameters as the model has them
+    (:func:`chat_schema`), each with how large it may be (``ToolSpec.limits``)."""
+    return limited(chat_schema(spec), getattr(spec, "limits", None) or {})
 
 
 def tool_entry(spec: Any) -> dict[str, Any]:

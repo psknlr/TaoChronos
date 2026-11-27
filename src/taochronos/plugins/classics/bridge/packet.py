@@ -41,6 +41,10 @@ INDICATION = re.compile(r"^[^，。：:]{1,8}，味[^，。]{1,4}[，。]|^[^。
 PROGNOSIS = re.compile(r"(?:转为|变为|传为|转成|变成|发为|久则|将为|恐成|遂成|乃成)$")
 TERM_CATEGORIES = ("disease", "symptom", "sign", "pattern", "disease_class")
 MARKS = re.compile(r"[，。、；：？！,.;:?!\s]")
+# how much of a clause, and of a sentence, is read around a finding.  A clause of the classics is some tens of
+# characters and a passage of the corpus 900 at the most; a caller's text may bear no mark at all, and reading the whole
+# of it again for each of its findings cost the square of the text (79,000 characters without a mark: 7 s of one call)
+AROUND = 2000
 
 
 class PacketReader:
@@ -57,6 +61,9 @@ class PacketReader:
         self.ambiguous = {normalize(k): v for k, v in data.ambiguous.items()}
         self.blocked = sorted({normalize(b) for b in data.blocked}, key=len, reverse=True)
         self.max_len = max((len(k) for k in self.index), default=1)
+        # the words of frequency and of timing, the longest first (每日 before 日)
+        self.modifier_words = {group: sorted(data.modifiers.get(group, {}).items(), key=lambda kv: -len(kv[0]))
+                               for group in ("frequency", "timing")}
 
     # ------------------------------------------------------------ rules
     def read(self, text: str, *, year: float | None = None, source: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -119,6 +126,14 @@ class PacketReader:
                     blocked[k] = True
                 start = norm.find(phrase, start + 1)
         clauses = self._clauses(norm)
+        at = 0  # the clause the reading has reached: it only goes forward
+
+        def clause_of(i: int) -> dict[str, Any]:
+            nonlocal at
+            while at < len(clauses) - 1 and clauses[at]["end"] <= i:
+                at += 1
+            return clauses[at]
+
         findings: list[dict[str, Any]] = []
         i = 0
         while i < n:
@@ -138,14 +153,14 @@ class PacketReader:
                 if form is None:
                     i += 1
                     continue
-                clause = next(c for c in clauses if c["start"] <= i < c["end"])
+                clause = clause_of(i)
                 for pid, reading, uncertain in self._readings(form, norm, i):
                     f = self._finding(pid, form, i, norm, clause, reading, uncertain)
                     f.update({"surface": norm[i: i + len(form) + 1], "span": [i, i + len(form) + 1], "negated": True})
                     findings.append(f)
                 i += len(form) + 1
                 continue
-            clause = next(c for c in clauses if c["start"] <= i < c["end"])
+            clause = clause_of(i)
             for pid, reading, uncertain in self._readings(hit, norm, i):
                 findings.append(self._finding(pid, hit, i, norm, clause, reading, uncertain))
             i += len(hit)
@@ -201,9 +216,10 @@ class PacketReader:
             single = len(surface) == 1
             return [(pid, None, single or self.data.phenotypes[pid].relation_of(form) in (
                 BridgeRelation.CONTEXT_DEPENDENT, BridgeRelation.HISTORICAL_SEMANTIC_SHIFT)) for pid in pids]
-        left = max(norm.rfind(ch, 0, i) for ch in SENTENCE_END)
-        rights = [p for p in (norm.find(ch, i) for ch in SENTENCE_END) if p >= 0]
-        sentence = norm[left + 1: min(rights) if rights else len(norm)].replace(surface, "")
+        lo, hi = max(0, i - AROUND), min(len(norm), i + AROUND)  # the sentence, or what of it stands around the form
+        left = max(norm.rfind(ch, lo, i) for ch in SENTENCE_END)
+        rights = [p for p in (norm.find(ch, i, hi) for ch in SENTENCE_END) if p >= 0]
+        sentence = norm[left + 1 if left >= 0 else lo: min(rights) if rights else hi].replace(surface, "")
         scores = {r: sum(1 for c in cues if c in sentence) for r, cues in amb["readings"].items()}
         best = max(scores.values()) if scores else 0
         winners = [r for r, v in scores.items() if v == best and v > 0]
@@ -224,9 +240,13 @@ class PacketReader:
             if key in near:
                 mods["severity"] = value
                 break
-        rest = clause["text"].replace(surface, "", 1)
+        around = clause["text"]
+        if len(around) > AROUND:  # a text with no mark is one clause: what stands around the finding is read
+            start = max(0, i - clause["start"] - AROUND // 2)
+            around = around[start: start + AROUND]
+        rest = around.replace(surface, "", 1)
         for group in ("frequency", "timing"):
-            for key, value in sorted(self.data.modifiers.get(group, {}).items(), key=lambda kv: -len(kv[0])):
+            for key, value in self.modifier_words[group]:
                 if key in rest:
                     mods[group] = value
                     break
