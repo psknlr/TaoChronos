@@ -153,6 +153,7 @@ def cross_associations(units: list[tuple[set[str], set[str]]], *, min_count: int
     right: Counter = Counter()
     pair: Counter = Counter()
     for ls, rs in units:
+        ls, rs = sorted(ls), sorted(rs)  # in one order, whatever the sets' own
         left.update(ls)
         right.update(rs)
         for a in ls:
@@ -185,7 +186,7 @@ def group_contrasts(groups: dict[str, list[set[str]]], *, min_cases: int = 3, q:
     for g, cases in groups.items():
         c: Counter = Counter()
         for s in cases:
-            c.update(s)
+            c.update(sorted(s))  # in one order, whatever the set's own
         per[g] = c
         total.update(c)
     n = sum(sizes.values())
