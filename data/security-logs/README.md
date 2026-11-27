@@ -18,7 +18,7 @@ Worker 绑定了归档存储桶后（仓库变量 `ARCHIVE_BUCKET`，[ADR 0023](
 | `route`、`status` | 命中的接口类别（chat / logs / api-read / api-call / api-research / page / honeypot / other / csp）与返回的状态码（未知时为 null） |
 | `who` | 访客的哈希键（有 `SENTINEL_SALT` 时跨月不变；否则按月） |
 | `fp` | 请求指纹：地址（`ip`）、网络（`asn`、`asOrg`）、国家与城市、Cloudflare 节点（`colo`）、协议（`proto`）、TLS 版本与密码套件、ClientHello 长度与扩展摘要、往返时延（`rtt`）、请求头（`ua`、`accept`、`lang`、`origin`、`referer`（只保留来源）、`sfSite`/`sfMode`/`sfDest`、`chUa`……）、`uaClass`、`traversal` |
-| `fp`（未被标记的访客） | 2026-11-25 起，没被标记的访客的事件（只有 `csp` 报告会这样）**不带地址**：只有 `ts`、`method`、`host`、`path`、`asn`、`country`、`proto`、`uaClass`、`browser`（引擎/版本）、`xrw`（应用内浏览器的包名）。研究任务与会话的编号在 `path` 里记作 `…` |
+| `fp`（未被标记的访客） | 2026-11-25 起，没被标记的访客的事件（只有 `csp` 报告会这样）**不带地址**（此前存下的 2030 条已于 2026-11-26 照此改写，git 历史里仍有原样）：只有 `ts`、`method`、`host`、`path`、`asn`、`country`、`proto`、`uaClass`、`browser`（引擎/版本）、`xrw`（应用内浏览器的包名）。研究任务与会话的编号在 `path` 里记作 `…` |
 | `shape` | 中转的模型调用请求的形状：消息数、字数、是否以系统提示开头（`system`）、系统提示与最后一问的哈希（`sys`、`q`，不含正文）、是否流式、工具数、`max_tokens` 字段名 |
 | `decision` | 当时的模式与结论：`blocked`、`shadow`、`until`（阻断到何时） |
 | `state` | 该访客的累计：请求数 `n`、错误数 `bad`、被标记次数、阻断次数、十秒内与十分钟内的请求数、同一问题的重复数、探测过的路径数、不同 UA 数、最近的 404 路径、网络 |

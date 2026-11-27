@@ -21,6 +21,7 @@ import json
 import lzma
 import os
 import shutil
+import signal
 import sqlite3
 import sys
 import threading
@@ -199,6 +200,28 @@ def _preload(runtime: Any) -> None:
         _log(f"case records not preloaded: {type(exc).__name__}: {exc}")
 
 
+def _stop_when_asked(server: Any) -> None:
+    """Stop serving on SIGTERM.
+
+    The platform sends it to a running container when a new image is deployed (and the site's Worker when the
+    container has been idle for its time), and waits up to fifteen minutes before it kills a container that has not
+    gone and starts the new image.  This process is the container's first, and on Linux the first process of a
+    container is given no default handling of a signal: without a handler SIGTERM does nothing.  On 2026-11-25 the
+    image before a deployment was still answering three minutes after it (the server read a file by its path, which
+    the deployed image refuses) and the new one only some time within the next fourteen: a fix deployed is to be a fix
+    served.  With the handler the server stops taking calls at once, and the Worker starts the new image with the next
+    call."""
+    if threading.current_thread() is not threading.main_thread():
+        return  # a handler is the main thread's to set (a test runs the server in another)
+
+    def stop(signum: int, frame: Any) -> None:
+        _log("asked to stop (SIGTERM): no further calls are taken")
+        # shutdown() waits for the serving loop, which is this thread's: asked from another
+        threading.Thread(target=server.shutdown, name="stop", daemon=True).start()
+
+    signal.signal(signal.SIGTERM, stop)
+
+
 def serve(port: int = 8080) -> None:
     from .server import ChatServer
     from . import ChatRuntime
@@ -209,6 +232,7 @@ def serve(port: int = 8080) -> None:
     runtime = ChatRuntime.create("full-corpus", kind="server")
     info = runtime.info()  # counted before the port opens: the first request answers at once
     server = ChatServer(("0.0.0.0", port), runtime, web_root=None, proxy=False, token=token)
+    _stop_when_asked(server)
     threading.Thread(target=_preload, args=(runtime,), name="case-records", daemon=True).start()
     _log(f"TaoChronos {info['version']} · {info['profile']} · {info['corpus']['books']} 部书 · "
          f"{info['corpus']['passages']} 段 · {info['tools']['offered']} 个工具 · :{port}")

@@ -197,6 +197,44 @@ def test_the_container_answers_only_the_workers_token_and_forwards_no_model_call
         servers[0].shutdown()
 
 
+def test_the_container_stops_when_the_platform_asks_it_to(prepared):
+    """SIGTERM is how the platform replaces a running container with a newly deployed image: it waits up to fifteen
+    minutes for the process to go, and only then starts the new one.  The first process of a container that sets no
+    handler never sees the signal — so the server sets one, and is gone in a moment, having said why."""
+    import signal
+    import socket
+    import subprocess
+    import sys
+
+    data, _, _ = prepared
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    env = {**os.environ, "TAOCHRONOS_DATA": str(data), "TAOCHRONOS_TOKEN": "worker-token",
+           "PYTHONPATH": str(ROOT / "src") + os.pathsep + os.environ.get("PYTHONPATH", "")}
+    proc = subprocess.Popen([sys.executable, "-m", "taochronos.chat.cloud", "serve", "--port", str(port)], env=env,
+                            stderr=subprocess.PIPE, text=True)
+    try:
+        for _ in range(1200):  # the runtime over the store, then the port
+            try:
+                if _get(f"http://127.0.0.1:{port}/api/info")[0] == 401:
+                    break
+            except OSError:
+                assert proc.poll() is None, proc.stderr.read()
+                threading.Event().wait(0.1)
+        else:
+            raise AssertionError("the server did not start")
+        proc.send_signal(signal.SIGTERM)
+        assert proc.wait(timeout=20) == 0  # it ended itself: killed by the signal it would be -15
+        assert "asked to stop (SIGTERM)" in proc.stderr.read()
+        with pytest.raises(OSError):
+            _get(f"http://127.0.0.1:{port}/api/info")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+        proc.stderr.close()
+
+
 class _Bucket(BaseHTTPRequestHandler):
     """The site's Worker as the upload client sees it: HEAD and PUT under /api/store/, with the token."""
     objects: dict[str, bytes] = {}
