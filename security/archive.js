@@ -20,7 +20,7 @@
 // repository's acknowledgement is refused (409), so that two collectors never delete from the same store.  The holder of
 // the collector's token reads a day back with serveArchive().
 
-import { bearerOk, json } from "./sentinel.js";
+import { bearerOk, handedOut, json } from "./sentinel.js";
 
 export const RECORDS = "chat-logs/";
 export const EVENTS = (source) => `security-logs/${source}/`;
@@ -186,7 +186,8 @@ export async function serveArchive(request, url, { bucket, prefix, token }) {
   for (const o of listed.objects) {
     const got = await bucket.get(o.key);
     if (!got) continue; // removed since it was listed
-    try { items.push(JSON.parse(await got.text())); } catch { items.push({ key: o.key, unreadable: true }); }
+    // (an archived event's reports as they would be kept now: a day written before their fields were checked)
+    try { items.push(handedOut(JSON.parse(await got.text()))); } catch { items.push({ key: o.key, unreadable: true }); }
   }
   return json({ day, items, cursor: listed.truncated ? listed.cursor : null, more: Boolean(listed.truncated) }, 200);
 }

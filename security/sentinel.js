@@ -795,8 +795,9 @@ export function cspReports(text) {
 
 const whole = (v) => (Number.isSafeInteger(v) && v >= 0 ? v : undefined);
 
-/** An event as the collector is given it: its reports, if it has any, as they would be kept now (keptReport). */
-function handedOut(event) {
+/** An event as the collector is given it: its reports, if it has any, as they would be kept now (keptReport) — from the
+ * book, and from the archive, where a day may have been written before a report's fields were checked. */
+export function handedOut(event) {
   if (event && typeof event === "object" && "reports" in event) {
     event.reports = Array.isArray(event.reports) ? event.reports.map(keptReport).filter(Boolean).slice(0, 10) : [];
   }

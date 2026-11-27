@@ -214,3 +214,24 @@ def test_the_door_walks_what_is_nested_deeper_than_the_interpreters_stack():
     assert levels == 75_000
     plain = {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"}
     assert collect._text(plain) == {"a": [1, "二", {"b": None, "c": True, "d": 1.5}], "e": "x"} and collect._text(f"a{lone}") == "a\ufffd" and collect._text(7) == 7
+
+
+def test_a_report_kept_before_its_fields_were_checked_is_pulled_however_deep_it_is(workers, tmp_path):
+    """A Worker not yet redeployed keeps a report's `line-number` as it was sent, nested as deep as its 16 KB allow
+    (3,668 levels in the runtime).  The whole way of such an event — read, made well-formed, written, the cursor moved —
+    not the door alone: a door that called itself for each level stopped the pull there, and every run after."""
+    import sys
+
+    relay, site = workers
+    levels = 3000 if sys.version_info >= (3, 12) else 900  # (before 3.12 the parser itself goes no deeper than some 990)
+    deep: object = "\ud800"
+    for _ in range(levels):
+        deep = [deep]
+    site.rows.append({"id": 1, "received": "2026-10-14T02:00:00Z", "event": {"v": 1, "kind": "csp", "reports": [{"directive": "img-src", "line": deep}]}})
+    site.next_id = 2
+    site.add("2026-10-14T03:00:00Z", "flag")
+    got = collect.pull({"site": site.url}, tmp_path)
+    assert (got["site_new"], got["site_last"]) == (2, 2)
+    lines = (tmp_path / "site" / "2026" / "10" / "14.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2 and "\ufffd" in lines[0] and "\ud800" not in lines[0]
+    assert json.loads((tmp_path / "cursor.json").read_text())["site"]["last"] == 2

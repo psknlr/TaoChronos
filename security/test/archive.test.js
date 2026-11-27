@@ -168,6 +168,14 @@ test("a day of the archive is read back with the collector's token, a page at a 
     new URL("https://x/a?day=2026-10-14"), { bucket: undefined, prefix: RECORDS, token: TOKEN });
   assert.equal((await none(null)).status, 401);
   assert.equal((await none(TOKEN)).status, 404);
+  // an event archived before a report's fields were checked is handed out as it would be kept now (sentinel.js, keptReport)
+  let deep = 1;
+  for (let k = 0; k < 1500; k++) deep = [deep];
+  await b.put("security-logs/site/2026/10/16/000000000009.json", JSON.stringify({ n: 9, received: "2026-10-16T01:00:00.000Z", source: "site", kind: "csp",
+    reports: [{ directive: "img-src", blocked: "inline", disposition: deep, line: { a: [deep] } }, "junk"] }), {});
+  const old = await serveArchive(new Request("https://x/a?day=2026-10-16", { headers: { Authorization: `Bearer ${TOKEN}` } }),
+    new URL("https://x/a?day=2026-10-16"), { bucket: b, prefix: EVENTS("site"), token: TOKEN });
+  assert.deepEqual((await old.json()).items.map((i) => [i.n, i.kind, i.reports]), [[9, "csp", [{ directive: "img-src", blocked: "inline" }]]]);
 });
 
 test("the sentinel's events: drained like the records, the export says the archive collects them, an ack is refused", async () => {
