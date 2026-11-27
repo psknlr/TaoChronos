@@ -63,7 +63,7 @@ the only one:
 * **What is kept is bounded by what it weighs**: the normaliser's memo by characters as well as entries, and no text
   over 2,000 characters; a runtime holds the four sessions last run or read and reads the others again from the store
   (read only: the contract's guards are a run's to install, not a reader's); a school's study asked with probes leaves
-  no file; a taboo survey reads each book once.
+  no file (the last eight are kept in memory); a taboo survey reads each book once.
 
 **3. A research run is started in one place.** On a server other machines reach, `taochronos_research` is not made
 inside `POST /api/call`: the page starts it with `POST /api/research`, where it waits its turn among twenty and is
@@ -86,9 +86,11 @@ and its report no longer names a folder of the server's disk.
   compared before and after each deployment), the same schemas shown to a model.
 * A call outside them fails where it used to work slowly: a search for more than 100 hits, a text of more than 20,000
   characters, a list of more than 60. The command line calls the study functions themselves and is not bounded.
-* Measured after, every tool at the limits of each of its arguments in turn (1,941 calls on the demonstration corpus,
-  1,941 on the 要籍语料 as a store): none ran over a minute, and what ran longest is a tool's own work with its default
-  arguments (a taboo survey of every book: 16 s), not its arguments.
+* Measured after, every tool at the limits of each of its arguments in turn (1,941 calls over 90 tools on the
+  demonstration corpus, the same on the 要籍语料 as a store of 168,278 passages): the slowest call took 1.05 s on the
+  first and 14 s on the second, and that one is a tool's own work with its default arguments (a taboo survey of every
+  book, read once), not its arguments; the most an argument at its limit added was 10.7 s (the schools compared on
+  probes: a reading of the corpus, whatever the probes).
 * The D1 backup, which answers only where there is no container, reads a call's form as before and keeps its own
   bounds (a search's `k` is at most 50 there, a study's result is one precomputed by its key): it is not changed.
 * **What this does not bound**: a tool that is heavy by what it does (a collation, a survey of every book, a research
