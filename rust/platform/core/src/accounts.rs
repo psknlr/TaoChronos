@@ -135,6 +135,11 @@ pub fn refused(status: u16, kind: &'static str, code: &'static str, message: imp
     Error::Refused(Refusal { status, kind, code, message: message.into(), retry: None })
 }
 
+/// What needs a passkey's touch, asked without one: the console answers it by asking for the touch.
+fn stepup(message: &str) -> Error {
+    refused(403, "permission", "stepup", message)
+}
+
 fn retry_after(e: Error, seconds: i64) -> Error {
     match e {
         Error::Refused(r) => Error::Refused(Refusal { retry: Some(seconds.max(1)), ..r }),
@@ -291,7 +296,7 @@ impl<'a> AccountCore<'a> {
     pub fn credit(&self, kind: &str, credits: i64, reference: &str, note: &str, now: i64) -> Outcome<bool> {
         self.require_org()?;
         let ok_kind = kind == "grant" && credits > 0 || kind == "adjust" && credits != 0;
-        if !ok_kind || credits.abs() > MOST_CREDITS {
+        if !ok_kind || !(-MOST_CREDITS..=MOST_CREDITS).contains(&credits) {
             return Err(refused(
                 400,
                 "invalid_request",
@@ -332,8 +337,12 @@ impl<'a> AccountCore<'a> {
         Ok(id)
     }
 
-    /// A project's monthly limit in credits (None: none).
-    pub fn set_limit(&self, project_id: &str, monthly_limit: Option<i64>) -> Outcome<()> {
+    /// A project's monthly limit in credits (None: none).  `touched`: a passkey touched the asking session lately (the
+    /// console), or the owner asked (the admin token) — what decides what an organisation may spend is asked for so.
+    pub fn set_limit(&self, project_id: &str, monthly_limit: Option<i64>, touched: bool) -> Outcome<()> {
+        if !touched {
+            return Err(stepup("a project's limit is set after a passkey's touch"));
+        }
         if monthly_limit.is_some_and(|l| !(0..=MOST_CREDITS).contains(&l)) {
             return Err(refused(400, "invalid_request", "limit", "a monthly limit is 0 or more credits"));
         }
@@ -351,20 +360,26 @@ impl<'a> AccountCore<'a> {
             .ok_or_else(|| refused(409, "conflict", "project", "the organisation has no project"))
     }
 
-    /// A new key of a project (the organisation's first when none is named): the key itself, shown this once.
+    /// A new key of a project (the organisation's first when none is named): the key itself, shown this once.  Scopes:
+    /// None for all of them; an empty list is refused, not widened.  A live key spends credits: made only after a
+    /// passkey's touch (`touched`: the console says so of its session, the owner's token always).
     #[allow(clippy::too_many_arguments)]
     pub fn create_key(
         &self,
         project: Option<&str>,
         env: KeyEnv,
         name: &str,
-        scopes: &[String],
+        scopes: Option<&[String]>,
         expires: Option<i64>,
         by: &str,
+        touched: bool,
         e: &dyn Entropy,
         now: i64,
     ) -> Outcome<(String, NewKey)> {
         let org = self.require_org()?;
+        if env == KeyEnv::Live && !touched {
+            return Err(stepup("a live key is made after a passkey's touch"));
+        }
         let project = match project {
             Some(p) => p.to_string(),
             None => self.default_project()?,
@@ -375,8 +390,11 @@ impl<'a> AccountCore<'a> {
         }
         let name = clean_name(name)
             .ok_or_else(|| refused(400, "invalid_request", "name", "a key's name is 1–64 characters"))?;
-        let mut wanted: Vec<&str> =
-            if scopes.is_empty() { SCOPES.to_vec() } else { scopes.iter().map(String::as_str).collect() };
+        let mut wanted: Vec<&str> = match scopes {
+            None => SCOPES.to_vec(),
+            Some([]) => return Err(refused(400, "invalid_request", "scope", "a key has at least one scope")),
+            Some(list) => list.iter().map(String::as_str).collect(),
+        };
         wanted.sort_unstable();
         wanted.dedup();
         if let Some(bad) = wanted.iter().find(|s| !SCOPES.contains(s)) {
@@ -403,14 +421,18 @@ impl<'a> AccountCore<'a> {
         Ok((key_id, new))
     }
 
-    /// Ok(true) when the key was revoked now, Ok(false) when it was before.
-    pub fn revoke_key(&self, key_id: &str, now: i64) -> Outcome<bool> {
+    /// Ok(true) when the key was revoked now, Ok(false) when it was before.  A live key's revocation is an outage if it
+    /// is the wrong one: after a passkey's touch, as its making was — decided here, where the key's environment is known.
+    pub fn revoke_key(&self, key_id: &str, touched: bool, now: i64) -> Outcome<bool> {
         let k = self
             .sql
-            .row("SELECT revoked FROM keys WHERE key_id = ?", args![key_id])?
+            .row("SELECT revoked, env FROM keys WHERE key_id = ?", args![key_id])?
             .ok_or_else(|| refused(404, "not_found", "key", "no such key"))?;
         if k.opt_int("revoked").is_some() {
             return Ok(false);
+        }
+        if k.text("env") == "live" && !touched {
+            return Err(stepup("a live key is revoked after a passkey's touch"));
         }
         self.sql.run("UPDATE keys SET revoked = ? WHERE key_id = ?", args![now, key_id])?;
         Ok(true)
@@ -564,7 +586,7 @@ impl<'a> AccountCore<'a> {
             }
             KeyEnv::Live => {
                 let price = self.cfg.price(a.product);
-                let available = self.total("net")? - self.total("held")?;
+                let available = self.total("net")?.saturating_sub(self.total("held")?);
                 if available < price {
                     self.count_refused(&k, a.product, now)?;
                     return Err(refused(
@@ -720,7 +742,7 @@ impl<'a> AccountCore<'a> {
     pub fn balance(&self) -> Result<Json, SqlError> {
         let net = self.total("net")?;
         let held = self.total("held")?;
-        Ok(json!({ "net": net, "held": held, "available": net - held }))
+        Ok(json!({ "net": net, "held": held, "available": net.saturating_sub(held) }))
     }
 
     /// What a key may do now: its scopes, its rate, its environment's allowance or the organisation's credits.
@@ -799,7 +821,10 @@ impl<'a> AccountCore<'a> {
         let held = self.sql.scalar("SELECT COALESCE(SUM(credits), 0) FROM reservations WHERE state = 'held'", &[])?;
         let spent = self.sql.scalar("SELECT COALESCE(SUM(credits), 0) FROM usage", &[])?;
         let charged = -self.sql.scalar("SELECT COALESCE(SUM(credits), 0) FROM ledger WHERE kind = 'usage'", &[])?;
-        Ok(net == self.total("net")? && held == self.total("held")? && spent == charged && net - held >= 0)
+        Ok(net == self.total("net")?
+            && held == self.total("held")?
+            && spent == charged
+            && net.saturating_sub(held) >= 0)
     }
 }
 
@@ -840,7 +865,21 @@ mod tests {
 
         fn key(&self, env: KeyEnv, scopes: &[&str]) -> String {
             let scopes: Vec<String> = scopes.iter().map(|s| s.to_string()).collect();
-            self.core().create_key(None, env, "k", &scopes, None, "owner", &self.e, T0).unwrap().1.key
+            self.core()
+                .create_key(
+                    None,
+                    env,
+                    "k",
+                    (!scopes.is_empty()).then_some(&scopes[..]),
+                    None,
+                    "owner",
+                    true,
+                    &self.e,
+                    T0,
+                )
+                .unwrap()
+                .1
+                .key
         }
 
         fn call(&self, key: &str, product: Product, id: &str, now: i64) -> Outcome<Authorized> {
@@ -1006,13 +1045,15 @@ mod tests {
         assert_eq!(code(w.call(&test, Product::Search, "req_t5", T0 + 3 * MINUTE)), "test_allowance");
         go(w.call(&test, Product::Search, "req_t6", T0 + DAY));
         // revoked, expired, unknown
-        let (gone_id, gone) = w.core().create_key(None, KeyEnv::Live, "gone", &[], None, "owner", &w.e, T0).unwrap();
+        let (gone_id, gone) =
+            w.core().create_key(None, KeyEnv::Live, "gone", None, None, "owner", true, &w.e, T0).unwrap();
         let gone = gone.key;
-        assert!(w.core().revoke_key(&gone_id, T0).unwrap());
-        assert!(!w.core().revoke_key(&gone_id, T0).unwrap());
+        assert_eq!(code(w.core().revoke_key(&gone_id, false, T0)), "stepup", "a live key's revocation needs a touch");
+        assert!(w.core().revoke_key(&gone_id, true, T0).unwrap());
+        assert!(!w.core().revoke_key(&gone_id, true, T0).unwrap());
         assert_eq!(code(w.call(&gone, Product::Verify, "req_x", T0)), "revoked_key");
         let (_, soon) =
-            w.core().create_key(None, KeyEnv::Live, "soon", &[], Some(T0 + 1000), "owner", &w.e, T0).unwrap();
+            w.core().create_key(None, KeyEnv::Live, "soon", None, Some(T0 + 1000), "owner", true, &w.e, T0).unwrap();
         assert_eq!(code(w.call(&soon.key, Product::Verify, "req_y", T0 + 1000)), "expired_key");
         let other = World::new(&[]);
         assert_eq!(
@@ -1028,23 +1069,28 @@ mod tests {
         let w = World::new(&[("PRICE_EVIDENCE_SEARCH", "10")]);
         w.core().credit("grant", 1000, "g", "", T0).unwrap();
         let p = w.core().create_project("pilot", Some(25), &w.e, T0).unwrap();
-        let (_, k) = w.core().create_key(Some(&p), KeyEnv::Live, "pilot key", &[], None, "owner", &w.e, T0).unwrap();
+        let (_, k) =
+            w.core().create_key(Some(&p), KeyEnv::Live, "pilot key", None, None, "owner", true, &w.e, T0).unwrap();
         for i in 0..2 {
             let id = go(w.call(&k.key, Product::Search, &format!("req_{i}"), T0));
             w.core().settle(&id, Some((200, "{}")), T0).unwrap();
         }
         assert_eq!(code(w.call(&k.key, Product::Search, "req_2", T0)), "project_limit");
-        w.core().set_limit(&p, None).unwrap();
+        assert_eq!(code(w.core().set_limit(&p, None, false)), "stepup");
+        w.core().set_limit(&p, None, true).unwrap();
         go(w.call(&k.key, Product::Search, "req_3", T0));
         let listed = serde_json::to_string(&w.core().keys().unwrap()).unwrap();
         assert!(!listed.contains(&k.digest) && !listed.contains(&k.key) && listed.contains(&k.shown));
         // a key of a project that is no project; a name that is none; a scope that is none
         assert_eq!(
-            code(w.core().create_key(Some("prj_nothing"), KeyEnv::Live, "x", &[], None, "o", &w.e, T0)),
+            code(w.core().create_key(Some("prj_nothing"), KeyEnv::Live, "x", None, None, "o", true, &w.e, T0)),
             "project"
         );
-        assert_eq!(code(w.core().create_key(None, KeyEnv::Live, "  ", &[], None, "o", &w.e, T0)), "name");
-        assert_eq!(code(w.core().create_key(None, KeyEnv::Live, "x", &["admin".into()], None, "o", &w.e, T0)), "scope");
+        assert_eq!(code(w.core().create_key(None, KeyEnv::Live, "  ", None, None, "o", true, &w.e, T0)), "name");
+        assert_eq!(
+            code(w.core().create_key(None, KeyEnv::Live, "x", Some(&["admin".into()]), None, "o", true, &w.e, T0)),
+            "scope"
+        );
         // the limits a key reads of itself
         let l = w.core().limits(&k.digest, T0).unwrap();
         // 1000 granted, 20 spent, 10 held by the call still in flight
@@ -1074,5 +1120,34 @@ mod tests {
         assert_eq!(code(w.core().credit("grant", -5, "g", "", T0)), "credits");
         assert!(w.core().credit("adjust", -5, "fix-1", "a correction", T0).unwrap());
         assert_eq!(w.core().balance().unwrap()["net"], -5, "an owner's adjustment alone may go below zero");
+    }
+
+    #[test]
+    fn what_spends_needs_a_touch_and_nothing_malformed_is_widened() {
+        let w = World::new(&[]);
+        // a live key is made, and revoked, only after a passkey's touch; a test key needs none
+        assert_eq!(code(w.core().create_key(None, KeyEnv::Live, "x", None, None, "o", false, &w.e, T0)), "stepup");
+        let (test_id, _) = w.core().create_key(None, KeyEnv::Test, "t", None, None, "o", false, &w.e, T0).unwrap();
+        assert!(w.core().revoke_key(&test_id, false, T0).unwrap());
+        // an empty list of scopes is refused, not made into all of them
+        let none: Vec<String> = Vec::new();
+        assert_eq!(
+            code(w.core().create_key(None, KeyEnv::Test, "x", Some(&none), None, "o", false, &w.e, T0)),
+            "scope"
+        );
+        // credits at the edges of i64: refused, never wrapped
+        for credits in [i64::MIN, i64::MAX, -MOST_CREDITS - 1, MOST_CREDITS + 1] {
+            assert_eq!(
+                code(w.core().credit("adjust", credits, &format!("edge-{credits}"), "", T0)),
+                "credits",
+                "{credits}"
+            );
+        }
+        assert!(w.core().credit("adjust", -MOST_CREDITS, "floor", "", T0).unwrap());
+        assert_eq!(
+            w.core().balance().unwrap()["available"],
+            -MOST_CREDITS,
+            "an owner's adjustment alone goes below zero"
+        );
     }
 }

@@ -535,10 +535,13 @@ fn s12_3_a_changed_address_keeps_the_person_their_organisation_and_their_passkey
     let token2 = w.id().stepup(&token, &a.get(su["challenge"].as_str().unwrap(), &Twist::default()), w.now()).unwrap();
     assert!(w.id().current(&token, w.now()).unwrap().is_none(), "a raised session has a new token; the old is nothing");
     w.registered("taken@example.org");
-    assert_eq!(
-        reason(w.id().start_email_change(&token2, "TAKEN@example.org", &b, "198.51.100.1", "en", w.now())),
-        "taken"
-    );
+    // an address that has an account: answered as any other — its owner alone is told, by mail, and given no code
+    let taken = w.id().start_email_change(&token2, "TAKEN@example.org", &b, "198.51.100.1", "en", w.now()).unwrap();
+    w.drain();
+    let notice = w.last_to("TAKEN@example.org").unwrap();
+    assert_eq!(notice.subject, "TaoChronos: this address already has an account");
+    assert!(code_in(&notice).is_none());
+    assert_eq!(reason(w.id().verify(&flow(&taken), &b, "12345678", Some(&user), &here(), w.now())), "code");
     let ch = w.id().start_email_change(&token2, "new@example.org", &b, "198.51.100.1", "en", w.now()).unwrap();
     w.drain();
     let code = w.code_to("new@example.org").unwrap();
@@ -643,11 +646,134 @@ fn every_template_renders_in_both_languages_with_its_code_where_it_has_one() {
             assert!(!left.contains('{'), "{name} {loc}: a placeholder left: {left}");
             if name.starts_with("passkey") {
                 assert!(
-                    m.html.contains("{code} &lt;b&gt;x&lt;/b&gt;") && !m.html.contains("<b>x</b>"),
-                    "a value is put in once, escaped"
+                    !m.text.contains("<b>x</b>") && !m.html.contains("x</b>"),
+                    "no name a person wrote is in a mail"
                 );
             }
         }
     }
     assert!(render("nothing", "en", &vars, &cfg).is_none());
+}
+
+#[test]
+fn an_address_change_tells_nobody_but_the_addresses_owner_whether_it_is_taken_and_limits_come_first() {
+    let w = World::new(&[("STARTS_PER_NETWORK_HOUR", "50"), ("EMAIL_CHANGES_PER_HOUR", "3")]);
+    for i in 0..3 {
+        w.registered(&format!("known{i}@example.org"));
+    }
+    let (b, _, _, token) = w.registered("asker@example.org");
+    let answer = |r: Res<Json>| match r {
+        Ok(v) => format!("ok:{}", v.as_object().unwrap().keys().cloned().collect::<Vec<_>>().join(",")),
+        Err(Fail::No(why)) => why.reason.to_string(),
+        Err(e) => panic!("{e:?}"),
+    };
+    // a registered address and a free one: the same answer
+    let known = answer(w.id().start_email_change(&token, "known0@example.org", &b, "198.51.100.1", "en", w.now()));
+    let free = answer(w.id().start_email_change(&token, "free0@example.org", &b, "198.51.100.1", "en", w.now()));
+    assert_eq!(known, free);
+    assert!(known.starts_with("ok:"));
+    // the account's own allowance spent: the same refusal for both, however often asked
+    w.id().start_email_change(&token, "free1@example.org", &b, "198.51.100.1", "en", w.now()).unwrap();
+    for round in 0..10 {
+        let known = reason(w.id().start_email_change(
+            &token,
+            &format!("known{}@example.org", round % 3),
+            &b,
+            "198.51.100.1",
+            "en",
+            w.now(),
+        ));
+        let free = reason(w.id().start_email_change(
+            &token,
+            &format!("nobody{round}@example.org"),
+            &b,
+            "198.51.100.1",
+            "en",
+            w.now(),
+        ));
+        assert_eq!((known, free), ("account", "account"));
+    }
+    // and the wider network's allowance stands over every /64 of a /48
+    let n = World::new(&[("STARTS_PER_WIDE_NETWORK_HOUR", "3")]);
+    let b = n.binding();
+    for i in 0..3 {
+        n.id()
+            .start("signin", &format!("m{i}@example.org"), &b, &format!("2001:db8:1:{i}::/64"), "en", n.now())
+            .unwrap();
+    }
+    assert_eq!(reason(n.id().start("signin", "m9@example.org", &b, "2001:db8:1:ff::/64", "en", n.now())), "network");
+    assert!(n.id().start("signin", "m9@example.org", &b, "2001:db8:2:0::/64", "en", n.now()).is_ok(), "another /48");
+    assert_eq!(
+        (wide("2001:db8:1:2::/64"), wide("203.0.113.7")),
+        ("2001:db8:1::/48".to_string(), "203.0.113.0/24".to_string())
+    );
+}
+
+#[test]
+fn what_the_old_address_began_ends_when_the_account_moves() {
+    let w = World::new(&[]);
+    let (b, user, _, token) = w.registered("old@example.org");
+    // someone who reads the old mailbox starts a sign-in in their own browser
+    let thief = w.binding();
+    let s = w.id().start("signin", "old@example.org", &thief, "192.0.2.66", "en", w.now()).unwrap();
+    w.drain();
+    let ch = w.id().start_email_change(&token, "new@example.org", &b, "198.51.100.1", "en", w.now()).unwrap();
+    w.drain();
+    assert_eq!(
+        w.id().verify(&flow(&ch), &b, &w.code_to("new@example.org").unwrap(), Some(&user), &here(), w.now()).unwrap(),
+        Verified::Done
+    );
+    // the old address's flow is over: no resend, no code of it opens the account
+    w.advance(MIN);
+    assert_eq!(reason(w.id().resend(&flow(&s), &thief, w.now())), "flow");
+    assert_eq!(
+        reason(w.id().verify(
+            &flow(&s),
+            &thief,
+            &w.code_to("old@example.org").unwrap_or_default(),
+            None,
+            &here(),
+            w.now()
+        )),
+        "flow"
+    );
+    // a grant the old address earned before the move (an account a passkey guards) is spent too
+    let w = World::new(&[]);
+    let (b, user, _, token) = w.registered("old2@example.org");
+    let opts = w.id().add_options(&token, w.now()).unwrap();
+    let mut a = Authenticator::new(ES256, &w.e);
+    a.user = crate::codec::from_b64url(opts["user"]["id"].as_str().unwrap()).unwrap();
+    let added =
+        w.id().add(&token, &a.create(opts["challenge"].as_str().unwrap(), &Twist::default()), "Key", w.now()).unwrap();
+    let recovery = added["recovery"][0].as_str().unwrap().to_string();
+    let thief = w.binding();
+    let s = w.id().start("signin", "old2@example.org", &thief, "192.0.2.66", "en", w.now()).unwrap();
+    w.drain();
+    let Verified::Second(grant) =
+        w.id().verify(&flow(&s), &thief, &w.code_to("old2@example.org").unwrap(), None, &here(), w.now()).unwrap()
+    else {
+        panic!()
+    };
+    let ch = w.id().start_email_change(&token, "new2@example.org", &b, "198.51.100.1", "en", w.now()).unwrap();
+    w.drain();
+    w.id().verify(&flow(&ch), &b, &w.code_to("new2@example.org").unwrap(), Some(&user), &here(), w.now()).unwrap();
+    assert_eq!(reason(w.id().second(&grant, &thief, &recovery, &here(), w.now())), "grant");
+}
+
+#[test]
+fn the_ceremonies_are_cleaned_by_an_index_and_names_keep_no_invisible_characters() {
+    let w = World::new(&[]);
+    for _ in 0..200 {
+        w.id().signin_options(w.now()).unwrap();
+    }
+    let plan: Vec<String> =
+        w.db.rows("EXPLAIN QUERY PLAN DELETE FROM ceremonies WHERE expires < 1", &[])
+            .unwrap()
+            .iter()
+            .map(|r| r.text("detail"))
+            .collect();
+    assert!(plan.iter().any(|d| d.contains("ceremonies_expires")), "{plan:?}");
+    assert_eq!(clean_name("Lap\u{202e}pot\u{200b} "), "Lappot");
+    assert_eq!(clean_name("\u{2066}\u{2069}"), "passkey");
+    assert_eq!(clean_name("Phone"), "Phone");
 }

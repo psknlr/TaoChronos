@@ -45,6 +45,8 @@ pub struct IdentityConfig {
     pub per_address_hour: i64,
     pub per_address_day: i64,
     pub per_network_hour: i64,
+    pub per_wide_hour: i64,
+    pub changes_per_hour: i64,
     pub mails_per_day: i64,
     pub session_ms: i64,
     pub idle_ms: i64,
@@ -82,6 +84,8 @@ impl IdentityConfig {
             per_address_hour: num("MAILS_PER_ADDRESS_HOUR", 5.0, 1.0) as i64,
             per_address_day: num("MAILS_PER_ADDRESS_DAY", 10.0, 1.0) as i64,
             per_network_hour: num("STARTS_PER_NETWORK_HOUR", 20.0, 1.0) as i64,
+            per_wide_hour: num("STARTS_PER_WIDE_NETWORK_HOUR", 100.0, 1.0) as i64,
+            changes_per_hour: num("EMAIL_CHANGES_PER_HOUR", 5.0, 1.0) as i64,
             mails_per_day: num("AUTH_MAILS_PER_DAY", 1000.0, 1.0) as i64,
             session_ms: (num("SESSION_DAYS", 30.0, 0.01) * DAY as f64) as i64,
             idle_ms: (num("SESSION_IDLE_DAYS", 7.0, 0.01) * DAY as f64) as i64,
@@ -171,6 +175,7 @@ const SCHEMA: &[&str] = &[
       locale TEXT NOT NULL, user_id TEXT, browser TEXT NOT NULL, created INTEGER NOT NULL, expires INTEGER NOT NULL, used INTEGER)",
     "CREATE TABLE IF NOT EXISTS ceremonies (challenge TEXT PRIMARY KEY, purpose TEXT NOT NULL, user_id TEXT, session TEXT, grant_digest TEXT, handle TEXT,
       expires INTEGER NOT NULL, used INTEGER)",
+    "CREATE INDEX IF NOT EXISTS ceremonies_expires ON ceremonies (expires)",
     "CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, public_id TEXT NOT NULL UNIQUE, user_id TEXT NOT NULL, created INTEGER NOT NULL,
       seen INTEGER NOT NULL, expires INTEGER NOT NULL, method TEXT NOT NULL, strong INTEGER, fresh INTEGER NOT NULL, security_version INTEGER NOT NULL,
       device TEXT NOT NULL, place TEXT NOT NULL, ended INTEGER)",
@@ -201,6 +206,7 @@ fn template(purpose: &str, mode: &str, disabled: bool) -> &'static str {
         ("register", _) => "register_exists",
         ("signin", "code") => "signin_code",
         ("signin", _) => "signin_unknown",
+        ("email_change", "notice") => "email_change_exists",
         _ => "email_change_code",
     }
 }
@@ -235,9 +241,18 @@ pub fn read_recovery(text: &str) -> Option<String> {
         .then(|| format!("{}-{}-{}-{}", &s[..4], &s[4..8], &s[8..12], &s[12..]))
 }
 
-/// A name a person gave a passkey, or the default: no control characters, at most 64.
+/// Characters that change how the text around them is shown without being seen: bidirectional overrides and isolates,
+/// zero-width characters, the byte-order mark, soft hyphens — a passkey's name is shown on the security page, and a
+/// name that reads one way and is another is no name.
+fn invisible(c: char) -> bool {
+    matches!(c, '\u{00ad}' | '\u{061c}' | '\u{180e}' | '\u{200b}'..='\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2060}'..='\u{2064}'
+        | '\u{2066}'..='\u{206f}' | '\u{feff}' | '\u{fff9}'..='\u{fffb}')
+}
+
+/// A name a person gave a passkey, or the default: no control or invisible characters, at most 64.
 fn clean_name(name: &str) -> String {
-    let s = name.trim();
+    let kept: String = name.chars().filter(|c| !invisible(*c)).collect();
+    let s = kept.trim();
     if s.is_empty() || s.chars().count() > 64 || s.chars().any(char::is_control) {
         "passkey".into()
     } else {
@@ -301,6 +316,33 @@ impl<'a> Identity<'a> {
         self.take(&format!("ah:{email_key}"), HOUR, now)?;
         self.take(&format!("ad:{email_key}"), DAY, now)?;
         self.take(&format!("md:{}", utc_day(now)), DAY, now)
+    }
+
+    /// The two networks a flow is counted against: the address's own (an IPv4 address, an IPv6 /64) and the wider one
+    /// it is in (an IPv4 /24, an IPv6 /48).  A /56 holds 256 /64s, each with its own allowance: the wider allowance is
+    /// over all of them.
+    fn networks(&self, ip_key: &str) -> [(String, i64); 2] {
+        [
+            (format!("n:{}", self.network(ip_key)), self.cfg.per_network_hour),
+            (format!("w:{}", self.network(&wide(ip_key))), self.cfg.per_wide_hour),
+        ]
+    }
+
+    fn network_refusal(&self, ip_key: &str, now: i64) -> Res<()> {
+        for (key, limit) in self.networks(ip_key) {
+            let (ok, left) = self.allowed(&key, limit, now)?;
+            if !ok {
+                return Err(wait("network", left));
+            }
+        }
+        Ok(())
+    }
+
+    fn count_network(&self, ip_key: &str, now: i64) -> Result<(), SqlError> {
+        for (key, _) in self.networks(ip_key) {
+            self.take(&key, HOUR, now)?;
+        }
+        Ok(())
     }
 
     fn network(&self, ip_key: &str) -> String {
@@ -397,11 +439,7 @@ impl<'a> Identity<'a> {
         if !is_secret(binding) {
             return Err(no("flow"));
         }
-        let network = self.network(ip_key);
-        let (ok, left) = self.allowed(&format!("n:{network}"), self.cfg.per_network_hour, now)?;
-        if !ok {
-            return Err(wait("network", left));
-        }
+        self.network_refusal(ip_key, now)?;
         self.mail_refusal(&email.key, now)?;
         let user = self.user_by_email(&email.key)?;
         let active = user.as_ref().is_some_and(|u| u.text("status") == "active");
@@ -422,7 +460,7 @@ impl<'a> Identity<'a> {
         )?;
         let life = if mode == "code" { self.cfg.code_ms } else { self.cfg.flow_ms };
         self.enqueue(tpl, &email.address, loc, Some(&flow), Some(1), json!({}), now + life, now)?;
-        self.take(&format!("n:{network}"), HOUR, now)?;
+        self.count_network(ip_key, now)?;
         self.count_mail(&email.key, now)?;
         Ok(json!({ "flow": flow, "expires": now + self.cfg.flow_ms, "resend": now + self.cfg.resend_ms }))
     }
@@ -520,7 +558,18 @@ impl<'a> Identity<'a> {
             });
         }
         // every refusal is decided before the first write that is not an attempt's count (a storage failure is then the
-        // only thing that can stop a step half-written): an address another account took meanwhile is one
+        // only thing that can stop a step half-written).  A sign-in's flow is of the address the account has now: one the
+        // old address began before the account moved is over
+        let signer = if purpose == "signin" { self.user(&f.text("user_id"))? } else { None };
+        if purpose == "signin"
+            && !signer
+                .as_ref()
+                .is_some_and(|u| u.text("status") == "active" && u.text("email_key") == f.text("email_key"))
+        {
+            self.sql.run("UPDATE flows SET state = 'dead' WHERE flow_id = ?", args![flow])?;
+            return Err(no("flow"));
+        }
+        // an address another account took meanwhile
         if purpose == "email_change"
             && self
                 .user_by_email(&f.text("email_key"))?
@@ -532,10 +581,7 @@ impl<'a> Identity<'a> {
         match purpose.as_str() {
             "register" => Ok(Verified::Enroll(self.grant("enroll", &f, None, now)?)),
             "signin" => {
-                let user = self
-                    .user(&f.text("user_id"))?
-                    .filter(|u| u.text("status") == "active")
-                    .ok_or_else(|| no("flow"))?;
+                let user = signer.ok_or_else(|| no("flow"))?;
                 let uid = user.text("user_id");
                 if !self.passkeys(&uid)?.is_empty() {
                     return Ok(Verified::Second(self.grant("second", &f, Some(&uid), now)?)); // not by the mailbox alone
@@ -551,7 +597,9 @@ impl<'a> Identity<'a> {
                     "UPDATE users SET email_key = ?, address = ? WHERE user_id = ?",
                     args![f.text("email_key"), f.text("address"), &uid],
                 )?;
-                self.sql.run("UPDATE flows SET state = 'dead' WHERE user_id = ? AND purpose = 'email_change' AND state = 'pending'", args![&uid])?;
+                // what the old address began is over: its sign-ins pending, its grants unused
+                self.sql.run("UPDATE flows SET state = 'dead' WHERE user_id = ? AND state = 'pending'", args![&uid])?;
+                self.sql.run("UPDATE grants SET used = ? WHERE user_id = ? AND used IS NULL", args![now, &uid])?;
                 self.event(
                     &uid,
                     "email_changed",
@@ -887,7 +935,10 @@ impl<'a> Identity<'a> {
             self.take(&format!("rc:{uid}"), HOUR, now)?;
             return Err(no("recovery"));
         }
-        let user = self.user(&uid)?.filter(|u| u.text("status") == "active").ok_or_else(|| no("grant"))?;
+        let user = self
+            .user(&uid)?
+            .filter(|u| u.text("status") == "active" && u.text("email_key") == g.text("email_key"))
+            .ok_or_else(|| no("grant"))?;
         self.sql.run("UPDATE recovery_codes SET used = ? WHERE user_id = ? AND digest = ?", args![now, &uid, &d])?;
         self.sql.run("UPDATE grants SET used = ? WHERE digest = ?", args![now, digest(grant)])?;
         self.sql.run("UPDATE users SET security_version = security_version + 1 WHERE user_id = ?", args![&uid])?;
@@ -971,7 +1022,7 @@ impl<'a> Identity<'a> {
             &me.user.text("locale"),
             None,
             None,
-            json!({ "name": name }),
+            json!({}),
             now + DAY,
             now,
         )?;
@@ -998,7 +1049,7 @@ impl<'a> Identity<'a> {
             &me.user.text("locale"),
             None,
             None,
-            json!({ "name": p.text("name") }),
+            json!({}),
             now + DAY,
             now,
         )?;
@@ -1042,19 +1093,22 @@ impl<'a> Identity<'a> {
         } else {
             self.need_strong(&me, now)?;
         }
+        if !is_secret(binding) {
+            return Err(no("flow"));
+        }
         let email = normalize(email).ok_or_else(|| no("email"))?;
         if email.key == me.user.text("email_key") {
             return Err(no("same"));
         }
-        if self.user_by_email(&email.key)?.is_some() {
-            return Err(no("taken")); // said to its signed-in owner only, and limited like every start
-        }
-        let network = self.network(ip_key);
-        let (ok, left) = self.allowed(&format!("n:{network}"), self.cfg.per_network_hour, now)?;
+        // every limit is asked and counted before anything is decided of the address: whether it has an account is told
+        // to its owner alone, by mail ("this address already has an account", and no code), never in this answer
+        let (ok, left) = self.allowed(&format!("ec:{uid}"), self.cfg.changes_per_hour, now)?;
         if !ok {
-            return Err(wait("network", left));
+            return Err(wait("account", left));
         }
+        self.network_refusal(ip_key, now)?;
         self.mail_refusal(&email.key, now)?;
+        let mode = if self.user_by_email(&email.key)?.is_some() { "notice" } else { "code" };
         self.sql.run(
             "UPDATE flows SET state = 'dead' WHERE user_id = ? AND purpose = 'email_change' AND state = 'pending'",
             args![&uid],
@@ -1063,20 +1117,22 @@ impl<'a> Identity<'a> {
         let loc = locale(loc);
         self.sql.run(
             "INSERT INTO flows (flow_id, purpose, mode, email_key, address, user_id, browser, locale, created, expires, generation, sent, sends, attempts, state)
-             VALUES (?, 'email_change', 'code', ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 0, 'pending')",
-            args![&flow, &email.key, &email.address, &uid, digest(binding), loc, now, now + self.cfg.flow_ms, now],
+             VALUES (?, 'email_change', ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 0, 'pending')",
+            args![&flow, mode, &email.key, &email.address, &uid, digest(binding), loc, now, now + self.cfg.flow_ms, now],
         )?;
+        let life = if mode == "code" { self.cfg.code_ms } else { self.cfg.flow_ms };
         self.enqueue(
-            "email_change_code",
+            template("email_change", mode, false),
             &email.address,
             loc,
             Some(&flow),
             Some(1),
             json!({}),
-            now + self.cfg.code_ms,
+            now + life,
             now,
         )?;
-        self.take(&format!("n:{network}"), HOUR, now)?;
+        self.take(&format!("ec:{uid}"), HOUR, now)?;
+        self.count_network(ip_key, now)?;
         self.count_mail(&email.key, now)?;
         Ok(json!({ "flow": flow, "expires": now + self.cfg.flow_ms, "resend": now + self.cfg.resend_ms }))
     }
@@ -1206,6 +1262,19 @@ fn passkey_reason(code: &'static str) -> &'static str {
         "counter" => "passkey_counter",
         _ => "passkey",
     }
+}
+
+/// The wider network an address's key is in: an IPv4 address's /24, an IPv6 /64's /48 (whatever else: itself).
+pub fn wide(ip_key: &str) -> String {
+    if let Some(prefix) = ip_key.strip_suffix("::/64") {
+        let groups: Vec<&str> = prefix.split(':').take(3).collect();
+        return format!("{}::/48", groups.join(":"));
+    }
+    let octets: Vec<&str> = ip_key.split('.').collect();
+    if octets.len() == 4 && octets.iter().all(|o| !o.is_empty() && o.bytes().all(|c| c.is_ascii_digit())) {
+        return format!("{}.{}.{}.0/24", octets[0], octets[1], octets[2]);
+    }
+    ip_key.to_string()
 }
 
 /// An address's network as the limits know it: an IPv4 address whole, an IPv6 one by its /64 (one household, one

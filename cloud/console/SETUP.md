@@ -8,7 +8,7 @@ codes, and makes the API keys of their organisation.  A Cloudflare Worker in Rus
 
 The platform workflow (`.github/workflows/platform.yml`) builds both Workers, tests the API as built, and deploys:
 the API once `API_ADMIN_TOKEN_SHA256` is set, the console once `ACCOUNT_SECRET` is.  The console is deployed with
-registration **off**; it is opened by the owner, last, after the steps below.
+registration **off**; it is opened by the owner, last, after the steps below — and only with Turnstile set.
 
 ## 1. Email Service: a sending domain
 
@@ -42,9 +42,9 @@ Repository → **Settings → Secrets and variables → Actions**:
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | secrets | as for the other Workers |
 | `API_ADMIN_TOKEN_SHA256` | variable | the sha256 of the owner's token for the API's `/admin/…` ([cloud/api/README.md](../api/README.md)) — deploys the API |
 | `ACCOUNT_SECRET` | secret | 32+ characters — deploys the console; its codes are derived under it: `openssl rand -base64 48` |
-| `CONSOLE_REGISTRATION` | variable | `open` to let anyone register; anything else: off (signing in still works) |
+| `CONSOLE_REGISTRATION` | variable | `open` to let anyone register — with Turnstile set, or it stays off; anything else: off (signing in still works) |
 | `CONSOLE_TRIAL_CREDITS` | variable | credits a new organisation is given; empty: none (at most `TRIALS_PER_DAY` a day) |
-| `TURNSTILE_SITE_KEY` | variable | Turnstile before every flow that sends mail, with… |
+| `TURNSTILE_SITE_KEY` | variable | Turnstile before every flow that sends mail (registering, signing in, changing an address), with… |
 | `TURNSTILE_SECRET` | secret | …its secret: a widget for the hostname `console.impf.ai` |
 
 `ACCOUNT_SECRET` can be changed: only the codes in flight stop working (sessions, keys and recovery codes are kept as
@@ -58,16 +58,19 @@ console, then its secrets.  `https://api.impf.ai/v1` and `https://console.impf.a
 
 ## 4. Open registration
 
-When the mail of step 1 arrives everywhere it should: set `CONSOLE_REGISTRATION` to `open` and run the workflow.  To
-close it again, unset it: those who registered still sign in.
+When the mail of step 1 arrives everywhere it should, and Turnstile is set (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET`):
+set `CONSOLE_REGISTRATION` to `open` and run the workflow.  Without Turnstile `deploy.sh` keeps registration off and
+says so: the per-address and per-network allowances alone do not stop a few networks from spending the day's
+verification mail for everyone.  To close it again, unset it: those who registered still sign in.
 
 ## What a person can do there
 
 Register with a code sent to their address; make a passkey (or not: the mailbox then opens the account, and the page
 says so); keep ten recovery codes; sign in with the passkey alone, or with a code and — when a passkey guards the
 account — a recovery code; see and end their sessions; change their address (a code to the new one, a notice to the
-old); add and remove passkeys; make test keys, and live keys after a passkey's touch; see their organisation's credits
-and usage by day.  What is kept of them: ADR 0038, *Consequences*.
+old; an address that already has an account is sent a notice instead, and the page answers alike either way); add and
+remove passkeys; make test keys, and live keys after a passkey's touch; see their organisation's credits and usage by
+day.  What is kept of them: ADR 0038, *Consequences*.
 
 ## Checking it here
 
@@ -88,6 +91,7 @@ cloud/console/test/run.sh
 ```
 
 The last one runs both Workers in local workerd beside a stand-in corpus, drives the console in Chromium with a virtual
-authenticator (registration by code and passkey, recovery codes, the trial, a live key, a passkey sign-in, a change from
-another origin refused), and spends the key it made on the API.  It needs Playwright with Chromium, which this
+authenticator (registration by code and passkey, recovery codes, the trial, a live key, a passkey sign-in, a sign-in by
+the mailbox and a recovery code, a move to an address another account has and to a new one, a change from another
+origin refused), and spends the key it made on the API.  It needs Playwright with Chromium, which this
 repository does not pin.  No mail leaves: local workerd writes each one to a file, where the test reads its code.

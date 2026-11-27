@@ -38,6 +38,8 @@ const T = {
     e_session: "请先登录。", e_stepup: "需要用通行密钥确认。", e_no_passkey: "需要先给账户添加通行密钥。", e_fresh: "请先重新登录，再添加第一个通行密钥。",
     e_same: "这就是现在的邮箱。", e_turnstile: "人机验证没有通过，请重试。", e_origin: "请求来源不对。", e_unavailable: "服务暂时不可用，请稍后再试。",
     e_credits: "额度不足。", e_passkey: "通行密钥验证失败（{r}）。", e_cancelled: "已取消。", e_other: "出错了（{r}）。",
+    e_account: "这个账户更改邮箱的次数太多，请稍后再试。", e_scope: "请至少选择一项权限。", e_role: "你在这个组织里没有这个权限。",
+    e_limit: "月度上限须是整数。", e_expires: "有效期须是 1 到 3650 天。",
   },
   en: {
     brand: "TaoChronos · Console", signout: "Sign out", foot: "TaoChronos · IMPF-AI", chat: "Research assistant",
@@ -72,6 +74,8 @@ const T = {
     e_session: "Please sign in.", e_stepup: "Confirm with your passkey.", e_no_passkey: "Add a passkey to the account first.", e_fresh: "Sign in again before adding your first passkey.",
     e_same: "That is the current address.", e_turnstile: "The human check failed: please retry.", e_origin: "Wrong origin.", e_unavailable: "The service is unavailable: try later.",
     e_credits: "Not enough credits.", e_passkey: "The passkey was not accepted ({r}).", e_cancelled: "Cancelled.", e_other: "Something went wrong ({r}).",
+    e_account: "Too many address changes for this account: try later.", e_scope: "Choose at least one scope.", e_role: "Your role in this organisation does not allow this.",
+    e_limit: "A monthly limit is a whole number.", e_expires: "Expiry is 1 to 3650 days.",
   },
 };
 
@@ -158,15 +162,21 @@ async function getPasskey(pk) {
   return credentialJSON(await navigator.credentials.get({ publicKey }));
 }
 
-/** A step that may need a passkey's touch: asked once more after one. */
+/** A passkey's touch on this session (a step-up): the session is strong for five minutes after it. */
+async function touch() {
+  const o = await api("POST", "/auth/stepup/options", {});
+  if (!o.ok) return o;
+  let credential;
+  try { credential = await getPasskey(o.publicKey); } catch { return { ok: false, error: "cancelled" }; }
+  return api("POST", "/auth/stepup/verify", { credential });
+}
+
+/** A step that may need a passkey's touch: asked once more after one.  (Not for a step that carries a Turnstile token,
+ * which is good once: such a step asks for the touch first.) */
 async function withTouch(step) {
   let r = await step();
   if (r.status === 403 && r.error === "stepup") {
-    const o = await api("POST", "/auth/stepup/options", {});
-    if (!o.ok) return o;
-    let credential;
-    try { credential = await getPasskey(o.publicKey); } catch { return { ok: false, error: "cancelled" }; }
-    const v = await api("POST", "/auth/stepup/verify", { credential });
+    const v = await touch();
     if (!v.ok) return v;
     r = await step();
   }
@@ -332,12 +342,16 @@ function setWho(me) {
 }
 
 let state = { me: null, org: null, tab: "overview" };
+let renders = 0;
 
 async function dashboard(me, tab = state.tab) {
+  // a render a later one overtook (a second tab clicked before the first answered) shows nothing
+  const render = ++renders;
   state = { ...state, me, tab };
   setWho(me);
   const orgId = me.orgs[0]?.id;
   const org = orgId ? await api("GET", `/console/org?org=${encodeURIComponent(orgId)}`) : null;
+  if (render !== renders) return;
   state.org = org?.ok ? org : null;
   const tabs = h("div", { class: "tabs", role: "tablist" }, ["overview", "keys", "usage", "security"].map((k) =>
     h("button", { type: "button", role: "tab", "aria-selected": tab === k, onclick: () => dashboard(state.me, k) }, t(k))));
@@ -430,12 +444,20 @@ async function security(panel, me) {
       dashboard(await api("GET", "/account"), "security");
     } }, t("end")))));
   const email = h("input", { type: "email", id: "new-email", required: true });
+  const box = h("div");
+  let token = () => "";
+  widget(box, "email_change").then((get) => { token = get; });
   const emailForm = h("form", { class: "stack", onsubmit: async (e) => {
     e.preventDefault();
-    const r = await withTouch(() => api("POST", "/account/email/start", { email: email.value, locale: lang }));
+    // the touch first, where a passkey guards the account: the request then goes once, with its one Turnstile token
+    if (me.passkeys.length && !(me.session.strong_until > Date.now() + 10000)) {
+      const v = await touch();
+      if (!v.ok) return out.replaceChildren(msg("error", errorText(v)));
+    }
+    const r = await api("POST", "/account/email/start", { email: email.value, locale: lang, turnstile: token() });
     if (!r.ok) return out.replaceChildren(msg("error", errorText(r)));
     codeForm("email_change", r.flow, email.value.trim(), r.resend, async () => dashboard(await api("GET", "/account"), "security"));
-  } }, h("label", { for: "new-email" }, t("new_email")), email, h("button", { type: "submit" }, t("change_email")));
+  } }, h("label", { for: "new-email" }, t("new_email")), email, box, h("button", { type: "submit" }, t("change_email")));
   const events = await api("GET", "/account/events");
   panel.append(
     h("section", { class: "card" }, h("h2", {}, t("passkeys")), me.passkeys.length ? h("table", {}, h("tbody", {}, passkeyRows)) : msg("warn", t("no_passkey_yet")),

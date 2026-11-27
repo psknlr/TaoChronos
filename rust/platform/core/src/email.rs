@@ -53,8 +53,11 @@ pub fn normalize(input: &str) -> Option<Email> {
 /// An address as it is shown to someone who is not its owner: its first character and its domain.
 pub fn masked(address: &str) -> String {
     match address.split_once('@') {
-        Some((local, domain)) if !local.is_empty() => format!("{}…@{domain}", &local[..1]),
-        _ => "…".into(),
+        Some((local, domain)) => match local.chars().next() {
+            Some(first) => format!("{first}…@{domain}"),
+            None => "…".into(),
+        },
+        None => "…".into(),
     }
 }
 

@@ -10,7 +10,10 @@ here="$(cd "$(dirname "$0")" && pwd)"
 console="$(cd "$here/.." && pwd)"
 api="$(cd "$console/../api" && pwd)"
 work="$(mktemp -d)"
-trap 'kill "${dev:-}" 2>/dev/null || true; rm -rf "$work"' EXIT
+# each wrangler dev is started in a process group of its own (setsid) and the whole group is stopped: npx, wrangler and
+# the workerd beneath them — killing npx alone leaves a server behind, still answering on the port
+stop() { if [ -n "${dev:-}" ]; then kill -TERM -- "-$dev" 2>/dev/null || true; wait "$dev" 2>/dev/null || true; dev=; fi; }
+trap 'stop; rm -rf "$work"' EXIT
 mkdir -p "$work/console"
 python3 - "$console/wrangler.toml" "$console" > "$work/console/wrangler.toml" <<'PY'
 import re, sys
@@ -33,13 +36,17 @@ print(s + '\n[[services]]\nbinding = "CORPUS"\nservice = "taochronos-corpus"\n')
 PY
 cp "$api/test/corpus.js" "$api/test/corpus.toml" "$work/"
 wait_for() { for _ in $(seq 1 90); do curl -fs -o /dev/null "$1" 2>/dev/null && return 0; sleep 1; done; return 1; }
-(cd "$console" && exec npx --no -- wrangler dev -c "$work/console/wrangler.toml" -c "$work/api.toml" -c "$work/corpus.toml" --port 8788 --ip 127.0.0.1 \
+# a server already on a port would be tested in this one's place
+for port in 8787 8788; do
+  if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:$port/" 2>/dev/null; then echo "port $port is in use" >&2; exit 1; fi
+done
+(cd "$console" && exec setsid npx --no -- wrangler dev -c "$work/console/wrangler.toml" -c "$work/api.toml" -c "$work/corpus.toml" --port 8788 --ip 127.0.0.1 \
   --persist-to "$work/state" > "$work/console.log" 2>&1) &
 dev=$!
 wait_for http://127.0.0.1:8788/auth/config
 CONSOLE=http://localhost:8788/ node "$here/browser.cjs" "$work/console.log" "$work/key.txt" || { tail -30 "$work/console.log" >&2; exit 1; }
-kill "$dev"; wait "$dev" 2>/dev/null || true
-(cd "$api" && exec npx --no -- wrangler dev -c "$work/api.toml" -c "$work/corpus.toml" --port 8787 --ip 127.0.0.1 --persist-to "$work/state" > "$work/api.log" 2>&1) &
+stop
+(cd "$api" && exec setsid npx --no -- wrangler dev -c "$work/api.toml" -c "$work/corpus.toml" --port 8787 --ip 127.0.0.1 --persist-to "$work/state" > "$work/api.log" 2>&1) &
 dev=$!
 wait_for http://127.0.0.1:8787/v1
 out=$(curl -fsS -X POST http://127.0.0.1:8787/v1/evidence/search -H "Authorization: Bearer $(cat "$work/key.txt")" -H "Content-Type: application/json" -d '{"query":"桂枝汤"}')

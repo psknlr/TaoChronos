@@ -145,7 +145,7 @@ fn status_of(reason: &str) -> u16 {
     match reason {
         "session" => 401,
         "stepup" | "no_passkey" | "fresh" | "org" => 403,
-        "address" | "network" | "service" | "cooldown" | "sends" | "attempts" => 429,
+        "address" | "network" | "service" | "cooldown" | "sends" | "attempts" | "account" => 429,
         "unconfigured" => 503,
         _ => 400,
     }
@@ -236,6 +236,14 @@ async fn route(mut req: Request, env: &Env) -> Result<Response> {
     }
     if !own(&req, &cfg) {
         return refused(403, "origin");
+    }
+    // every change a page asks, per address, at the edge — before the one identity object is asked anything (a
+    // `[[ratelimits]]` binding; without it, no gate here: the object's own limits stand)
+    if req.method() == Method::Post
+        && let Ok(limiter) = env.rate_limiter("AUTH_LIMIT")
+        && !limiter.limit(address(&req)).await.map(|o| o.success).unwrap_or(true)
+    {
+        return answer(429, &json!({ "error": "network", "retry": 60 }), &[("Retry-After", "60".into())]);
     }
     let body: Json = if req.method() == Method::Post {
         match read_body(&mut req, 64 * 1024).await? {
@@ -387,6 +395,9 @@ async fn route(mut req: Request, env: &Env) -> Result<Response> {
         }
         (true, "/account/recovery/renew") => answer(200, &go!("renew_recovery", json!({ "token": token })), &[]),
         (true, "/account/email/start") => {
+            if !turnstile(env, &req, &s("turnstile"), "email_change").await {
+                return refused(403, "turnstile");
+            }
             let v = go!(
                 "email_start",
                 json!({ "token": token, "email": s("email"), "binding": binding, "ip": address(&req), "locale": lang })
@@ -460,10 +471,6 @@ async fn org(req: &mut Request, env: &Env, path: &str, body: &Json, token: &str)
             relay(call(&stub, "org_usage", &json!({ "from": from, "to": q("to").unwrap_or(today) })).await)
         }
         (true, "/console/keys") => {
-            let live = s("environment") == "live";
-            if live && !strong {
-                return refused(403, "stepup"); // a live key spends credits: a passkey's touch first
-            }
             if !matches!(role, "owner" | "admin" | "developer") {
                 return refused(403, "role");
             }
@@ -472,38 +479,31 @@ async fn org(req: &mut Request, env: &Env, path: &str, body: &Json, token: &str)
                     &stub,
                     "create_key",
                     &json!({ "project": body.get("project"), "environment": s("environment"), "name": s("name"),
-                "scopes": body.get("scopes"), "expires_days": body.get("expires_days"), "by": user }),
+                "scopes": body.get("scopes"), "expires_days": body.get("expires_days"), "by": user, "touched": strong }),
                 )
                 .await,
             )
         }
         (true, "/console/keys/revoke") => {
-            // a live key's revocation needs a touch too (an outage is the price of a wrong one)
-            let summary = call(&stub, "summary", &json!({})).await;
-            let is_live = matches!(&summary, Ok((200, v)) if v["keys"].as_array().into_iter().flatten()
-                .any(|k| k["id"].as_str() == Some(&s("id")) && k["environment"] == "live"));
-            if is_live && !strong {
-                return refused(403, "stepup");
+            // who may make a key may revoke one; a live key's revocation needs a touch too (an outage is the price of a
+            // wrong one), which the Account object decides — it knows the key's environment
+            if !matches!(role, "owner" | "admin" | "developer") {
+                return refused(403, "role");
             }
-            relay(call(&stub, "revoke_key", &json!({ "key": s("id") })).await)
+            relay(call(&stub, "revoke_key", &json!({ "key": s("id"), "touched": strong })).await)
         }
         (true, "/console/projects") if manage => relay(
             call(&stub, "create_project", &json!({ "name": s("name"), "monthly_limit": body.get("monthly_limit") }))
                 .await,
         ),
-        (true, "/console/projects/limit") if manage => {
-            if !strong {
-                return refused(403, "stepup");
-            }
-            relay(
-                call(
-                    &stub,
-                    "set_limit",
-                    &json!({ "project": s("project"), "monthly_limit": body.get("monthly_limit") }),
-                )
-                .await,
+        (true, "/console/projects/limit") if manage => relay(
+            call(
+                &stub,
+                "set_limit",
+                &json!({ "project": s("project"), "monthly_limit": body.get("monthly_limit"), "touched": strong }),
             )
-        }
+            .await,
+        ),
         (true, "/console/projects" | "/console/projects/limit") => refused(403, "role"),
         _ => refused(404, "not_found"),
     }

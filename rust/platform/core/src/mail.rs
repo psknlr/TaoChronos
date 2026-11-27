@@ -6,8 +6,8 @@
 //!
 //! * a code is in the body alone — never in the subject, which delivery logs, a phone's lock screen and a mail list
 //!   show to whoever looks.  It is derived when the mail is claimed (`Keyring::code`): the outbox holds none;
-//! * nothing a person wrote, no research question, no other person's address (an address that changed is shown as its
-//!   first character and its domain);
+//! * nothing a person wrote — not a passkey's name either, which the security page shows instead — no research question,
+//!   no other person's address (an address that changed is shown as its first character and its domain);
 //! * no link that does anything: a code is typed where it was asked for (a link would be followed by the scanners some
 //!   providers run on mail, and would open a session in whichever browser opened the mail).
 //!
@@ -216,6 +216,26 @@ fn template(name: &str, en: bool) -> Option<(&'static str, &'static [&'static st
                 "If this wasn't you, ignore this email: without the code, the address is not changed.",
             ],
         ),
+        ("email_change_exists", false) => (
+            "道乃久：这个邮箱已有账户",
+            &[
+                "你好，",
+                "有人（可能就是你）刚才想把一个道乃久账户的邮箱改为这个地址，但这个地址已经有自己的账户了。这封邮件里没有验证码，邮箱不会更改。",
+                "如果是你：这个地址的账户直接登录即可 —— {console}",
+                "如果不是你：无需任何操作，你的账户没有任何变化。",
+                "{asked}",
+            ],
+        ),
+        ("email_change_exists", true) => (
+            "TaoChronos: this address already has an account",
+            &[
+                "Hello,",
+                "Someone (probably you) just tried to move a TaoChronos account to this address, but it already has an account of its own. This email contains no code, and no address is changed.",
+                "If it was you, sign in to that account: {console}",
+                "If it wasn't you, there is nothing to do: your account has not changed.",
+                "{asked}",
+            ],
+        ),
         ("email_changed", false) => (
             "道乃久：账户邮箱已更改",
             &[
@@ -240,7 +260,7 @@ fn template(name: &str, en: bool) -> Option<(&'static str, &'static [&'static st
             "道乃久：账户添加了通行密钥",
             &[
                 "你好，",
-                "你的道乃久账户刚刚添加了一个通行密钥：「{name}」。",
+                "你的道乃久账户刚刚添加了一个通行密钥。",
                 "如果这不是你本人的操作，请立即登录（{console}）删除它，并检查已登录的设备。",
                 "{asked}",
             ],
@@ -249,7 +269,7 @@ fn template(name: &str, en: bool) -> Option<(&'static str, &'static [&'static st
             "TaoChronos: a passkey was added to your account",
             &[
                 "Hello,",
-                "A passkey was just added to your TaoChronos account: “{name}”.",
+                "A passkey was just added to your TaoChronos account.",
                 "If this wasn't you, sign in now ({console}), remove it, and check your signed-in devices.",
                 "{asked}",
             ],
@@ -258,7 +278,7 @@ fn template(name: &str, en: bool) -> Option<(&'static str, &'static [&'static st
             "道乃久：账户删除了通行密钥",
             &[
                 "你好，",
-                "你的道乃久账户刚刚删除了通行密钥「{name}」。",
+                "你的道乃久账户刚刚删除了一个通行密钥。",
                 "如果这不是你本人的操作，请立即登录（{console}）检查。",
                 "{asked}",
             ],
@@ -267,7 +287,7 @@ fn template(name: &str, en: bool) -> Option<(&'static str, &'static [&'static st
             "TaoChronos: a passkey was removed from your account",
             &[
                 "Hello,",
-                "The passkey “{name}” was just removed from your TaoChronos account.",
+                "A passkey was just removed from your TaoChronos account.",
                 "If this wasn't you, sign in now and check ({console}).",
                 "{asked}",
             ],
@@ -296,13 +316,14 @@ fn template(name: &str, en: bool) -> Option<(&'static str, &'static [&'static st
     })
 }
 
-pub const TEMPLATES: [&str; 10] = [
+pub const TEMPLATES: [&str; 11] = [
     "register_code",
     "register_exists",
     "signin_code",
     "signin_unknown",
     "account_disabled",
     "email_change_code",
+    "email_change_exists",
     "email_changed",
     "passkey_added",
     "passkey_removed",

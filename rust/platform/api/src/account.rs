@@ -25,6 +25,21 @@ fn s<'a>(v: &'a Json, k: &str) -> &'a str {
     v.get(k).and_then(Json::as_str).unwrap_or("")
 }
 
+/// Did the caller say a passkey touched its session lately (the console), or is it the owner (the admin token)?
+fn touched(v: &Json) -> bool {
+    v.get("touched") == Some(&Json::Bool(true))
+}
+
+/// A monthly limit: absent or null for none, a whole number of credits — anything else is refused, never read as none.
+fn limit(v: &Json) -> Outcome<Option<i64>> {
+    match v.get("monthly_limit") {
+        None | Some(Json::Null) => Ok(None),
+        Some(n) => n.as_i64().map(Some).ok_or_else(|| {
+            refused(400, "invalid_request", "limit", "monthly_limit is a whole number of credits, or null")
+        }),
+    }
+}
+
 fn opt_s<'a>(v: &'a Json, k: &str) -> Option<&'a str> {
     v.get(k).and_then(Json::as_str).filter(|x| !x.is_empty())
 }
@@ -112,40 +127,53 @@ impl Account {
                 Ok(json!({ "added": added, "credits": core.balance()? }))
             }
             "create_project" => {
-                let id =
-                    core.create_project(s(b, "name"), b.get("monthly_limit").and_then(Json::as_i64), &JsEntropy, t)?;
+                let id = core.create_project(s(b, "name"), limit(b)?, &JsEntropy, t)?;
                 Ok(json!({ "project": id }))
             }
             "set_limit" => {
-                core.set_limit(s(b, "project"), b.get("monthly_limit").and_then(Json::as_i64))?;
+                core.set_limit(s(b, "project"), limit(b)?, touched(b))?;
                 Ok(json!({ "ok": true }))
             }
             "create_key" => {
                 let env = KeyEnv::parse(s(b, "environment"))
                     .ok_or_else(|| refused(400, "invalid_request", "environment", "environment is live or test"))?;
-                let scopes: Vec<String> = b
-                    .get("scopes")
-                    .and_then(Json::as_array)
-                    .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
-                    .unwrap_or_default();
-                let expires = b
-                    .get("expires_days")
-                    .and_then(Json::as_i64)
-                    .filter(|d| (1..=3650).contains(d))
-                    .map(|d| t + d * 86_400_000);
+                // scopes: none named, all of them; a list, exactly it (an empty one is refused by the core); anything
+                // else refused — a value that is not what it should be is never read as the widest it could be
+                let scopes: Option<Vec<String>> = match b.get("scopes") {
+                    None | Some(Json::Null) => None,
+                    Some(Json::Array(a)) if a.iter().all(Json::is_string) => {
+                        Some(a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                    }
+                    Some(_) => return Err(refused(400, "invalid_request", "scope", "scopes is a list of scope names")),
+                };
+                let expires = match b.get("expires_days") {
+                    None | Some(Json::Null) => None,
+                    Some(d) => match d.as_i64().filter(|d| (1..=3650).contains(d)) {
+                        Some(d) => Some(t + d * 86_400_000),
+                        None => {
+                            return Err(refused(
+                                400,
+                                "invalid_request",
+                                "expires",
+                                "expires_days is a whole number from 1 to 3650",
+                            ));
+                        }
+                    },
+                };
                 let (id, key) = core.create_key(
                     opt_s(b, "project"),
                     env,
                     s(b, "name"),
-                    &scopes,
+                    scopes.as_deref(),
                     expires,
                     s(b, "by"),
+                    touched(b),
                     &JsEntropy,
                     t,
                 )?;
                 Ok(json!({ "id": id, "key": key.key, "shown": key.shown, "environment": env.as_str() }))
             }
-            "revoke_key" => Ok(json!({ "revoked": core.revoke_key(s(b, "key"), t)? })),
+            "revoke_key" => Ok(json!({ "revoked": core.revoke_key(s(b, "key"), touched(b), t)? })),
             "keys" => Ok(json!({ "keys": core.keys()? })),
             _ => Err(refused(404, "not_found", "op", "no such operation")),
         }

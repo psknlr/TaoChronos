@@ -27,7 +27,9 @@ use tao_platform::accounts::{Product, Refusal};
 use tao_platform::api::{self, Corpus};
 use tao_platform::crypto::{digest, new_id, same};
 use tao_platform::keys::{self, ParsedKey};
-use worker::{Context, Delay, Env, Headers, Method, Request, RequestInit, Response, Result, Stub, event};
+use worker::{
+    AbortController, Context, Delay, Env, Headers, Method, Request, RequestInit, Response, Result, Stub, event,
+};
 
 const VERSION: &str = "2026-11-27";
 
@@ -97,6 +99,7 @@ fn leak_code(c: &str) -> &'static str {
         "op",
         "key",
         "days",
+        "stepup",
     ];
     CODES.iter().copied().find(|k| *k == c).unwrap_or("refused")
 }
@@ -281,31 +284,46 @@ async fn product(req: &mut Request, env: &Env, rid: &str, product: Product) -> R
     }
     let go = &out["go"];
     let reservation = go["reservation"].as_str().unwrap_or(rid).to_string();
-    // the corpus, within a time the reservation outlasts
+    // the corpus, within a time the reservation outlasts: the answer and its body under one deadline (a body that
+    // trickles is no answer), at most the hold less a quarter of a minute — so that a reservation never lapses under a
+    // call still being read.  When it passes the call is aborted, so that the corpus stops too: a call given up here
+    // and still running there would let an organisation's slow calls outnumber its four in flight
+    let hold = tao_platform::accounts::AccountConfig::from_vars(|k| var(env, k)).hold_ms / 1000;
     let secs = var(env, "CORPUS_TIMEOUT_SECONDS")
-        .and_then(|v| v.parse::<u64>().ok())
+        .and_then(|v| v.parse::<i64>().ok())
         .filter(|s| (5..=90).contains(s))
-        .unwrap_or(60);
+        .unwrap_or(60)
+        .min(hold - 15)
+        .max(5) as u64;
     let headers = Headers::new();
     headers.set("Content-Type", "application/json")?;
     headers.set("Accept", "application/json")?;
     let mut init = RequestInit::new();
     init.with_method(Method::Post).with_headers(headers).with_body(Some(api::corpus_body(&call_).to_string().into()));
-    let asked = Request::new_with_init("https://corpus.internal/api/call", &init)?;
-    let outcome =
-        match select(Box::pin(corpus.fetch_request(asked)), Box::pin(Delay::from(Duration::from_secs(secs)))).await {
-            Either::Left((Ok(mut res), _)) => {
-                let status = res.status_code();
-                let retry = res.headers().get("Retry-After")?;
-                let text = res.text().await.unwrap_or_default();
-                api::read_corpus(status, &text, retry.as_deref())
-            }
-            Either::Left((Err(e), _)) => {
-                worker::console_error!("api {rid}: corpus {e}");
-                Corpus::Failed
-            }
-            Either::Right(_) => Corpus::Unavailable(10),
-        };
+    let stop = AbortController::default();
+    let signal = stop.signal();
+    let sys: worker::web_sys::RequestInit = (&init).into();
+    sys.set_signal(Some(&*signal));
+    let asked: Request =
+        worker::web_sys::Request::new_with_str_and_init("https://corpus.internal/api/call", &sys)?.into();
+    let whole = async {
+        let mut res = corpus.fetch_request(asked).await?;
+        let status = res.status_code();
+        let retry = res.headers().get("Retry-After")?;
+        let text = res.text().await?;
+        Ok::<_, worker::Error>((status, text, retry))
+    };
+    let outcome = match select(Box::pin(whole), Box::pin(Delay::from(Duration::from_secs(secs)))).await {
+        Either::Left((Ok((status, text, retry)), _)) => api::read_corpus(status, &text, retry.as_deref()),
+        Either::Left((Err(e), _)) => {
+            worker::console_error!("api {rid}: corpus {e}");
+            Corpus::Failed
+        }
+        Either::Right(_) => {
+            stop.abort();
+            Corpus::Unavailable(10)
+        }
+    };
     // what the caller is told, and whether the call is charged: only a tool that ran
     let (refused, body) = match outcome {
         Corpus::Delivered(data) => {
@@ -391,12 +409,12 @@ async fn admin(req: &mut Request, env: &Env, rid: &str) -> Result<Response> {
         (Method::Post, ["orgs", org, "grants"]) => ask(org, "credit", json!({ "kind": "grant", "credits": body["credits"], "reference": body["reference"], "note": body["note"] })).await,
         (Method::Post, ["orgs", org, "adjustments"]) => ask(org, "credit", json!({ "kind": "adjust", "credits": body["credits"], "reference": body["reference"], "note": body["note"] })).await,
         (Method::Post, ["orgs", org, "projects"]) => ask(org, "create_project", json!({ "name": body["name"], "monthly_limit": body["monthly_limit"] })).await,
-        (Method::Post, ["orgs", org, "projects", project, "limit"]) => ask(org, "set_limit", json!({ "project": project, "monthly_limit": body["monthly_limit"] })).await,
+        (Method::Post, ["orgs", org, "projects", project, "limit"]) => ask(org, "set_limit", json!({ "project": project, "monthly_limit": body["monthly_limit"], "touched": true })).await,
         (Method::Post, ["orgs", org, "keys"]) => {
             ask(org, "create_key", json!({ "project": body["project"], "environment": body["environment"], "name": body["name"], "scopes": body["scopes"],
-                "expires_days": body["expires_days"], "by": "owner" })).await
+                "expires_days": body["expires_days"], "by": "owner", "touched": true })).await
         }
-        (Method::Post, ["orgs", org, "keys", key, "revoke"]) => ask(org, "revoke_key", json!({ "key": key })).await,
+        (Method::Post, ["orgs", org, "keys", key, "revoke"]) => ask(org, "revoke_key", json!({ "key": key, "touched": true })).await,
         _ => Err(refusal(404, "not_found", "path", "no such endpoint")),
     };
     match result {

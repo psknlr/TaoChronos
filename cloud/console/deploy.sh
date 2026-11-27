@@ -12,16 +12,24 @@ cd "$(dirname "$0")"
 secret="$(printf '%s' "${ACCOUNT_SECRET:-}" | tr -d '[:space:]')"
 [ "${#secret}" -ge 32 ] || { echo "::error::ACCOUNT_SECRET must be at least 32 characters" >&2; exit 1; }
 cp wrangler.toml wrangler.deploy.toml
+site_key="$(printf '%s' "${TURNSTILE_SITE_KEY:-}" | tr -d '[:space:]')"
+turnstile="$(printf '%s' "${TURNSTILE_SECRET:-}" | tr -d '[:space:]')"
+turnstile_on=0
+if [[ "$site_key" =~ ^[0-9A-Za-z_-]{8,100}$ ]] && [ -n "$turnstile" ]; then turnstile_on=1; fi
+# registration is opened only with Turnstile before it: without it, a few networks' allowances are enough to spend the
+# day's verification mail for everyone (docs/adr/0038-accounts-keys-and-credits.md)
 if [ "${CONSOLE_REGISTRATION:-}" = "open" ]; then
-  sed -i 's/^REGISTRATION = "off"$/REGISTRATION = "open"/' wrangler.deploy.toml
-  echo "registration: open"
+  if [ "$turnstile_on" = 1 ]; then
+    sed -i 's/^REGISTRATION = "off"$/REGISTRATION = "open"/' wrangler.deploy.toml
+    echo "registration: open"
+  else
+    echo "::warning::CONSOLE_REGISTRATION is open but Turnstile is not set (TURNSTILE_SITE_KEY, TURNSTILE_SECRET): registration stays closed"
+  fi
 fi
 if [[ "${CONSOLE_TRIAL_CREDITS:-}" =~ ^[0-9]{1,9}$ ]]; then
   sed -i "s/^TRIAL_CREDITS = \"0\"$/TRIAL_CREDITS = \"$CONSOLE_TRIAL_CREDITS\"/" wrangler.deploy.toml
 fi
-site_key="$(printf '%s' "${TURNSTILE_SITE_KEY:-}" | tr -d '[:space:]')"
-turnstile="$(printf '%s' "${TURNSTILE_SECRET:-}" | tr -d '[:space:]')"
-if [[ "$site_key" =~ ^[0-9A-Za-z_-]{8,100}$ ]] && [ -n "$turnstile" ]; then
+if [ "$turnstile_on" = 1 ]; then
   sed -i "s/^TURNSTILE_SITE_KEY = \"\"$/TURNSTILE_SITE_KEY = \"$site_key\"/" wrangler.deploy.toml
   echo "Turnstile: on"
 fi

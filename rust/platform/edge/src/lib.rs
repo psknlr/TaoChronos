@@ -77,7 +77,11 @@ pub fn json(status: u16, body: &Json, extra: &[(&str, String)]) -> Result<Respon
     headers.set("X-Content-Type-Options", "nosniff")?;
     headers.set("Strict-Transport-Security", "max-age=31536000")?;
     for (k, v) in extra {
-        headers.set(k, v)?;
+        if k.eq_ignore_ascii_case("Set-Cookie") {
+            headers.append(k, v)?; // each its own header: set would keep the last
+        } else {
+            headers.set(k, v)?;
+        }
     }
     Ok(Response::ok(body.to_string())?.with_status(status).with_headers(headers))
 }

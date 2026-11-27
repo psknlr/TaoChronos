@@ -58,7 +58,7 @@ itself (measured in workerd where it could be):
    `rust/rust-toolchain.toml` pins.
    * **`core` (`tao-platform`)** holds every decision, synchronous, over any SQLite (`sql::Sql`, the shape of a Durable
      Object's `ctx.storage.sql`): identity, WebAuthn, keys, credits, the API's request rules, mail.  It compiles and
-     is tested natively (42 tests, over SQLite itself through rusqlite) and for wasm32 in the Workers.  It reads no
+     is tested natively (46 tests, over SQLite itself through rusqlite) and for wasm32 in the Workers.  It reads no
      clock and no system source of randomness: both are handed in.
    * **`api` (`tao-api`)** is **api.impf.ai**: the gateway and the organisations' Durable Object (`Account`).
    * **`console` (`tao-console`)** is **console.impf.ai**: the account console, its people's Durable Object
@@ -78,9 +78,10 @@ itself (measured in workerd where it could be):
 
 3. **An address is proved by a code, in the browser that asked.**  A flow binds to its browser (`__Host-tcb`, 256 bits;
    its SHA-256 kept), its purpose (register, sign in, change address), its address and its **generation**: a resend
-   makes the next one, the only code from then on, and gives back none of the five attempts.  Ten minutes a code,
-   thirty a flow, five mails a flow, a minute between them; per address, five an hour and ten a day; per network
-   (an IPv6 /64, HMAC'd), twenty flows an hour; the service, a configurable number a day (Email Service's quota is
+   makes the next one, the only code from then on, and gives back none of the five attempts.  Ten minutes a code, thirty
+   a flow, five mails a flow, a minute between them; per address, five an hour and ten a day; per network, HMAC'd,
+   twenty flows an hour from its own (an IPv4 address, an IPv6 /64) and a hundred from the wider one around it (an IPv4
+   /24, an IPv6 /48: one /56 alone holds 256 /64s); the service, a configurable number a day (Email Service's quota is
    unpublished).  **The code is kept nowhere**: it is an HMAC of (purpose, flow, generation, address) under the Worker
    secret `ACCOUNT_SECRET`, computed when the mail leaves and again when the code is typed — not in a row, not sealed in
    the outbox, not in a log.  The proposal asked for an HMAC verifier and an encrypted delivery payload; deriving the
@@ -88,8 +89,9 @@ itself (measured in workerd where it could be):
 4. **The page learns nothing of an address.**  Registering and signing in answer alike whether an address has an
    account; only the mail differs, and its owner alone reads it ("you already have an account", "no account uses this
    address" — no code).  A flow that sent no code takes none, refusing a code exactly as a wrong one is refused, attempt
-   for attempt.  An address the signed-in owner wants to move to is said to be taken: to them alone, after they proved
-   their session, within the same limits.
+   for attempt.  **A change of address answers alike too**: whether the new address has an account is told to that
+   address's owner, by mail ("this address already has an account", and no code), and every limit — five changes an
+   account an hour, the network's, the address's — is asked and counted before anything of the address is decided.
 5. **Nothing usable before the address is proved.**  A right code gives one **grant** (256 bits, fifteen minutes, this
    browser): to create the account, with a passkey made against a challenge bound to that grant, or with none.  The
    account, its organisation (its own, with a trial if one is given today), its membership, its passkey and its first
@@ -98,32 +100,46 @@ itself (measured in workerd where it could be):
 6. **Passkeys, verified in Rust** (`webauthn.rs`, WebAuthn L3 §7.1 and §7.2 step by step, the step numbers in the code):
    ES256 (`p256`), EdDSA (`ed25519-dalek`, strict) and RS256 — the signature raised to the key's exponent with
    `num-bigint` and the whole PKCS #1 v1.5 message compared with the one expected, never parsed (the way lax RSA
-   verifiers have been forged).  User verification required; discoverable credentials; attestation "none", whatever the
-   format, trusted from no maker; a user handle that is random, never an address; the backup flags kept and shown; a
-   counter that once counts must rise.  CBOR is read by `cbor.rs`, a strict subset: definite lengths, no tags, no
-   floats, each map key once, nothing after the end.  The relying party is `impf.ai` and the console the one origin
-   allowed: a later move of the ceremonies (an `auth.impf.ai`, the site's own sign-in) keeps every passkey.
+   verifiers have been forged); the exponent is 65537 alone (with 1, every message is its own signature).  User
+   verification required; discoverable credentials; attestation "none", whatever the format, trusted from no maker; a
+   user handle that is random, never an address; the backup flags kept and shown; a counter that once counts must rise.
+   CBOR is read by `cbor.rs`, a strict subset: definite lengths, no tags, no floats, each map key once, nothing after
+   the end.  The relying party is `impf.ai` and the console the one origin allowed: a later move of the ceremonies (an
+   `auth.impf.ai`, the site's own sign-in) keeps every passkey.
 7. **An account a passkey guards is not opened by its mailbox alone.**  An email code then gives a second grant that a
    **recovery code** completes — ten of them, 80 bits each, made with the first passkey, kept as digests, shown once;
    one used ends every other session and tells the owner.  An account with no passkey signs in by its mailbox, which is
-   then the whole of its security and is said so on its page.
+   then the whole of its security and is said so on its page.  **When an account moves to a new address, what the old
+   one began is over**: its pending flows end, its unused grants are void, and a sign-in or a second grant whose address
+   is no longer the account's is refused.
 8. **Sessions are the server's** (RFC 10017's backend-for-frontend): `__Host-tcs`, 256 bits, `HttpOnly`, `Secure`,
    `SameSite=Lax`, the SHA-256 kept; thirty days at most, seven unused.  A change must come from the console's origin,
    as JSON, and not from another site (`Origin`, `Sec-Fetch-Site`).  **A passkey's touch within five minutes** (a
    step-up, which gives the session a new token) is asked before a live key is made or revoked, a passkey removed,
    recovery codes renewed, an address changed or a project's limit set; the first passkey of an account without one is
-   made within ten minutes of proving its address.  A recovery ends every session but its own (the account's security
-   version).  The person sees their sessions, ends any, and reads their account's last hundred security events.
+   made within ten minutes of proving its address.  What of these the organisation's object holds — a live key made or
+   revoked, a limit set — it refuses itself unless told the touch was made, so a path of the console that forgot to ask
+   fails closed.  A recovery ends every session but its own (the account's security version).  The person sees their
+   sessions, ends any, and reads their account's last hundred security events.  Every change a page asks is limited at
+   the edge first — sixty a minute an address (`AUTH_LIMIT`) — before the one identity object is asked; the challenges
+   of the passkey ceremonies, which anyone may ask for, are cleaned by an index on their expiry, so that their number
+   never makes the next one slower.  A name a person gives (a passkey's) keeps no control, bidirectional or zero-width
+   character.
 9. **Mail leaves from the object's outbox**, written in the step that decided it, sent by its alarm (`mail.rs`): what is
    past its time is dropped, a code's mail whose flow moved on (a resend, the code typed) is dropped as obsolete, a
    refusal that will not pass is given up, what may pass is tried again with backoff, four times at most and never past
    its time.  **No code is ever in a subject** (delivery logs and lock screens show subjects), no link does anything (a
-   scanner would follow it, and it would open a session in whichever browser opened the mail), nothing a person wrote
-   is in a mail, and an address that changed is shown to the old one as its first character and its domain.  Logs name
-   a template and an error's code, never an address or a code.  Delivery events, when the owner subscribes a Queue, are
-   kept beside their mail by event id, a deferral never undoing a delivery, and never verify an address (§12.3).
-10. **Turnstile**, when its keys are set, stands before every flow that sends mail: checked with Cloudflare for this host
-   and this action, and kept once by the identity object (its own reuse check is eventually consistent).
+   scanner would follow it, and it would open a session in whichever browser opened the mail), nothing a person wrote is
+   in a mail (a passkey's name neither), and an address that changed is shown to the old one as its first character and
+   its domain.  Logs name a template and an error's code, never an address or a code.  Delivery events, when the owner
+   subscribes a Queue, are kept beside their mail by event id, a deferral never undoing a delivery, and never verify an
+   address (§12.3).
+10. **Turnstile**, when its keys are set, stands before every flow that sends mail — registering, signing in, changing
+   an address; a resend belongs to its flow, five mails at most — checked with Cloudflare for this host and this action,
+   and kept once by the identity object (its own reuse check is eventually consistent).  A token is good once, so the
+   page asks for a passkey's touch before a step that carries one, never after it.  **Registration is opened only with
+   Turnstile**: without it `deploy.sh` keeps registration closed and says so, since the allowances alone would let a
+   few networks spend the day's mail for everyone.
 
 ### What a key may do, and what a call costs (api.impf.ai)
 
@@ -135,25 +151,31 @@ itself (measured in workerd where it could be):
    holds the key, read without a lookup), 192 random bits, and a CRC-32 that refuses a mistyped key before anything is
    asked and lets a scanner find keys with few false alarms.  Kept as its SHA-256 — 192 bits need no key, so no
    rotation of a service secret invalidates a key; shown once, then as `tao_live_…` and four characters of the
-   checksum.  Scopes: `evidence:search`, `citations:verify`, `usage:read`.  At most fifty keys not revoked.
+   checksum.  Scopes: `evidence:search`, `citations:verify`, `usage:read`.  At most fifty keys not revoked.  What a key
+   is made with is read strictly: no scope chosen, an unknown one, an expiry or a limit that is not a whole number in
+   range is refused — never read as "all", "never" or "none".
 13. **Credits in whole numbers, reserved before, settled after.**  *available* = the ledger's sum − what calls in flight
    hold; a call is let through only if its price fits, and is held; settling moves it to spent, a failure gives it back.
-   So nothing a call does takes the balance below zero, however many arrive together (§12.3).  A reservation is settled
-   once, a usage entry and a grant are written once (their references are unique), a reservation nobody settles lapses
-   after two minutes — **released, not charged**, and counted — because a result that may not have reached the caller
-   is not one to charge for; a settlement that comes after its lapse is counted and changes nothing.  A price's version
-   is kept with every reservation and charge.  `Idempotency-Key`: the same key and request get the first answer again
-   (`Idempotent-Replayed`), uncharged; another request under the same key is refused (422); a failed call is no answer,
-   and its repeat runs.  Test keys spend no credits: a hundred calls a day an organisation.  Each key 60 calls a minute
-   and two in flight, each organisation four in flight, each project an optional monthly limit; the edge's rate limits
-   stand before the object (per address, per key).
+   So nothing a call does takes the balance below zero, however many arrive together (§12.3); a grant or an adjustment
+   is bounded, and the arithmetic cannot wrap.  A reservation is settled once, a usage entry and a grant are written
+   once (their references are unique), a reservation nobody settles lapses after two minutes — **released, not
+   charged**, and counted — because a result that may not have reached the caller is not one to charge for; a settlement
+   that comes after its lapse is counted and changes nothing.  A price's version is kept with every reservation and
+   charge.  `Idempotency-Key`: the same key and request get the first answer again (`Idempotent-Replayed`), uncharged;
+   another request under the same key is refused (422); a failed call is no answer, and its repeat runs.  Test keys
+   spend no credits: a hundred calls a day an organisation.  Each key 60 calls a minute and two in flight, each
+   organisation four in flight, each project an optional monthly limit; the edge's rate limits stand before the object
+   (per address, per key).
 14. **The products** are the corpus's own tools (`api.rs`): `POST /v1/evidence/search` (`classics.search`) and
    `POST /v1/citations/verify` (`validation.verify_quote`), and `GET /v1/limits`, `GET /v1/usage`.  A request is read
    strictly — the fields a product takes, each within limits narrower than the tool's own, nothing else — and **refused,
    not clamped** (ADR 0037's rule).  The corpus answers 200 whether a tool ran or refused: a call is **charged only when
    the tool ran**; a tool's refusal is the caller's 422, a starting or busy corpus a 503 with its own `Retry-After`,
-   anything else a 502 — none charged.  The corpus is given sixty seconds, inside the reservation's two minutes.  What
-   is passed on is the result, its citations, its summary and its text for a model; never the harness's receipt.
+   anything else a 502 — none charged.  The corpus is given one deadline for the whole of its answer, the body
+   included: sixty seconds at most, and always a quarter of a minute inside the reservation's two, so that no
+   reservation lapses under a call still being read; a call past it is aborted, at the corpus too, so that slow calls
+   never outnumber the four in flight.  What is passed on is the result, its citations, its summary and its text for a
+   model; never the harness's receipt.
 15. **The owner's endpoints** (`/admin/…`: organisations, grants, adjustments, projects, keys, revocation) answer the
    token whose SHA-256 is `ADMIN_TOKEN_SHA256` — as `STORE_TOKEN_SHA256` does, the token itself is kept nowhere — and are
    off without it.  The console provisions a new person's organisation in the same object, with the trial the identity
@@ -170,19 +192,28 @@ itself (measured in workerd where it could be):
    (`subtle`, `curve25519-dalek`, `ed25519-dalek`) and workers-rs's router are under, and two releases of `syn`, both
    build-time only.  Advisories, bans, licences and sources pass; the audit workflow checks it each week.
 17. **Tested as built before it is deployed.**  The platform workflow tests the core, builds both Workers with the
-   pinned tools, runs the API as built in local workerd beside a stand-in corpus (`cloud/api/test/run.sh`: 30 checks —
-   charges, refusals, replays, failures not charged, usage, revocation, forged keys, the owner's token), and deploys
-   only what the owner has configured (the API once `API_ADMIN_TOKEN_SHA256` is set; the console once `ACCOUNT_SECRET`
-   is).  `cloud/console/test/run.sh` drives the console in Chromium with a virtual authenticator — registration by code
-   and passkey, recovery codes, the trial, a live key, sign-in by passkey alone, the security page, a change from another
-   origin refused — and then spends that key on the API; it needs Playwright, which is not pinned here, so it is a
-   developer's check.  Run before this was committed, it found that workers-rs reads an `i64` given to `set_alarm` as
-   an offset: the mail alarm had been set fifty-seven years ahead.
+   pinned tools, runs the API as built in local workerd beside a stand-in corpus (`cloud/api/test/run.sh`: 31 checks —
+   charges, refusals, replays, failures not charged, a call past its time aborted at the corpus, usage, revocation,
+   forged keys, the owner's token), and deploys only what the owner has configured (the API once
+   `API_ADMIN_TOKEN_SHA256` is set; the console once `ACCOUNT_SECRET` is).  `cloud/console/test/run.sh` drives the
+   console in Chromium with a virtual authenticator — registration by code and passkey, recovery codes, the trial, a
+   live key, sign-in by passkey alone, the security page, sign-in by the mailbox and a recovery code, a move to an
+   address another account has (answered as any other, its owner told) and to a new one, a change from another origin
+   refused — and then spends that key on the API; it needs Playwright, which is not pinned here, so it is a developer's
+   check.  Run before this was committed, it found that workers-rs reads an `i64` given to `set_alarm` as an offset: the
+   mail alarm had been set fifty-seven years ahead.  **An independent review** of the code before its first deployment
+   found nothing critical or high.  Its two medium findings — an address change that told a signed-in person, without
+   limit, whether any address had an account; a passkey challenge anyone could ask for, each one making the next slower
+   in the one identity object — and its low and informational ones (mail routes without Turnstile, the old address's
+   sign-ins surviving a move, a revocation that skipped the touch when a check failed, an adjustment that could wrap the
+   balance, empty or malformed fields widened, RSA's exponent 1, a deadline that left the body unbounded, a passkey's
+   name in mail) are fixed as decisions 3–4, 6–10 and 12–14 say — each with a test, but for Turnstile on the routes,
+   which only Cloudflare's own check can exercise.
 
 ## Where this departs from the proposal
 
 * **Rust, not TypeScript**, by the owner's choice; the research framework and TaoCore are unchanged.  The modules are
-  0.76 MB (the API) and 1.1 MB (the console), 0.24 and 0.36 MB compressed.
+  0.76 MB (the API) and 1.1 MB (the console), 0.24 and 0.37 MB compressed.
 * **No passwords yet.**  Passkeys, email codes and recovery codes.  A password needs a memory-hard hash, which a Worker
   can only have as a WebAssembly module built and pinned like TaoCore's (Argon2id at OWASP's 19 MiB); PBKDF2 at what
   production allows is six times weaker than OWASP's floor, and the proposal itself says not to weaken hashing for the
@@ -224,7 +255,7 @@ itself (measured in workerd where it could be):
   organisation, grants it credits and issues its key with the token ([cloud/api/README.md](../../cloud/api/README.md)).
   With the secret `ACCOUNT_SECRET` set it deploys **console.impf.ai** too, registration off until the owner opens it,
   after the steps of [cloud/console/SETUP.md](../../cloud/console/SETUP.md): Email Service's sending domain on Workers
-  Paid, **its previews turned off before anything is sent**, its quota checked.
+  Paid, **its previews turned off before anything is sent**, its quota checked, Turnstile set.
 * The site, the relay and the corpus are unchanged; the API's calls take their share of the corpus's one instance,
   bounded by four in flight an organisation and the prices.
 * What the platform keeps of a person: an address, a random handle, passkeys' public keys, digests, security events

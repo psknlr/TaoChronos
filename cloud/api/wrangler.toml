@@ -1,8 +1,8 @@
 # 道乃久开发者接口 — api.impf.ai: the developer API and the organisations' accounts, a Worker written in Rust
 # (rust/platform/api; docs/adr/0038-accounts-keys-and-credits.md; README.md here is the API's own documentation).
-# Built by rust/platform/build.sh (workers-rs, with every tool pinned) and deployed by .github/workflows/api.yml, which
-# binds the full corpus's Worker (CORPUS) when the account has it, as cloud/site/deploy.sh does — without it every paid
-# call is answered 503 and nothing is reserved.
+# Built by rust/platform/build.sh (workers-rs, with every tool pinned) and deployed by deploy.sh here, from
+# .github/workflows/platform.yml: it binds the full corpus's Worker (CORPUS) when the account has it, as
+# cloud/site/deploy.sh does — without it every paid call is answered 503 and nothing is reserved.
 name = "taochronos-api"
 main = "../../rust/platform/api/build/worker/shim.mjs"
 compatibility_date = "2025-09-01"
@@ -25,8 +25,9 @@ KEY_CONCURRENCY = "2"
 ORG_CONCURRENCY = "4"
 TEST_CALLS_PER_DAY = "100"
 # a reservation nobody settles lapses after this (released, not charged); the corpus is given at most
-# CORPUS_TIMEOUT_SECONDS, well inside it.  The corpus runs one instance for the site and the API alike
-# (docs/adr/0037-what-a-call-may-cost.md): ORG_CONCURRENCY bounds what one organisation can take of it
+# CORPUS_TIMEOUT_SECONDS for its whole answer, and never more than HOLD_SECONDS less fifteen, and a call past it is
+# aborted.  The corpus runs one instance for the site and the API alike (docs/adr/0037-what-a-call-may-cost.md):
+# ORG_CONCURRENCY bounds what one organisation can take of it
 HOLD_SECONDS = "120"
 CORPUS_TIMEOUT_SECONDS = "60"
 IDEMPOTENCY_HOURS = "24"

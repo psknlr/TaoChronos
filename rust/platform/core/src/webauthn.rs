@@ -135,8 +135,10 @@ pub fn cose_to_key(cose: &Cbor, allowed: &[i64]) -> R<PublicKey> {
         RS256 if kty == Some(3) => {
             let n = bytes(-1, None)?;
             let e = bytes(-2, None)?;
-            if !(256..=512).contains(&n.len()) || n[0] == 0 || e.is_empty() || e.len() > 4 || e[e.len() - 1] & 1 == 0 {
-                return fail("key"); // 2048–4096 bits, minimal; an odd exponent that fits in 32 bits
+            // 2048–4096 bits, minimal; the exponent 65537 alone — every authenticator uses it, and a key of exponent 1 is a key
+            // whose every message is its own signature
+            if !(256..=512).contains(&n.len()) || n[0] == 0 || e != [1, 0, 1] {
+                return fail("key");
             }
             PublicKey::Rs256 { n: b64url(&n), e: b64url(&e) }
         }
@@ -649,6 +651,16 @@ pub mod tests {
         }
     }
 
+    fn a_rsa_cose() -> Vec<u8> {
+        let i = |n: i64| Cbor::Int(n);
+        encode(&Cbor::Map(vec![
+            (i(1), i(3)),
+            (i(3), i(RS256)),
+            (i(-1), Cbor::Bytes(hex_bytes(TEST_N))),
+            (i(-2), Cbor::Bytes(vec![1, 0, 1])),
+        ]))
+    }
+
     pub fn origins() -> Vec<String> {
         vec!["https://console.impf.ai".to_string()]
     }
@@ -754,6 +766,13 @@ pub mod tests {
             },
             "key",
         );
+        // an RSA key of another exponent than 65537 (1 would make every message its own signature): refused
+        let n = cbor::decode(&a_rsa_cose()).unwrap().int_key(-1).cloned().unwrap();
+        for e in [vec![1u8], vec![3u8], vec![1, 0, 0, 1]] {
+            let cose =
+                encode(&Cbor::Map(vec![(i(1), i(3)), (i(3), i(RS256)), (i(-1), n.clone()), (i(-2), Cbor::Bytes(e))]));
+            check(Twist { cose: Some(cose), ..Default::default() }, "key");
+        }
         // without user verification asked for, a credential made without it is taken (and said to be)
         let loose = verify_registration(
             &a.create(&c, &Twist { no_uv: true, ..Default::default() }),
