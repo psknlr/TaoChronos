@@ -37,7 +37,7 @@ classics.search takes: …` — so that a model asks again within it.
   entries (its texts 20,000 each), a whole number 0–10,000, a number ±10⁹. The registry gives them to every tool it is
   handed, so a plugin's tool is bounded without knowing of any of this.
 * **The mesh's own** (`tools/limits.py`), by the parameter's name and, where a tool uses a name otherwise, by the tool:
-  a few times what the tool does by default where the number is work (`k` 1–100, `permutations` 0–999, `max_chars`
+  a few times what the tool does by default where the number is work (`k` 0–100, `permutations` 0–999, `max_chars`
   to 120,000, `max_candidates` to 2,000, `clauses` to 60), generous where it only cuts what was worked out (`items` to
   1,000), years −5000…5000, shares 0…1. `analysis.link_prediction` keeps `k` to 5,000: the statistician ranks its
   hypotheses among the first 5,000.

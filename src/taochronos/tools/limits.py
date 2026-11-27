@@ -22,22 +22,23 @@ YEAR = count(-5000, 5000)
 SHARE = {"minimum": 0, "maximum": 1}
 THRESHOLD = count(0, 1_000_000_000)  # compared with, never counted to
 
-# by the parameter's name, as the tools use it
+# by the parameter's name, as the tools use it.  (From 0: a count of none is a call that worked and costs nothing —
+# a search for no hits is one of the cases the D1 backup is compared on.)
 BY_NAME: dict[str, dict[str, Any]] = {
     # cuts of what was worked out: the entries of each list a result keeps, the characters of each text
     "items": count(0, 1000),
-    "chars": count(1, 100_000),
-    "top": count(1, 100),
+    "chars": count(0, 100_000),
+    "top": count(0, 100),
     # how much is worked out
     "limit": count(0, 1000),
-    "k": count(1, 100),
-    "max_candidates": count(1, 2000),
+    "k": count(0, 100),
+    "max_candidates": count(0, 2000),
     "max_chars": count(0, 120_000),  # of the base witness of a collation (0: the default)
     "permutations": count(0, 999),  # twice the default: 9,999 of them were 15 s of one call on a working set of 20,000 passages
-    "per_period": count(1, 1000),
-    "sample_per_period": count(1, 1000),
-    "clauses": count(1, 60),
-    "max_points": count(1, 50),
+    "per_period": count(0, 1000),
+    "sample_per_period": count(0, 1000),
+    "clauses": count(0, 60),
+    "max_points": count(0, 50),
     "similar": count(0, 100),
     "max_extra": count(0, 50),
     "max_rounds": count(0, 100),  # (a research run keeps it within its own range)
@@ -67,9 +68,9 @@ BY_NAME: dict[str, dict[str, Any]] = {
 
 # where a tool uses a name otherwise
 BY_TOOL: dict[str, dict[str, dict[str, Any]]] = {
-    "analysis.link_prediction": {"k": count(1, 5000)},  # the statistician ranks its hypotheses in the first 5000
-    "kg.neighbors": {"k": count(1, 500)},
-    "study.layers": {"k": count(1, 20)},  # the layers a work is cut into
+    "analysis.link_prediction": {"k": count(0, 5000)},  # the statistician ranks its hypotheses in the first 5000
+    "kg.neighbors": {"k": count(0, 500)},
+    "study.layers": {"k": count(0, 20)},  # the layers a work is cut into
     "study.reuse": {"limit": count(0, 400)},  # the candidates labelled (200 by default: 7 s on the full corpus)
     "study.concordance": {"limit": count(0, 500)},
 }
