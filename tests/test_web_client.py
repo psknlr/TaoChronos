@@ -3333,7 +3333,9 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
             pass
 
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
-    api = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
+    # no home: this server makes no runtime files for the browser.  With one, the browser's runtime starts wherever
+    # Pyodide can be fetched, and the page's last visit below ends ready where it is to end without a runtime
+    api = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web")
     locked = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT, token="t0ken")
     pages = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Static, directory=str(ROOT / "web")))  # no runtime files
     for s in (api, locked, pages):
