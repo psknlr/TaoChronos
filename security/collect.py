@@ -121,8 +121,12 @@ def pull(sources: dict[str, str], out: Path, *, limit: int = 500, pages: int = 4
         state = dict(cursor.get(name) or {})
         last, new = int(state.get("last", 0)), 0
         skipped = None
+        size = limit
         for _ in range(pages):
-            status, page = _request(f"{base}{PREFIX[name]}/export?after={last}&limit={limit}", token=token)
+            status, page = _request(f"{base}{PREFIX[name]}/export?after={last}&limit={size}", token=token)
+            while status >= 500 and size > 1:  # a page the Worker cannot hand out (too heavy for it): asked for again, smaller
+                size = max(1, size // 4)
+                status, page = _request(f"{base}{PREFIX[name]}/export?after={last}&limit={size}", token=token)
             if status in (401, 404):
                 skipped = status
                 break

@@ -107,6 +107,11 @@ def pull(relay: str, out: Path, *, limit: int = 500, pages: int = 40) -> dict:
     last, new = int(cursor.get("last", 0)), 0
     for _ in range(pages):
         status, page = _request(f"{relay}/v1/logs/export?after={last}&limit={limit}", token=token)
+        # a page the relay cannot hand out (one heavier than a Durable Object may return — a relay from before it bounded
+        # its pages by weight — fails at every run, and the collection with it): asked for again, smaller
+        while status >= 500 and limit > 1:
+            limit = max(1, limit // 4)
+            status, page = _request(f"{relay}/v1/logs/export?after={last}&limit={limit}", token=token)
         if status != 200 or not isinstance(page, dict):
             raise SystemExit(f"the relay refused the export: HTTP {status} {str(page)[:300]}")
         if page.get("archive"):

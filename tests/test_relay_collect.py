@@ -37,6 +37,8 @@ class FakeRelay(ThreadingHTTPServer):
         self.second_turns: list[str] = []
         self.sponsors = [{"id": 1, "model": "gpt-6-luna", "hint": "sk-…WXYZ"}]
         self.places: dict | None = None  # what GET /v1/egress says of the model service's host from each place (none: an older relay)
+        self.heaviest: int | None = None  # the most records it can hand out in a page (none: any number): more is a 500
+        self.asked: list[int] = []  # the page sizes its export was asked for
 
     def add(self, received: str, question: str) -> None:
         self.rows.append({"id": self.next_id, "received": received, "record": {"v": 1, "question": question}})
@@ -93,6 +95,9 @@ class _Handler(BaseHTTPRequestHandler):
             more = start + 2 < len(day)
             return self._json(200, {"day": q["day"][0], "items": page, "cursor": str(start + 2) if more else None, "more": more})
         after, limit = int(q.get("after", ["0"])[0]), int(q.get("limit", ["500"])[0])
+        self.server.asked.append(limit)
+        if self.server.heaviest is not None and limit > self.server.heaviest:
+            return self._json(500, {"error": {"message": "默认服务出错了，请稍后再试", "type": "relay_error"}})
         rows = [r for r in self.server.rows if r["id"] > after]
         items = rows[:limit]
         page = {"items": items, "last": items[-1]["id"] if items else after, "more": len(rows) > limit}
@@ -264,3 +269,21 @@ def test_a_record_holding_what_no_file_of_lines_takes_is_pulled_all_the_same(rel
     relay.archived = [{"n": 1, "received": "2026-10-14T01:00:00Z", "question": f"问{lone}{ends}"}]
     assert collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")["records"] == 1
     assert [r["question"] for r in _lines(tmp_path / ".archive" / "2026" / "10" / "14.jsonl")] == [f"问\ufffd{ends}"]
+
+
+def test_a_page_the_relay_cannot_hand_out_is_asked_for_again_smaller(relay, tmp_path):
+    """A page heavier than a Durable Object may return (a relay from before it bounded its pages by what they weigh:
+    a day of one address's largest records) failed the export — at every run, the same page asked for again.  The
+    collector asks for a smaller one, and goes on with that size."""
+    out = tmp_path / "data" / "chat-logs"
+    for k in range(9):
+        relay.add(f"2026-09-28T08:0{k}:00Z", f"问{k}")
+    relay.heaviest = 3
+    assert collect.pull(relay.url, out, limit=40) == {"new": 9, "last": 9}
+    assert relay.asked == [40, 10, 2, 2, 2, 2, 2]  # smaller until it is handed out, then on at that size
+    assert [r["n"] for r in _lines(out / "2026" / "09" / "28.jsonl")] == list(range(1, 10))
+    relay.add("2026-09-28T09:00:00Z", "再问")
+    relay.heaviest = 0  # a relay that fails whatever it is asked: told, as before
+    with pytest.raises(SystemExit, match="refused the export: HTTP 500"):
+        collect.pull(relay.url, out, limit=40)
+    assert json.loads((out / "cursor.json").read_text())["last"] == 9

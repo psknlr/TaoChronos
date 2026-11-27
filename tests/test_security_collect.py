@@ -30,6 +30,7 @@ class FakeWorker(ThreadingHTTPServer):
         self.rows: list[dict] = []
         self.next_id = 1
         self.archived: list[dict] | None = None
+        self.heaviest: int | None = None  # the most events it can hand out in a page (none: any number): more is a 500
 
     def add(self, received: str, kind: str) -> None:
         self.rows.append({"id": self.next_id, "received": received, "event": {"v": 1, "kind": kind}})
@@ -60,9 +61,12 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(401, {})
         q = parse_qs(url.query)
         if url.path == f"{self.server.prefix}/export":
-            after = int(q.get("after", ["0"])[0])
-            items = [r for r in self.server.rows if r["id"] > after]
-            page = {"items": items, "last": items[-1]["id"] if items else after, "more": False}
+            after, limit = int(q.get("after", ["0"])[0]), int(q.get("limit", ["500"])[0])
+            if self.server.heaviest is not None and limit > self.server.heaviest:
+                return self._json(500, {"error": {"type": "relay_error"}})
+            rows = [r for r in self.server.rows if r["id"] > after]
+            items = rows[:limit]
+            page = {"items": items, "last": items[-1]["id"] if items else after, "more": len(rows) > limit}
             return self._json(200, {**page, "archive": "r2"} if self.server.archived is not None else page)
         if url.path == f"{self.server.prefix}/archive":
             if self.server.archived is None:
@@ -162,3 +166,15 @@ def test_an_answer_that_is_not_what_a_worker_keeps_ends_the_run_in_words(workers
     site.add("2026-10-14T02:00:00Z", "flag")
     with pytest.raises(SystemExit, match="refused the export"):
         collect.pull({"site": site.url}, tmp_path)
+
+
+def test_a_page_a_worker_cannot_hand_out_is_asked_for_again_smaller(workers, tmp_path):
+    """A page too heavy for the Worker to hand out failed the export at every run: the collector asks for a smaller one."""
+    relay, site = workers
+    for k in range(7):
+        site.add(f"2026-10-14T02:0{k}:00Z", "flag")
+    relay.add("2026-10-14T01:00:00Z", "honeypot")
+    site.heaviest = 3
+    got = collect.pull({"relay": relay.url, "site": site.url}, tmp_path, limit=40)
+    assert (got["relay_new"], got["site_new"], got["site_last"]) == (1, 7, 7)
+    assert [json.loads(x)["n"] for x in (tmp_path / "site" / "2026" / "10" / "14.jsonl").read_text().splitlines()] == list(range(1, 8))

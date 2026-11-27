@@ -15,6 +15,7 @@ import { gateCall, logged as ledgerLogged, turnFinished, turnRecorded } from "..
 import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, normalizeTurn, openaiBody, placedFetch, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
 import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
 import { LimiterCore, LogBookCore } from "../src/state.js";
+import { PAGE_CHARS, pageEnd } from "../../security/sentinel.js";
 import { UsageCore } from "../../security/usage.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
@@ -785,6 +786,39 @@ test("the collector: token required, records after its cursor, deleted once comm
   const weak = relay({ env: { LOG_EXPORT_TOKEN: "short" } });
   assert.equal((await weak.call("/v1/logs/export", { headers: { Authorization: "Bearer short" } })).status, 401);
 });
+
+test("a page of the export is bounded by what it weighs: a day of one address's largest records comes in several pages", () => quiet(async () => {
+  // a Durable Object's method returns 32 MiB at the most, a string of Chinese two bytes a character: 500 records of
+  // 47 KB — what one address may send in a day — were a page the book could not hand out, and the export failed at
+  // every run (in workerd; under Node nothing limits it, so the page is measured here)
+  const r = relay();
+  const big = JSON.stringify(normalizeRecord({ ...turn, question: "问".repeat(4000), answer: "字".repeat(20000),
+    tools: Array.from({ length: 40 }, (_, k) => ({ name: "classics.search", ok: true, ms: 1, args: "参".repeat(300), id: `t${k}` })) }));
+  assert.ok(big.length > 36000);
+  for (let k = 0; k < 250; k++) r.book.add(big, new Date(Date.UTC(2026, 8, 28, 12, 0, k)).toISOString());
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const seen = [];
+  let after = 0;
+  let pages = 0;
+  for (;;) {
+    const res = await r.call(`/v1/logs/export?after=${after}&limit=500`, { headers: auth });
+    const body = await res.text();
+    assert.ok(body.length <= PAGE_CHARS + 200000, `a page of ${body.length} characters`);
+    const page = JSON.parse(body);
+    assert.ok(page.items.length >= 1);
+    seen.push(...page.items.map((i) => i.id));
+    pages += 1;
+    after = page.last;
+    if (!page.more) break;
+    assert.ok(pages < 50);
+  }
+  assert.ok(pages >= 3, `${pages} pages`);
+  assert.deepEqual(seen, Array.from({ length: 250 }, (_, k) => k + 1)); // every record, once, in order
+  // the rows still bound a page of small records, as before; and a record heavier than a page alone is its own page
+  assert.deepEqual([r.book.records(0, 3).items.length, r.book.records(0, 3).more, r.book.records(249, 3).more], [3, true, false]);
+  assert.deepEqual(pageEnd(r.book.sql, "logs", "record", 0, 500, 10), { through: 1, more: true });
+  assert.deepEqual(pageEnd(r.book.sql, "logs", "record", 250, 500, 10), { through: 250, more: false });
+}));
 
 test("with the archive's bucket the records and events go there: the repository's collector is told, and may not delete", () => quiet(async () => {
   const objects = new Map();

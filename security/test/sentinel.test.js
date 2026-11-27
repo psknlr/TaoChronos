@@ -6,7 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
 import { anonymous, assess, bodyShape, browserOf, clipped, cspReports, DEFAULTS, expectsClientHints, expectsSecFetch, fingerprint, ipKey, isHoneypot, keptPath,
-  keptReport, ledFrom, logLine, sentinelConfig, serveSecurity, uaClass, WatchCore } from "../sentinel.js";
+  keptReport, ledFrom, logLine, pageEnd, sentinelConfig, serveSecurity, uaClass, WatchCore } from "../sentinel.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
 function sqlStore() {
@@ -551,6 +551,26 @@ test("what is kept of a string anyone can send is text: cut between characters, 
     [],
   ]);
   assert.equal(page.items[0].event.kind, "csp");
+
+  // a request's own properties: the Workers runtime reads a header's value as UTF-8, so a user agent cut at its limit in
+  // the middle of a character kept half of it — one GET of a scanner's path was enough (Node's Request refuses such a
+  // header: a request as the runtime gives it, by hand)
+  const got = { "user-agent": `${"a".repeat(299)}${rare}`, referer: `not a url ${"r".repeat(69)}${rare}`, "x-requested-with": `x${lone}`, "cf-connecting-ip": "203.0.113.7" };
+  const asRuntime = { url: "https://chat.impf.ai/wp-login.php", method: `GET${"T".repeat(40)}`, headers: { get: (name) => got[name.toLowerCase()] ?? null },
+    cf: { clientAcceptEncoding: `${"e".repeat(199)}${rare}${"e".repeat(5000)}`, asOrganization: `org${lone}`, city: { nested: [lone] }, asn: 4134 } };
+  const seen = fingerprint(asRuntime, T0);
+  assert.deepEqual([seen.ua.length, seen.referer.length, seen.xrw, seen.method.length, seen.enc.length, seen.asOrg, seen.city, seen.asn],
+    [299, 79, `x${FFFD}`, 16, 199, `org${FFFD}`, undefined, 4134]);
+  assert.ok(Object.values(seen).every((v) => typeof v !== "string" || v.isWellFormed()));
+
+  // a page of events is bounded by what it weighs as well as by its rows (pageEnd): the first row whatever it weighs
+  const heavy = new WatchCore(sqlStore());
+  for (let k = 0; k < 30; k++) heavy.sql.exec("INSERT INTO events (received, event) VALUES (?, ?)", new Date(T0).toISOString(), JSON.stringify({ v: 1, kind: "flag", pad: "重".repeat(1000) }));
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 0, 500, 5000), { through: 4, more: true });
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 4, 2, 1e9), { through: 6, more: true });
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 29, 500, 10), { through: 30, more: false });
+  assert.deepEqual(pageEnd(heavy.sql, "events", "event", 30, 500), { through: 30, more: false });
+  assert.deepEqual([heavy.records(0, 500).items.length, heavy.records(0, 500).more, heavy.records(28, 500).items.map((i) => i.id)], [30, false, [29, 30]]);
 });
 
 test("a violation of both policies is kept as both: what the enforced one refused is not folded into a report", async () => {
