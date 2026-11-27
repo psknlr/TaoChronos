@@ -68,6 +68,45 @@ DEVICE = re.compile(r"CFNetwork/|Darwin/|^Dalvik/|^Quark/|NetworkingExtension/|c
 ID_PATH = re.compile(r"^(/api/(?:research|session)/)[^/]+")
 
 
+# What Cloudflare's API answers is JSON, and what it tells of a request — its path, its user agent — is the sender's.
+# JSON carries two things a file of lines cannot take as they are.  A lone surrogate ("\ud800": half a character)
+# cannot be written as UTF-8: the day's file would not be written, at this run or the next.  It becomes U+FFFD as the
+# answer comes in (_text).  And U+0085, U+2028 and U+2029, which JSON lets a string hold as they are, end a line for
+# str.splitlines: an event holding one was several lines to its readers.  They are written as JSON's own escapes
+# (_line), and a file is read by its line feeds alone (_records).
+_LONE = re.compile("[\ud800-\udfff]")
+_ENDS = re.compile("[\u0085\u2028\u2029]")
+
+
+def _text(data):
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD."""
+    if isinstance(data, str):
+        return _LONE.sub("\ufffd", data)
+    if isinstance(data, list):
+        return [_text(v) for v in data]
+    if isinstance(data, dict):
+        return {_text(k): _text(v) for k, v in data.items()}
+    return data
+
+
+def _line(record: dict) -> str:
+    """A record as one line of JSON: one line to every reader."""
+    return _ENDS.sub(lambda m: f"\\u{ord(m.group()):04x}", json.dumps(record, ensure_ascii=False, sort_keys=True))
+
+
+def _records(path: Path):
+    """The lines of a JSON-lines file that are records (objects); anything else is passed over."""
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        if not line.strip():
+            continue
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(e, dict):
+            yield e
+
+
 def kept_path(path: str) -> str:
     """A path as it is kept: the id of a research run or its session is the only key to it, and goes into no log."""
     return ID_PATH.sub(r"\1…", path or "")
@@ -78,7 +117,7 @@ def query(token: str, q: str, variables: dict) -> dict:
                                  headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310 — Cloudflare's API
-            body = json.loads(r.read().decode("utf-8"))
+            body = _text(json.loads(r.read().decode("utf-8", "replace")))
     except urllib.error.HTTPError as err:
         raise SystemExit(f"the GraphQL API answered {err.code}: {err.read().decode('utf-8', 'replace')[:300]}") from None
     if body.get("errors"):
@@ -251,12 +290,8 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
     # is the larger (the day was pulled before it was over), and what is new is added after
     held: dict[str, dict] = {}
     if path.is_file():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            try:
-                e = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(e, dict) and e.get("key"):
+        for e in _records(path):
+            if e.get("key"):
                 held[e["key"]] = e
     seen = set(held)
     changed = False
@@ -368,7 +403,7 @@ def pull(token: str, zone: str, day: datetime, out: Path, hosts: list[str], now:
                 kept["skipped"].append(f"traffic of {host}: not asked ({str(err)[:160]})")
         kept["security_actions_seen"] = actions  # what the zone reports as 'no action': checked once against what worth() ignores
     if changed:
-        path.write_text("".join(json.dumps(e, ensure_ascii=False, sort_keys=True) + "\n" for e in held.values()), encoding="utf-8")
+        path.write_text("".join(_line(e) + "\n" for e in held.values()), encoding="utf-8")
     kept["suspects"] = len(suspects(out, write=True))
     return kept
 
@@ -411,11 +446,7 @@ def suspects(out: Path, write: bool = False) -> dict:
         day = f"{f.parts[-3]}-{f.parts[-2]}-{f.stem}"
         if day < since:
             continue
-        for line in f.read_text(encoding="utf-8").splitlines():
-            try:
-                e = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for e in _records(f):
             ip = e.get("clientIP")
             if not ip:
                 continue

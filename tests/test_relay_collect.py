@@ -242,3 +242,25 @@ def test_a_relay_that_archives_its_records_gives_the_repository_none_and_reads_a
     relay.archived = None
     with pytest.raises(SystemExit, match="no archive"):
         collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")
+
+
+def test_a_record_holding_what_no_file_of_lines_takes_is_pulled_all_the_same(relay, tmp_path):
+    """A question and an answer are a visitor's words, cut at a limit that counts UTF-16 units: one cut in the middle
+    of a rare character left half of it (a lone surrogate), which JSON carries and UTF-8 cannot — the pull stopped on
+    it before its cursor moved, and so at every run.  And a text may hold U+2028, U+2029 or U+0085, which
+    ``str.splitlines`` takes for ends of lines: the record was several lines to its readers."""
+    out = tmp_path / "data" / "chat-logs"
+    lone, ends = "\ud83d", "\u0085\u2028\u2029"
+    relay.add("2026-09-28T08:00:00Z", f"半个字{lone}")
+    relay.add("2026-09-28T08:01:00Z", f"一行{ends}123{ends}又一行")
+    relay.add("2026-09-28T08:02:00Z", "桂枝汤主治什么？")
+    assert collect.pull(relay.url, out) == {"new": 3, "last": 3}
+    text = (out / "2026" / "09" / "28.jsonl").read_text(encoding="utf-8")
+    assert text.count("\n") == 3 and not any(c in text for c in ends)
+    assert [r["question"] for r in _lines(out / "2026" / "09" / "28.jsonl")] == ["半个字\ufffd", f"一行{ends}123{ends}又一行", "桂枝汤主治什么？"]
+    assert json.loads((out / "cursor.json").read_text())["last"] == 3
+    assert collect.ack(relay.url, 3) == {"acked": 3, "remaining": 0}
+    # and a day read back from the relay's archive
+    relay.archived = [{"n": 1, "received": "2026-10-14T01:00:00Z", "question": f"问{lone}{ends}"}]
+    assert collect.archive(relay.url, "2026-10-14", tmp_path / ".archive")["records"] == 1
+    assert [r["question"] for r in _lines(tmp_path / ".archive" / "2026" / "10" / "14.jsonl")] == [f"问\ufffd{ends}"]

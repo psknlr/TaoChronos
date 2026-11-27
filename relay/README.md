@@ -109,6 +109,8 @@ SPONSOR_SECRET=… python3 relay/collect.py sponsors --delete 3
   不同意的访客照常使用，什么也不上传。
 - **chat-logs** 工作流每小时（也可手动运行）取走新记录，按接收日期（UTC）追加到 `data/chat-logs/年/月/日.jsonl`，游标在
   `data/chat-logs/cursor.json`；推送成功后才通知中转删除。字段见 [`data/chat-logs/README.md`](../data/chat-logs/README.md)。
+  记录里的文字按长度截断时不把一个字截成两半，落单的半个字换成 U+FFFD（中转收下时、收集器取回时各一次；
+  [`security/README.md`](../security/README.md) 说了为什么）；一条记录一行，行内的 U+2028 之类写成转义。
 - 记录只在这个**私有仓库**里；仓库若要公开，先把 `data/chat-logs/` 移走。停止收集：`wrangler.toml` 里 `LOGS = "off"` 并重新部署。
 - **对回答的反馈**：每条回答下有“有帮助 / 有问题”两个按钮，点开后可勾选原因、写几句说明，按“提交”才发送；再点一次已选的按钮即撤回
   （发一条 `rating: null`）。反馈与记录存在一起，`"kind": "feedback"`，字段见 [`data/chat-logs/README.md`](../data/chat-logs/README.md)；

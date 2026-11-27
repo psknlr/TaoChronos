@@ -42,6 +42,7 @@ from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from . import InvalidArguments
+from ..protocol.schema import whole
 from .jobs import QueueFull
 from .providers import key_env_for, proxy_hosts, web_providers
 
@@ -228,8 +229,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._proxy()
         try:
             data = json.loads(self._body() or b"{}")
-        except json.JSONDecodeError as exc:
-            return self._json({"error": f"invalid JSON: {exc}"}, 400)
+            if path != "/api/call":  # with no half character in it (whole): none reaches a session or a file.  A call's
+                data, _ = whole(data)  # arguments are the runtime's to read: it says what it repaired
+        except (ValueError, RecursionError) as exc:
+            # not JSON — or not UTF-8, an integer longer than the interpreter converts, nested deeper than it goes: the
+            # last three are no JSONDecodeError, and each ended the connection without an answer (which the site's
+            # Worker takes for the container being down)
+            return self._json({"error": f"invalid JSON: {str(exc)[:200]}"}, 400)
+        if not isinstance(data, dict) and path != "/api/research":  # a research run's arguments are read below, whatever they are
+            return self._json({"error": "invalid JSON: an object is expected"}, 400)
         rt = self.server.runtime
         try:
             if path == "/api/call":

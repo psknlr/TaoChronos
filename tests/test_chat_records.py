@@ -208,3 +208,17 @@ def test_the_command_reads_the_collected_days_and_says_no_word_of_them(tmp_path,
     assert QUESTION not in printed and "桂枝" not in printed and "a.1" not in printed
     assert main(["records", str(tmp_path), "--since", "2026-10-21"]) == 0
     assert json.loads(capsys.readouterr().out)["turns"] == 1
+
+
+def test_a_record_is_one_line_whatever_its_words_hold(tmp_path):
+    """U+2028, U+2029 and U+0085 are ends of lines to ``str.splitlines`` and may be in a question or an answer: a day
+    kept with them as they are (as the collector once wrote them) is read by its line feeds alone — the record whole,
+    and nothing made of its pieces."""
+    ends = "\u0085\u2028\u2029"
+    day = tmp_path / "2026" / "10" / "23.jsonl"
+    day.parent.mkdir(parents=True)
+    answer = f"太阳中风{ends}{{}}{ends}123{ends}桂枝汤主之"  # a piece of it alone would be JSON: an object, a number
+    day.write_text(json.dumps({"n": 1, "received": "2026-10-23T08:00:07Z", **timed(answer=answer)}, ensure_ascii=False) + "\n"
+                   + "123\n[]\n" + json.dumps(old(), ensure_ascii=False) + "\n", encoding="utf-8")
+    got = list(read([tmp_path]))
+    assert len(got) == 2 and got[0]["answer"] == answer  # the record whole; the lines that are no record passed over

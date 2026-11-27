@@ -48,6 +48,38 @@ STALE_SECONDS = 3 * 3600  # an event older than this still in an outbox: nothing
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
+# What comes in is JSON, and JSON carries what no file can hold: a lone surrogate ("\ud800": half a character), which
+# cannot be written as UTF-8 and would stop a run where it met one — at every run, once it is in what is asked for
+# again.  It becomes U+FFFD as the answer comes in.
+_LONE = re.compile("[\ud800-\udfff]")
+
+
+def _text(data):
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD."""
+    if isinstance(data, str):
+        return _LONE.sub("\ufffd", data)
+    if isinstance(data, list):
+        return [_text(v) for v in data]
+    if isinstance(data, dict):
+        return {_text(k): _text(v) for k, v in data.items()}
+    return data
+
+
+# A file of lines is read by its line feeds alone: U+0085, U+2028 and U+2029, which JSON lets a string hold as they are,
+# end a line for str.splitlines, and a record holding one was several lines — each skipped, or read for something else.
+def _records(path: Path):
+    """The lines of a JSON-lines file that are records (objects); anything else is passed over."""
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            yield r
+
+
 def _request(url: str, *, token: str | None = None, timeout: float = 90) -> tuple[int, dict | str]:
     headers = {"User-Agent": UA, "Accept": "application/json"}
     if token:
@@ -55,12 +87,12 @@ def _request(url: str, *, token: str | None = None, timeout: float = 90) -> tupl
     req = urllib.request.Request(url, headers=headers, method="GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 — the Workers' https addresses
-            raw, status = r.read().decode("utf-8"), r.status
+            raw, status = r.read().decode("utf-8", "replace"), r.status
     except urllib.error.HTTPError as err:
         raw, status = err.read().decode("utf-8", "replace"), err.code
     try:
-        return status, json.loads(raw)
-    except json.JSONDecodeError:
+        return status, _text(json.loads(raw))
+    except (json.JSONDecodeError, RecursionError):  # not JSON, or nested deeper than anything a Worker keeps
         return status, raw
 
 
@@ -425,11 +457,7 @@ def from_records(logs: Path) -> dict[str, dict]:
     turns: dict[str, dict] = {}  # id → the last record of the turn
     feedback: dict[str, dict] = {}
     for f in sorted(logs.glob("*/*/*.jsonl")):
-        for line in f.read_text(encoding="utf-8").splitlines():
-            try:
-                r = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for r in _records(f):
             day = reader_day(str(r.get("received") or ""))
             if not day or not r.get("id"):
                 continue
@@ -496,11 +524,7 @@ def from_edge(edge: Path) -> dict[str, dict]:
     every request to the two hosts, what a Worker saw of them or not."""
     out: dict[str, dict] = {}
     for f in sorted(edge.glob("*/*/*.jsonl")):
-        for line in f.read_text(encoding="utf-8").splitlines():
-            try:
-                e = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+        for e in _records(f):
             if e.get("kind") != "traffic":
                 continue
             slot = out.setdefault(str(e.get("day")), {})

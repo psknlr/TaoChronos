@@ -33,6 +33,31 @@ from pathlib import Path
 
 UA = "taochronos-collector/1"
 
+# What a Worker answers is JSON, and JSON carries two things a file of lines cannot take as they are.  A lone surrogate
+# ("\ud800": half a character — what a text cut in the middle of one leaves, or what a sender put there) cannot be
+# written as UTF-8: a pull stopped on it before its cursor moved, and so at every run after.  It becomes U+FFFD as the
+# answer comes in (_text).  And U+0085, U+2028 and U+2029, which JSON lets a string hold as they are, end a line for
+# str.splitlines and for some editors: a record holding one was several lines to its readers.  They are written as
+# JSON's own escapes (_line) — the same string to whoever parses the line.
+_LONE = re.compile("[\ud800-\udfff]")
+_ENDS = re.compile("[\u0085\u2028\u2029]")
+
+
+def _text(data):
+    """Parsed JSON with every string and every key well-formed: a lone surrogate is U+FFFD."""
+    if isinstance(data, str):
+        return _LONE.sub("\ufffd", data)
+    if isinstance(data, list):
+        return [_text(v) for v in data]
+    if isinstance(data, dict):
+        return {_text(k): _text(v) for k, v in data.items()}
+    return data
+
+
+def _line(record: dict) -> str:
+    """A record as one line of JSON: one line to every reader."""
+    return _ENDS.sub(lambda m: f"\\u{ord(m.group()):04x}", json.dumps(record, ensure_ascii=False, sort_keys=True))
+
 
 def _request(url: str, *, token: str | None = None, data: dict | None = None, origin: str | None = None,
              timeout: float = 60, headers: dict | None = None) -> tuple[int, dict | str]:
@@ -48,13 +73,13 @@ def _request(url: str, *, token: str | None = None, data: dict | None = None, or
     req = urllib.request.Request(url, data=body, headers=headers, method="POST" if data is not None else "GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 — the relay's https address
-            raw = r.read().decode("utf-8")
+            raw = r.read().decode("utf-8", "replace")
             status = r.status
     except urllib.error.HTTPError as err:
         raw, status = err.read().decode("utf-8", "replace"), err.code
     try:
-        return status, json.loads(raw)
-    except json.JSONDecodeError:
+        return status, _text(json.loads(raw))
+    except (json.JSONDecodeError, RecursionError):  # not JSON, or nested deeper than anything a Worker keeps
         return status, raw
 
 
@@ -90,7 +115,7 @@ def pull(relay: str, out: Path, *, limit: int = 500, pages: int = 40) -> dict:
         by_day: dict[str, list[str]] = {}
         for item in page.get("items", []):
             received = str(item.get("received") or datetime.now(timezone.utc).isoformat())
-            line = json.dumps({"n": item["id"], "received": received, **(item.get("record") or {})}, ensure_ascii=False, sort_keys=True)
+            line = _line({"n": item["id"], "received": received, **(item.get("record") or {})})
             by_day.setdefault(received[:10], []).append(line)
             last = max(last, int(item["id"]))
             new += 1
@@ -129,7 +154,7 @@ def archive(relay: str, day: str, out: Path) -> dict:
             raise SystemExit("the relay has no archive (no ARCHIVE bucket bound: relay/SETUP.md)")
         if status != 200 or not isinstance(page, dict):
             raise SystemExit(f"the relay refused the archive: HTTP {status} {str(page)[:300]}")
-        lines += [json.dumps(item, ensure_ascii=False, sort_keys=True) for item in page.get("items", [])]
+        lines += [_line(item) for item in page.get("items", [])]
         cursor = page.get("cursor") or ""
         if not page.get("more") or not cursor:
             break

@@ -131,6 +131,11 @@ AI 与云的凭据——`/.openai/credentials.json`、`/.anthropic/config.json`�
 - 浏览器的策略报告（`csp`）不论谁发来都记为事件，所以**没被标记的访客的报告不带地址**：只留主机、路径、网络（ASN/国家）、协议、
   浏览器的种类与版本、应用内浏览器的包名（`anonymous()`）。2026-11-25 之前不是这样：此前取回的报告里有 2030 条带着未被标记
   访客的地址与完整请求头；2026-11-26 已按同一规则改写（`data/security-logs/` 的两个哨兵目录里，再没有未被标记的访客的地址）。
+- 报告谁都能发，所以留下的每个字段都只是浏览器会发的那一种（`sentinel.js` 的 `keptReport`）：短文本、两种 `disposition` 之一
+  （`enforce` / `report`）、非负整数的行号与状态码；别的类型一律不留。此前 `disposition`、行号、状态码是来什么留什么（任意类型、
+  任意嵌套），收集器取到这样一条就读不下去。凡是请求带来的文本，留下之前都经 `clipped()`：按长度截断时不把一个字截成两半
+  （基本平面之外的字占两个 UTF-16 单元，生僻汉字、表情都是），落单的半个字（孤立代理项，JSON 写作 `"\ud800"`）换成 U+FFFD——
+  JSON 带得动它，UTF-8 写不出，收集器曾因此在同一条上每次都停下。事件交给收集器时再按同一规则过一遍（此前存下的也一样）。
   git 历史里仍有原样：要从历史中去掉，只能改写仓库历史，由站长决定。
 - 研究任务与研究会话的编号是读取它们的唯一凭据，**不进任何一行、事件或日志**：路径记作 `/api/research/…`、`/api/session/…`
   （`keptPath()`；边缘的记录由 `events.py` 的 `kept_path()` 同样处理）。
@@ -149,6 +154,11 @@ AI 与云的凭据——`/.openai/credentials.json`、`/.anthropic/config.json`�
 
 `.github/workflows/chat-logs.yml` 每小时在取对话记录之后运行 `python3 security/collect.py pull --relay … --site … --out data/security-logs`，
 推送成功后 `ack`；绑定了归档存储桶的 Worker 跳过（`relay/SETUP.md`「归档」，[ADR 0023](../docs/adr/0023-workers-paid.md)）。本机看概览：`LOG_EXPORT_TOKEN=… python3 security/collect.py summary`（`--site ""` 只看中转，`--relay ""` 只看网站）。
+
+事件里的字符串是发请求的人写的，所以四个收集器（`collect.py`、`events.py`、`activity.py`、`relay/collect.py`）都这样对待取回的 JSON：
+**进门**时把落单的半个字换成 U+FFFD（否则写不进文件，游标不动，此后每次都停在同一条上——`chat-logs` 工作流里取事件这一步失败，
+连同一次取回的对话记录也不提交）；**写**时一条一行，U+0085、U+2028、U+2029 写成 JSON 自己的转义（JSON 允许字符串里原样带着它们，
+而 `str.splitlines` 把它们当换行）；**读**时只按换行符分行，不是对象的行跳过。
 
 Workers Logs（两个 Worker 都开了 observability）：分数 ≥ 1、状态 ≥ 400、被拒绝或 shadow 的请求各写一行结构化日志（字段：`tag`、`route`、`status`、`score`、`reasons`、
 `who`、`ip`（仅被标记时）、`ua`、`asn`、`cc`、`colo`、`path`、`proto`、`tls`、`ray`），在 Cloudflare 控制台 Workers → 该 Worker → Logs 里按字段筛选。免费计划保留 3 天。

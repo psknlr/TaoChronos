@@ -412,6 +412,36 @@ def unknown_properties(instance: Any, schema: dict[str, Any]) -> list[str]:
     return [k for k in instance if k not in props]
 
 
+_HALF = re.compile("[\ud800-\udfff]")
+
+
+def whole(value: Any, path: str = "$") -> tuple[Any, list[str]]:
+    """``value`` (parsed JSON) with no half character in its strings and names, and where one was.  A lone surrogate —
+    half of a character written as two units, which JSON carries (``"\\ud800"``) and which a model, or a text cut in
+    the middle of a rare character, can leave — is no text: nothing can encode it, and a call whose arguments held one
+    ended where its id is made (a hash of them).  Each is U+FFFD."""
+    if isinstance(value, str):
+        return (_HALF.sub("\ufffd", value), [f"{path}: half a character (a lone surrogate) → U+FFFD"]) if _HALF.search(value) else (value, [])
+    if isinstance(value, list):
+        items, notes = [], []
+        for i, v in enumerate(value):
+            v, said = whole(v, f"{path}[{i}]")
+            items.append(v)
+            notes += said
+        return items, notes
+    if isinstance(value, dict):
+        fields, notes = {}, []
+        for k, v in value.items():
+            if isinstance(k, str) and _HALF.search(k):
+                k = _HALF.sub("\ufffd", k)
+                notes.append(f"{path}: half a character (a lone surrogate) in a name → U+FFFD")
+            v, said = whole(v, f"{path}.{k}")
+            fields[k] = v
+            notes += said
+        return fields, notes
+    return value, []
+
+
 def fit_arguments(arguments: Any, schema: dict[str, Any], *, tool: str) -> tuple[dict[str, Any], list[str], str | None]:
     """A model's arguments for ``tool``: repaired where only their form was wrong (:func:`coerce`), what was repaired, and
     the error to send back where they still do not fit — what :func:`validate` finds, then the parameters the tool does

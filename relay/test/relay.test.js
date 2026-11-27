@@ -821,6 +821,30 @@ test("with the archive's bucket the records and events go there: the repository'
   assert.equal((await plain.call("/v1/logs/archive?day=2026-09-28", { headers: auth })).status, 404);
 }));
 
+test("what a record says is text: cut between characters at its limits, and no half of one is kept or handed to the collector", () => quiet(async () => {
+  // a character outside the BMP is two units, and a limit counts units: an answer cut at its limit in the middle of one
+  // kept a lone surrogate, which JSON carries and no file holds — the collector stopped on it, at every run
+  const lone = String.fromCharCode(0xd800), rare = String.fromCodePoint(0x20000), FFFD = "\ufffd";
+  const cut = normalizeRecord({ ...turn, question: `${"问".repeat(3999)}${rare}`, answer: `${"字".repeat(19999)}${rare}尾`, error: `x${lone}`,
+    tools: [{ name: "classics.search", args: `${"参".repeat(299)}${rare}` }], citations: { pids: [`${"p".repeat(79)}${rare}`, `q${lone}`] } });
+  assert.deepEqual([cut.question.length, cut.answer.length, cut.error, cut.tools[0].args.length, cut.citations.pids],
+    [3999, 19999, `x${FFFD}`, 299, ["p".repeat(79), `q${FFFD}`]]);
+  assert.equal(normalizeRecord({ ...turn, question: `${"问".repeat(3998)}${rare}` }).question.length, 4000); // whole where it fits
+  const said = normalizeFeedback({ ...rated, comment: `${"评".repeat(1999)}${rare}`, question: `问${lone}`, answer: `${lone}${rare}` });
+  assert.deepEqual([said.comment.length, said.question, said.answer], [1999, `问${FFFD}`, `${FFFD}${rare}`]);
+  const given = normalizeSponsor({ v: 1, agree: true, key: "sk-0123456789abcdef", model: `m${lone}`, note: `${"注".repeat(999)}${rare}`, contact: `c${lone}` }).sponsor;
+  assert.deepEqual([given.model, given.note.length, given.contact], [`m${FFFD}`, 999, `c${FFFD}`]); // a sponsorship's words alike
+  // through the door, and out of it
+  const r = relay();
+  assert.equal((await r.call("/v1/logs", post({ ...turn, provider: "openai", model: "gpt-x", question: `半${lone}`, answer: `${"字".repeat(19999)}${rare}` }))).status, 204);
+  assert.equal((await r.call("/v1/feedback", post({ ...rated, comment: `评${lone}` }))).status, 204);
+  const res = await r.call("/v1/logs/export?after=0", { headers: { Authorization: `Bearer ${TOKEN}` } });
+  const body = await res.text();
+  assert.ok(!/\\ud[89a-f][0-9a-f]{2}/i.test(body), "no half character is handed out"); // as JSON writes one
+  const [record, feedback] = JSON.parse(body).items.map((i) => i.record);
+  assert.deepEqual([record.question, record.answer.length, feedback.comment], [`半${FFFD}`, 19999, `评${FFFD}`]);
+}));
+
 test("a full book refuses the next record and keeps every one it took in", () => quiet(async () => {
   const r = relay({ env: { LOG_KEEP: "3" } });
   await r.call("/v1/chat/completions", post(PAGE_ASK));

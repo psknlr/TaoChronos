@@ -23,7 +23,7 @@ import { LIMITS, pageClock } from "./limits.js";
 import { pause, pausedNow, pauseText } from "./pause.js";
 import * as store from "./store.js";
 import {
-  $, bare, copyText, dateGroup, debounce, download, downloadBlob, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, returnedText, sleep,
+  $, bare, clip, copyText, dateGroup, debounce, download, downloadBlob, fmtMs, h, icon, moveBar, passageLabel, progressBar, replace, returnedText, sleep,
   storage, throttleFrame, toast, truncate, uid, withFound, yearLabel,
 } from "./util.js";
 import { renderDrawer, reportNode } from "./view/drawer.js";
@@ -1968,8 +1968,8 @@ async function recordTurn(conv, msg, diag = null) {
       v: 1, id: msg.id, conversation: conv.id, turn: conv.messages.slice(0, idx).filter((m) => m.role === "user").length,
       started: new Date(msg.created).toISOString(), finished: new Date().toISOString(), ms: msg.ms, rounds: msg.rounds,
       resumed: msg.resumed || undefined, // taken up again (继续作答): its times are from the last time it was
-      question: (user.text || "").slice(0, 4000), images: user.images?.length || undefined, answer: said.text.slice(0, 12000),
-      redacted: said.hits || undefined, status: msg.status, error: msg.error ? String(msg.error).slice(0, 500) : undefined,
+      question: clip(user.text || "", 4000), images: user.images?.length || undefined, answer: clip(said.text, 12000),
+      redacted: said.hits || undefined, status: msg.status, error: msg.error ? clip(String(msg.error), 500) : undefined,
       model: msg.model, provider: msg.provider, runtime: S.runtimeInfo?.runtime || S.runtime?.kind, corpus: S.runtimeInfo?.corpus?.kind,
       app: S.runtimeInfo?.version, usage: msg.usage || undefined, tools: tools.slice(0, 40), citations: await citationSummary(conv, msg),
       requests: times?.requests, events: times?.events, hidden: times?.hidden, asleep: times?.asleep, was: times?.was,

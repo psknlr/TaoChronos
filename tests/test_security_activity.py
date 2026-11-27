@@ -355,3 +355,48 @@ def test_the_owners_summary_is_readable_and_names_no_one(monkeypatch, tmp_path, 
     assert "IS" not in text and "hospital" not in text and "v_" not in text
     # nothing new: the summary is not written again
     assert activity.report(SITE, tmp_path / "out", least=3)["new"] == 0
+
+
+def test_what_was_kept_is_read_whatever_its_words_hold(tmp_path):
+    """A day of records or of the edge's events kept with U+2028, U+2029 or U+0085 inside a string (as the collectors
+    once wrote them) is read by its line feeds alone: ``str.splitlines`` made several lines of such a record, and a
+    piece that was JSON but no record (a number) ended the run."""
+    ends = "\u0085\u2028\u2029"
+    logs = tmp_path / "chat-logs" / "2026" / "11"
+    logs.mkdir(parents=True)
+    (logs / "17.jsonl").write_text(
+        json.dumps({"n": 1, "received": "2026-11-17T03:00:00+00:00", "id": "m1", "conversation": "c1", "provider": "impf", "model": "MiniMax-M3", "status": "done",
+                    "rounds": 2, "tools": [], "question": f"一行{ends}123{ends}又一行"}, ensure_ascii=False) + "\n123\n[1]\n", encoding="utf-8")
+    assert activity.from_records(tmp_path / "chat-logs")["2026-11-17"]["questions"] == 1
+    edge = tmp_path / "edge" / "2026" / "11"
+    edge.mkdir(parents=True)
+    (edge / "17.jsonl").write_text(
+        json.dumps({"key": "tr:a", "kind": "traffic", "day": "2026-11-17", "host": f"chat.impf.ai{ends}7{ends}", "country": "CN", "status": 200, "requests": 900},
+                   ensure_ascii=False) + "\n7\n", encoding="utf-8")
+    assert activity.from_edge(tmp_path / "edge")["2026-11-17"]["requests"] == 900
+
+
+def test_what_a_worker_answers_is_made_text_at_the_door(monkeypatch):
+    """A lone surrogate (half a character) in an answer — JSON carries it, no file holds it — is U+FFFD from the door on."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Answer(BaseHTTPRequestHandler):
+        def log_message(self, *a) -> None:
+            pass
+
+        def do_GET(self) -> None:
+            raw = b'{"days": ["2026-11-17"], "place": "x\\ud800y", "k\\udfff": ["\\ud83d\\ude00", "\\ud83d"]}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Answer)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        status, body = activity._request(f"http://127.0.0.1:{server.server_address[1]}/api/stats", token=TOKEN)
+    finally:
+        server.shutdown()
+    assert status == 200 and body == {"days": ["2026-11-17"], "place": "x\ufffdy", "k\ufffd": ["\U0001f600", "\ufffd"]}  # a pair is its character
+    json.dumps(body, ensure_ascii=False).encode("utf-8")  # and can be written

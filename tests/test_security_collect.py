@@ -120,3 +120,45 @@ def test_a_worker_that_archives_gives_the_repository_none_while_the_other_still_
     out = collect.archive({"relay": relay.url, "site": site.url}, "2026-10-14", tmp_path / ".archive")
     assert out == {"day": "2026-10-14", "relay": 0, "site": 1}
     assert json.loads((tmp_path / ".archive" / "site" / "2026" / "10" / "14.jsonl").read_text())["kind"] == "flag"
+
+
+def test_an_event_holding_what_no_file_of_lines_takes_is_pulled_all_the_same(workers, tmp_path):
+    """A report's strings are the sender's, and anyone can send one.  JSON carries a lone surrogate (half a character)
+    and the three characters ``str.splitlines`` takes for ends of lines; the pull once stopped on the first before its
+    cursor moved — at every run, the same event first in what it was given — and wrote the others as they were, one
+    event as several lines to its readers."""
+    relay, site = workers
+    lone, ends = "\ud800", "\u0085\u2028\u2029"
+    site.rows.append({"id": 1, "received": "2026-10-14T02:00:00Z",
+                      "event": {"v": 1, "kind": "csp", "reports": [{"directive": "script-src", "blocked": f"x{lone}y", f"k{lone}": f"a{ends}123{ends}b"}]}})
+    site.rows.append({"id": 2, "received": "2026-10-14T03:00:00Z", "event": {"v": 1, "kind": "flag"}})
+    site.next_id = 3
+    got = collect.pull({"site": site.url}, tmp_path)
+    assert (got["site_new"], got["site_last"]) == (2, 2)
+    text = (tmp_path / "site" / "2026" / "10" / "14.jsonl").read_text(encoding="utf-8")
+    assert [json.loads(x)["n"] for x in text.splitlines()] == [1, 2]  # two events, two lines — to a reader that splits as Python does
+    assert text.count("\n") == 2 and not any(c in text for c in ends)
+    first = json.loads(text.splitlines()[0])
+    assert first["reports"] == [{"directive": "script-src", "blocked": "x\ufffdy", "k\ufffd": f"a{ends}123{ends}b"}]  # the half is U+FFFD, the rest as sent
+    assert json.loads((tmp_path / "cursor.json").read_text())["site"]["last"] == 2  # the cursor moved: the next run begins after them
+    assert collect.ack({"site": site.url}, tmp_path)["site_acked"] == 2
+    # a day read back from a Worker's archive is written the same way
+    site.archived = [{"n": 9, "received": "2026-10-14T05:00:00Z", "source": "site", "kind": "csp", "reports": [{"directive": f"d{lone}{ends}"}]}]
+    assert collect.archive({"site": site.url}, "2026-10-14", tmp_path / ".archive")["site"] == 1
+    back = (tmp_path / ".archive" / "site" / "2026" / "10" / "14.jsonl").read_text(encoding="utf-8")
+    assert [json.loads(x)["reports"][0]["directive"] for x in back.splitlines()] == [f"d\ufffd{ends}"]
+
+
+def test_an_answer_that_is_not_what_a_worker_keeps_ends_the_run_in_words(workers, tmp_path, monkeypatch):
+    """Nested deeper than the parser goes: told as an answer that cannot be read, not as a traceback."""
+    relay, site = workers
+
+    class Deep:  # json, but what it is given to read is nested deeper than it goes
+        JSONDecodeError = json.JSONDecodeError
+        dumps = staticmethod(json.dumps)
+        loads = staticmethod(lambda raw: json.loads("[" * 100_000 + "]" * 100_000))
+
+    monkeypatch.setattr(collect, "json", Deep)
+    site.add("2026-10-14T02:00:00Z", "flag")
+    with pytest.raises(SystemExit, match="refused the export"):
+        collect.pull({"site": site.url}, tmp_path)

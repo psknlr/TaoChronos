@@ -346,3 +346,59 @@ def test_the_days_totals_carry_bytes_and_visits_where_the_zone_lists_them_and_a_
     monkeypatch.setattr(events, "query", api)
     result = events.pull("token", "zone", DAY, tmp_path / "refused", ["chat.impf.ai"], now=LATER)
     assert result["requests"] == 1 and any(n.startswith("traffic of chat.impf.ai: not asked") for n in result["skipped"])
+
+
+def test_what_the_edge_tells_of_a_request_is_the_senders_and_is_kept_a_line_an_event(monkeypatch, tmp_path):
+    """A request's user agent and path are whatever was sent.  A lone surrogate (half a character) in the API's answer
+    could not be written, at this run or the next; U+2028, U+2029 and U+0085 were written as they are, and an event
+    holding one was several lines when the day was read back — its pieces skipped, or read for something else."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Answer(BaseHTTPRequestHandler):  # the door: the real query against a stand-in API
+        def log_message(self, *a) -> None:
+            pass
+
+        def do_POST(self) -> None:
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            raw = b'{"data": {"agent": "curl\\ud800/8", "k\\udc00": ["\\ud83d\\ude00"]}}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Answer)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        monkeypatch.setattr(events, "API", f"http://127.0.0.1:{server.server_address[1]}/graphql")
+        assert events.query("token", "query { x }", {}) == {"agent": "curl\ufffd/8", "k\ufffd": ["\U0001f600"]}
+    finally:
+        server.shutdown()
+
+    ends = "\u0085\u2028\u2029"
+    agent = f"x{ends}7{ends}{{}}{ends}y"  # a piece of it alone would be JSON: a number, an object
+
+    class Agents(FakeAPI):
+        def __call__(self, token: str, q: str, variables: dict) -> dict:
+            data = super().__call__(token, q, variables)
+            for row in data["viewer"]["zones"][0].get("firewallEventsAdaptive") or []:
+                row["userAgent"] = agent
+            return data
+
+    api = Agents(zone_settings())
+    monkeypatch.setattr(events, "query", api)
+    first = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    text = (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8")
+    assert not any(c in text for c in ends) and len(text.splitlines()) == text.count("\n")  # an event a line, to any reader
+    kept_events = [json.loads(x) for x in text.splitlines()]
+    assert [e["userAgent"] for e in kept_events if e["kind"] == "firewall"] == [agent] * first["events"] and first["events"] == 3
+    again = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)  # the day read back: nothing lost, nothing twice
+    assert again["events"] == 0 and (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8") == text
+    # a day kept before, the ends of lines as they were: read whole, and nothing made of its pieces
+    today = datetime.now(timezone.utc)
+    before = tmp_path / "kept" / today.strftime("%Y") / today.strftime("%m") / f"{today.strftime('%d')}.jsonl"
+    before.parent.mkdir(parents=True)
+    before.write_text(json.dumps({"key": "fw:old", "kind": "firewall", "day": today.strftime("%Y-%m-%d"), "clientIP": "198.51.100.7", "action": "block",
+                                  "userAgent": agent}, ensure_ascii=False) + "\n7\n", encoding="utf-8")
+    ranked = events.suspects(tmp_path / "kept")
+    assert (ranked["198.51.100.7"]["blocked"], ranked["198.51.100.7"]["agents"]) == (1, [agent])

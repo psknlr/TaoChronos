@@ -22,7 +22,7 @@
 // a visitor's day, a visit, a question's calls and tokens, a day's metrics — is made again from the rows it is a sum
 // of.  Two outboxes write here in no order: nothing depends on which came first.
 
-import { bearerOk, json } from "./sentinel.js";
+import { bearerOk, clipped, json } from "./sentinel.js";
 import { shiftDay } from "./usage.js";
 import { isVisitor } from "./visitor.js";
 
@@ -87,7 +87,7 @@ export async function ensure(db) {
 const ROWS = new Set(["page_view", "page_ready", "api_read", "api_call", "research_started", "request", "question_submitted", "model_invocation",
   "model_refused", "feedback_submitted", "sponsor_submitted", "visitor_choice"]);
 // what a visit is made of: what a visitor did, not what the service did for it
-const str = (v, n = 80) => (typeof v === "string" && v ? v.slice(0, n) : null);
+const str = (v, n = 80) => clipped(v, n) || null; // well-formed text (sentinel.js, clipped), or nothing
 const int = (v, most = 1e12) => (Number.isFinite(Number(v)) && v !== null && v !== "" && typeof v !== "boolean" ? Math.max(0, Math.min(most, Math.round(Number(v)))) : null);
 const flag = (v) => (v === true || v === 1 ? 1 : v === false || v === 0 ? 0 : null);
 const DAY = /^\d{4}-\d{2}-\d{2}$/;

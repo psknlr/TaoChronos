@@ -46,7 +46,7 @@
 // page's name of the turn, which a conversation record carries: the ledger cannot say who asked what.
 
 import { EVENTS, RECORDS, serveArchive } from "../../security/archive.js";
-import { assess, bodyShape, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
+import { assess, bodyShape, clipped, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
 import { ledgerConfig, readPass, turnKey } from "../../security/visitor.js";
 import { normalizeSponsor, sealSponsor, sponsorReady, unseal } from "./sponsors.js";
@@ -1162,7 +1162,10 @@ export function reasoningFilter() {
 
 // ------------------------------------------------------------------ records
 const RELAY_PROVIDER = "impf"; // the page's id for the default service (web/js/providers.js)
-const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : undefined);
+// a field of text: its first n units, cut between characters and with no half character left in it (sentinel.js,
+// clipped) — a question or an answer cut at its limit in the middle of a rare character was kept with a lone
+// surrogate, which the collector cannot write
+const str = clipped;
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
 const list = (v, n, each) => (Array.isArray(v) ? v.slice(0, n).map((x) => each(obj(x) || {})) : undefined);
@@ -1206,7 +1209,7 @@ export function normalizeRecord(r) {
   if (c && typeof c === "object" && !Array.isArray(c)) {
     out.citations = {};
     for (const k of ["total", "ok", "warn", "bad", "pending"]) if (num(c[k]) !== undefined) out.citations[k] = c[k];
-    if (Array.isArray(c.pids)) out.citations.pids = c.pids.filter((p) => typeof p === "string").slice(0, 60).map((p) => p.slice(0, 80));
+    if (Array.isArray(c.pids)) out.citations.pids = c.pids.filter((p) => typeof p === "string").slice(0, 60).map((p) => str(p, 80));
   }
   return JSON.parse(JSON.stringify(out)); // without the undefined fields
 }
@@ -1367,7 +1370,7 @@ export function normalizeTurn(r) {
     module: MODULES.has(r.module) ? r.module : undefined, turn_index: count(r.turn_index, 100000),
     content_consent: r.consent === true ? true : r.consent === false ? false : undefined, ui_lang: word(r.lang, /^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$/),
   };
-  return { turn: r.turn, pass: typeof r.pass === "string" ? r.pass.slice(0, 120) : "", info: JSON.parse(JSON.stringify(info)) };
+  return { turn: r.turn, pass: str(r.pass, 120) ?? "", info: JSON.parse(JSON.stringify(info)) };
 }
 
 /**
