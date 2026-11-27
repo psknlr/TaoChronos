@@ -2222,6 +2222,51 @@ def test_the_page_tells_its_own_use_in_counts_and_only_where_it_may_under_node(t
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+# a worker's global as a module worker has it while its imports are evaluated: messages arrive, a handler may be set
+NODE_INBOX = r"""
+import assert from "node:assert/strict";
+globalThis.self = globalThis;
+const { listen } = await import("./js/inbox.js");
+assert.equal(typeof self.onmessage, "function");  // set by the import itself, before anything can wait
+const post = (data) => self.onmessage({ data });
+post("init"); post({ id: 2 });  // what the page sent while the worker's other imports were still waited for
+const got = [];
+listen((e) => got.push(e.data));
+assert.deepEqual(got, ["init", { id: 2 }]);  // handed over as the handler is set, in the order they came
+post("later");
+assert.deepEqual(got, ["init", { id: 2 }, "later"]);  // and from then on the handler is the worker's own
+listen((e) => got.push(["second", e.data]));  // a handler set again is given nothing twice
+post("last");
+assert.deepEqual(got.slice(3), [["second", "last"]]);
+console.log("ok");
+"""
+
+
+def test_a_module_worker_holds_what_comes_before_it_listens_under_node(tmp_path):
+    """A module worker's code runs once everything it imports has run, and i18n.js waits for its dictionary on every
+    page but a Chinese one: the messages sent meanwhile were dropped, and a page in English lost its runtime's start one
+    time in three.  inbox.js holds them and hands them, in order, to the handler once it is set — and it is each
+    worker's first import, itself importing nothing and waiting for nothing: imported after i18n.js it would run too
+    late.  (The browser test of this is skipped where there is no Chromium: CI.)"""
+    js = ROOT / "web" / "js"
+    inbox = (js / "inbox.js").read_text(encoding="utf-8")
+    assert not re.search(r"^\s*import\b|\bawait\b", re.sub(r"//.*", "", inbox), re.M), "inbox.js must run at once"
+    for name in ("worker.js", "unpack-worker.js"):
+        source = (js / name).read_text(encoding="utf-8")
+        imports = re.findall(r'^import\s[^;]*?\sfrom\s+"([^"]+)";', source, re.M)
+        assert imports and imports[0] == "./inbox.js", f"{name}: its first import must be ./inbox.js, not {imports[:1]}"
+        assert "./i18n.js" in imports[1:], name  # what waits, after it
+        assert re.search(r"^listen\(", source, re.M) and not re.search(r"^\s*self\.onmessage\s*=", source, re.M), name
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(js, tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_INBOX, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""
