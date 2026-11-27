@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import http.client
 import json
 import re
@@ -334,6 +335,9 @@ def test_the_server_answers_the_api_and_serves_the_client(server):
     resp, pkg = request(server, "GET", "/runtime/taochronos.zip")
     assert len(pkg) == manifest["files"]["taochronos.zip"]["bytes"]
     assert "taochronos/chat/__init__.py" in zipfile.ZipFile(BytesIO(pkg)).namelist()
+    resp, kernel = request(server, "GET", "/runtime/taocore.wasm")  # TaoCore's module, as a built site carries it
+    assert resp.getheader("Content-Type") == "application/wasm" and kernel[:4] == b"\0asm"
+    assert hashlib.sha256(kernel).hexdigest() == manifest["files"]["taocore.wasm"]["sha256"]
     resp, _ = request(server, "GET", "/../pyproject.toml")
     assert resp.status == 404
 
@@ -529,6 +533,10 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
         assert (site / rel).is_file(), rel
     manifest = json.loads((site / "runtime" / "manifest.json").read_text())
     assert manifest["pyodide_base"].startswith("https://cdn.jsdelivr.net/pyodide/") and info["files"] == manifest["files"]
+    # TaoCore's module, the committed one, named by its hash and the ABI its loader speaks (rust/, ADR 0036)
+    kernel = (site / "runtime" / "taocore.wasm").read_bytes()
+    assert kernel == (ROOT / "rust" / "crates" / "taocore-wasm" / "taocore.wasm").read_bytes()
+    assert manifest["files"]["taocore.wasm"] == {"bytes": len(kernel), "sha256": hashlib.sha256(kernel).hexdigest(), "abi": 1}
     if (ROOT / "corpus" / "web" / "passages.jsonl.gz").is_file():  # the 要籍语料: a store without its index, xz-compressed
         corpus = manifest["files"]["corpus.sqlite.xz"]
         assert corpus["profile"] == "web-canon" and corpus["bytes"] == (site / "runtime" / "corpus.sqlite.xz").stat().st_size
@@ -537,7 +545,6 @@ def test_the_site_build_is_deterministic_and_complete(tmp_path):
     shipped = zipfile.ZipFile(site / "runtime" / "home.zip")
     cached = [n for n in shipped.namelist() if n.startswith(".cache/yaml/")]
     assert len(cached) > 40 and all(n.endswith(".v1.pickle") for n in cached)
-    import hashlib
     import pickle
 
     from taochronos.protocol.yamlio import load_yaml

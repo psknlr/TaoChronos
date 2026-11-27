@@ -6,10 +6,15 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
 import { drain, EVENTS, RECORDS } from "../../security/archive.js";
+import { LedgerCore } from "../../security/ledger.js";
+import { apply, ensure, rollup, stats as ledgerStats } from "../../security/ledger-d1.js";
 import { WatchCore } from "../../security/sentinel.js";
-import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, openaiBody, placedFetch, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
+import { d1 } from "../../security/test/fakes.js";
+import { isVisitor, ledgerConfig, passFor } from "../../security/visitor.js";
+import { gateCall, logged as ledgerLogged, turnFinished, turnRecorded } from "../src/gate.js";
+import { config, defaultModel, handle, normalizeFeedback, normalizeRecord, normalizeTurn, openaiBody, placedFetch, publicText, waitAsked, withoutReasoning } from "../src/relay.js";
 import { normalizeSponsor, seal, SponsorBookCore, unseal } from "../src/sponsors.js";
-import { ANSWERS, LimiterCore, LogBookCore } from "../src/state.js";
+import { LimiterCore, LogBookCore } from "../src/state.js";
 import { UsageCore } from "../../security/usage.js";
 
 /** The Durable Object SQL API's shape over node:sqlite. */
@@ -41,27 +46,31 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
   const book = new LogBookCore(sqlStore());
   const usage = new UsageCore(sqlStore());
   const sponsors = new SponsorBookCore(sqlStore());
+  const ledger = new LedgerCore(sqlStore(), "relay"); // the turns the object remembers, and the activity ledger's outbox
+  const fullEnv = { MINIMAX_API_KEY: KEY, LOG_EXPORT_TOKEN: TOKEN, ...env };
+  const lcfg = ledgerConfig(fullEnv);
   const calls = [];
   const pending = [];
   const bursts = [];
   const pauses = [];
-  const observe = async (fp, a, extra, cfg) => watch.observe(fp, a, extra, cfg, now());
+  const observe = async (fp, a, extra, cfg) => {
+    const w = await watch.observe(fp, a, extra, cfg, now());
+    if (extra?.activity) ledgerLogged(ledger, { ...extra.activity, fp, a, w, status: extra.status, ledger: true }, now());
+    return w;
+  };
   const deps = {
     limit: async (who, kind, limits) => limiter.hit(who, kind, limits, now()),
-    // as the Durable Object does it (relay/src/index.js): the sentinel first, then the counters
-    gate: async ({ who, kind, limits, fp, a, shape, status, cfg, served, reserve, usage: counted, question }) => {
+    // as the Durable Object does it (relay/src/index.js): its own code (relay/src/gate.js) over these stores
+    gate: async (args) => {
       if (gateFails) throw new Error("Durable Object: daily limit reached");
-      const w = fp && a ? await observe(fp, a, { shape, status }, cfg) : null;
-      if (w?.blocked) return { ok: false, reason: "blocked", retry: w.retry, watch: w };
-      const keys = fp ? [await WatchCore.who(fp.ip, cfg, now()), await WatchCore.who(fp.ip, cfg, now() - 86400000)] : [];
-      if (served && !(fp ? limiter.wasServed(keys, now()) : limiter.served(who, served, now()))) return { ok: false, reason: "not_served", retry: 0, watch: w };
-      const q = question ? limiter.question(who, question, now()) : null;
-      if (q && !q.ok) return { ...q, watch: w };
-      const gate = limiter.hit(who, kind, limits, now(), reserve);
-      if (gate.ok) q?.commit?.();
-      if (gate.ok && ANSWERS.has(kind) && keys.length) limiter.markServed(keys[0], now());
-      if (gate.ok && ANSWERS.has(kind) && counted) usage.call(counted, keys[0]);
-      return { ...gate, watch: w };
+      return gateCall({ core: limiter, watch, usage, ledger }, args, now());
+    },
+    ledger: {
+      settle: async (outcome) => ledger.settle(outcome, now(), { offset: 8, keep: lcfg.keep }),
+      finished: async (act, key, info) => turnFinished(ledger, act, key, info, now(), lcfg),
+      recorded: async (act, key, info, counted) => turnRecorded(ledger, act, key, info, now(), lcfg, counted),
+      logged: async (act) => ledgerLogged(ledger, { ...act, ledger: true }, now()),
+      health: async () => ledger.health(now()),
     },
     stats: async (days, today) => usage.stats(days, today),
     observe,
@@ -81,14 +90,23 @@ function relay({ env = {}, upstream, now = () => Date.UTC(2026, 8, 28, 12, 0, 0)
     pause: async (ms) => { pauses.push(ms); }, // between two asks of the upstream: noted, not waited for
     now,
   };
-  const fullEnv = { MINIMAX_API_KEY: KEY, LOG_EXPORT_TOKEN: TOKEN, ...env };
   const call = (path, init = {}) => {
     const request = new Request(`https://chat-api.impf.ai${path}`, init);
     if (cf) request.cf = cf;
     return handle(request, fullEnv, deps);
   };
   const settle = () => Promise.all(pending.splice(0)); // what the Worker finishes after the answer (ctx.waitUntil)
-  return { call, calls, book, limiter, watch, usage, sponsors, settle, bursts, pauses };
+  // the ledger's events so far (what is not a visitor's is added up by the minute, and written here now), and the
+  // registry they are drained into
+  const events = () => { ledger.flush(now(), 0, true); return ledger.batch(0, 5000).map((r) => r.event); };
+  const registry = async () => {
+    const db = fullEnv.ACTIVITY_DB;
+    await ensure(db);
+    await apply(db, events());
+    await rollup(db);
+    return db;
+  };
+  return { call, calls, book, limiter, watch, usage, sponsors, settle, bursts, pauses, ledger, events, registry, env: fullEnv };
 }
 
 function sse(events) {
@@ -916,6 +934,11 @@ test("a scanner path refuses its address for a day; the page's requests score no
   assert.deepEqual([page.n, page.score, page.flagged], [1, 0, 0]); // the page's visitor: a count, no address
   assert.equal((await r.call("/v1/security/export")).status, 401);
   assert.equal((await r.call("/v1/security/summary", { headers: { Authorization: "Bearer not-the-token-0123456789" } })).status, 401);
+  // the owner's: no page reads them, the site's own included — with the token or without it
+  for (const headers of [{ Origin: PAGE }, { Origin: PAGE, ...auth }]) {
+    const res = await r.call("/v1/security/summary", { headers });
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+  }
   assert.deepEqual(await (await r.call("/v1/security/ack", { method: "POST", headers: auth, body: JSON.stringify({ through: items[1].id }) })).json(), { remaining: 0 });
   // a browser's policy report is kept as an event
   const csp = await r.call("/v1/security/csp", { method: "POST", headers: { "Content-Type": "application/csp-report", Origin: PAGE },
@@ -1082,45 +1105,67 @@ test("config: the defaults, and the Worker's variables over them", () => {
 // ------------------------------------------------------------------ the counts for the settings' 统计 pane
 const STATS = "stats-token-0123456789abcdef";
 
-test("a question is counted with its place and visitor, a tool round only as a call, a refused call not at all", () => quiet(async () => {
+test("a question is counted with its place and visitor — once a turn: a tool round, the self-check's rewrite and a call made again are calls of it", () => quiet(async () => {
   let t = Date.UTC(2026, 9, 6, 16, 30, 0); // 00:30 on the 7th in Beijing: the readers' day
   const r = relay({ now: () => t, cf: { country: "CN", regionCode: "GD", asn: 4134 }, env: { STATS_TOKEN: STATS } });
-  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200);
+  const named = (body, turn) => post(body, { "X-Tao-Turn": turn });
+  assert.equal((await r.call("/v1/chat/completions", named(PAGE_ASK, "m_first"))).status, 200);
   const round = { ...PAGE_ASK, messages: [...PAGE_ASK.messages, { role: "assistant", content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "classics.search", arguments: "{}" } }] },
     { role: "tool", tool_call_id: "c1", content: "《伤寒论》……" }] };
   t += 5000;
-  assert.equal((await r.call("/v1/chat/completions", post(round))).status, 200);
+  assert.equal((await r.call("/v1/chat/completions", named(round, "m_first"))).status, 200);
+  // the self-check asks for a rewrite, and an answer cut at the output limit is written on: each a call that ends with a
+  // user's message — a note of the page's, not a question of the visitor's
+  const checked = { ...PAGE_ASK, messages: [...round.messages, { role: "assistant", content: "桂枝汤主之[[x.1]]" }, { role: "user", content: "［自查：回答所引的 [[x.1]] 在语料中查无此段……］" }] };
   t += 5000;
-  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK))).status, 200); // the same visitor asks again
+  assert.equal((await r.call("/v1/chat/completions", named(checked, "m_first"))).status, 200);
+  t += 5000;
+  assert.equal((await r.call("/v1/chat/completions", named(checked, "m_first"))).status, 200); // asked again after a failure
+  t += 5000;
+  assert.equal((await r.call("/v1/chat/completions", named(PAGE_ASK, "m_second"))).status, 200); // the same visitor asks the same again: another turn
   const s = r.usage.stats(1, "2026-10-07");
-  assert.deepEqual(s.today, { view: 0, visitor: 0, question: 2, call: 3, asker: 1 });
-  assert.deepEqual(s.places, [{ country: "CN", region: "GD", view: 0, visitor: 0, question: 2, call: 3, asker: 1 }]); // ISO 3166-2, as Cloudflare gives it
+  assert.deepEqual(s.today, { view: 0, visitor: 0, question: 2, call: 5, asker: 1 });
+  assert.deepEqual(s.places, [{ country: "CN", region: "GD", view: 0, visitor: 0, question: 2, call: 5, asker: 1 }]); // ISO 3166-2, as Cloudflare gives it
+  assert.equal(r.ledger.waiting(), 0); // the turns are remembered; without the ledger's key nothing is written down
   const refused = relay({ cf: { country: "US", regionCode: "OH" }, burst: () => false });
   assert.equal((await refused.call("/v1/chat/completions", post(PAGE_ASK))).status, 429);
   assert.deepEqual(refused.usage.stats(1, "2026-09-28").places, []);
 }));
 
-test("the counts are read with the stats token, from the page's origin", () => quiet(async () => {
+test("a page that names no turn: a call that ends with what was asked is a question once, its tool rounds and the same call again are not", () => quiet(async () => {
+  const r = relay({ cf: { country: "CN", regionCode: "GD" } });
+  const round = { ...PAGE_ASK, messages: [...PAGE_ASK.messages, { role: "assistant", content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "classics.search", arguments: "{}" } }] },
+    { role: "tool", tool_call_id: "c1", content: "……" }] };
+  for (const body of [PAGE_ASK, round, PAGE_ASK]) assert.equal((await r.call("/v1/chat/completions", post(body))).status, 200);
+  assert.deepEqual(r.usage.stats(1, "2026-09-28").today, { view: 0, visitor: 0, question: 1, call: 3, asker: 1 });
+  const other = { ...PAGE_ASK, messages: [PAGE_ASK.messages[0], { role: "user", content: "麻黄汤呢？" }] };
+  assert.equal((await r.call("/v1/chat/completions", post(other))).status, 200);
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK, { "CF-Connecting-IP": "203.0.113.8" }))).status, 200); // another visitor asks the same
+  assert.deepEqual(r.usage.stats(1, "2026-09-28").today, { view: 0, visitor: 0, question: 3, call: 5, asker: 2 });
+}));
+
+test("the counts are the owner's: read with the collector's token alone, never by a page", () => quiet(async () => {
   const t = Date.UTC(2026, 9, 7, 4, 0, 0);
-  const r = relay({ now: () => t, cf: { country: "CN", regionCode: "BJ" }, env: { STATS_TOKEN: STATS } });
+  const r = relay({ now: () => t, cf: { country: "CN", regionCode: "BJ" }, env: { STATS_TOKEN: STATS, STATS_PUBLIC: "1" } }); // (neither means anything now)
   await r.call("/v1/chat/completions", post(PAGE_ASK));
+  // the page can neither send a bearer to the relay nor read its counts
   const preflight = await r.call("/v1/stats", { method: "OPTIONS", headers: { Origin: PAGE, "Access-Control-Request-Headers": "authorization" } });
-  assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/);
-  const none = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE } });
-  assert.equal(none.status, 401);
-  assert.equal(none.headers.get("Access-Control-Allow-Origin"), PAGE); // the page reads why
-  const ok = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE, Authorization: `Bearer ${STATS}` } });
+  assert.doesNotMatch(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/i);
+  for (const auth of [null, STATS, "not-the-token-0123456789"]) {
+    const res = await r.call("/v1/stats?days=7", { headers: { Origin: PAGE, ...(auth ? { Authorization: `Bearer ${auth}` } : {}) } });
+    assert.equal(res.status, 401);
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), null);
+    assert.deepEqual(await res.json(), { error: "需要收集令牌" });
+  }
+  const ok = await r.call("/v1/stats?days=7", { headers: { Authorization: `Bearer ${TOKEN}` } }); // the collector's, as the repository's workflow sends it
   assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("Access-Control-Allow-Origin"), null);
   const body = await ok.json();
   assert.equal(body.asOf, "2026-10-07");
   assert.deepEqual(body.today, { view: 0, visitor: 0, question: 1, call: 1, asker: 1 });
   assert.equal(body.days.length, 7);
   assert.deepEqual([body.totals.question, body.totals.call], [1, 1]);
   assert.equal(body.places[0].region, "BJ");
-  const unset = relay({ cf: { country: "CN" } });
-  assert.equal((await (await unset.call("/v1/stats", { headers: { Origin: PAGE, Authorization: `Bearer ${STATS}` } })).json()).configured, false);
-  const open = relay({ env: { STATS_PUBLIC: "1" } });
-  assert.equal((await open.call("/v1/stats", { headers: { Origin: PAGE } })).status, 200);
 }));
 
 // ------------------------------------------------------------------ the second model (GPT-6 Luna, through OpenAI)
@@ -1423,3 +1468,225 @@ test("sponsorship: sealing round-trips under its secret only; the form's fields 
   assert.equal(sponsor.note.length, 1000);
   assert.deepEqual(normalizeSponsor({ ...GIFT, base_url: "" }).sponsor.base_url, "");
 });
+
+// ------------------------------------------------------------------ the activity ledger (security/ledger.js)
+const ACTIVITY_KEY = "activity-key-for-tests-0123456789abcdef";
+const T1 = Date.UTC(2026, 10, 25, 4, 0, 0); // noon in Beijing
+const withLedger = (over = {}) => relay({ now: () => T1, cf: { country: "CN", regionCode: "GD", asn: 4134, httpProtocol: "HTTP/2", tlsVersion: "TLSv1.3" }, ...over,
+  env: { ACTIVITY_KEY, ACTIVITY_DB: d1(), ...(over.env || {}) } });
+const usageStream = (input = 70, output = 40) => sse(['{"choices":[{"delta":{"content":"可以"}}]}',
+  `{"choices":[{"finish_reason":"stop","index":0,"delta":{}}],"model":"MiniMax-M3","usage":{"prompt_tokens":${input},"completion_tokens":${output}}}`, "[DONE]"]);
+const visitorOf = (n) => `v_${String(n).padStart(24, "0")}`;
+const beaconOf = (body, headers = {}) => ({ method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8", Origin: PAGE, "CF-Connecting-IP": "203.0.113.7", ...BROWSER, ...headers },
+  body: JSON.stringify(body) });
+
+test("the relay says what the page may send: a turn's name always; a visitor's pass and a turn's end with the ledger", async () => {
+  const bare = await (await relay().call("/v1/health")).json();
+  assert.deepEqual(bare.activity, { turn: true });
+  const r = withLedger();
+  assert.deepEqual((await (await r.call("/v1/health")).json()).activity, { turn: true, beacon: true, ids: "notice" });
+  assert.deepEqual((await (await withLedger({ env: { ACTIVITY_IDS: "off" } }).call("/v1/health")).json()).activity, { turn: true, beacon: true, ids: "off" });
+  assert.deepEqual((await (await relay({ env: { ACTIVITY_KEY } }).call("/v1/health")).json()).activity, { turn: true }); // the key without the registry: no ledger
+  const preflight = await r.call("/v1/chat/completions", { method: "OPTIONS", headers: { Origin: PAGE, "Access-Control-Request-Headers": "x-tao-turn,x-tao-visitor" } });
+  assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /X-Tao-Turn, X-Tao-Visitor/);
+  assert.equal((await r.call("/v1/activity/health")).status, 401);
+  const health = await (await r.call("/v1/activity/health", { headers: { Authorization: `Bearer ${TOKEN}` } })).json();
+  assert.deepEqual([health.relay.source, health.relay.waiting, health.relay.dropped, health.ids], ["relay", 0, 0, "notice"]);
+  assert.equal((await relay().call("/v1/activity/health", { headers: { Authorization: `Bearer ${TOKEN}` } })).status, 404);
+});
+
+test("with the ledger a turn is written down: its question once, each model call with how it ended and what it cost, for the visitor the pass names", () => quiet(async () => {
+  let t = T1;
+  const r = withLedger({ now: () => t, upstream: () => usageStream() });
+  const pass = await passFor(visitorOf(7), ACTIVITY_KEY, T1);
+  const headers = { "X-Tao-Turn": "m_turn-1", "X-Tao-Visitor": pass };
+  for (let i = 0; i < 3; i++) {
+    const res = await r.call("/v1/chat/completions", post(PAGE_ASK, headers));
+    assert.equal(res.status, 200);
+    await res.text(); // the reply read to its end: its usage has passed
+    t += 4000;
+  }
+  await r.settle();
+  const events = r.events();
+  // (each call's end is told when its reply has gone, after the answer)
+  assert.deepEqual(events.map((e) => e.event_type), ["question_submitted", "model_invocation", "model_settled", "model_invocation", "model_settled", "model_invocation", "model_settled"]);
+  const [q, call] = events;
+  assert.deepEqual([q.visitor_id, q.basis, q.named, q.provider, q.model, q.route, q.country, q.region, q.traffic_class, q.risk_score, q.day],
+    [visitorOf(7), "relay", true, "impf", "Tao-R1", "/v1/chat/completions", "CN", "GD", "human", 0, "2026-11-25"]);
+  assert.match(q.turn_id, /^trn_[0-9A-Z]{26}$/);
+  assert.equal(new Set(events.map((e) => e.turn_id)).size, 1);
+  assert.match(call.invocation_id, /^inv_[0-9A-Z]{26}$/);
+  const done = events.at(-1);
+  assert.deepEqual([done.execution_status, done.http_status, done.input_tokens, done.output_tokens, done.asks, done.retry_count, done.via], ["ok", 200, 70, 40, 1, 0, "direct"]);
+  // not the page's name of the turn, the pass, the address, the agent or a word of the question
+  const text = JSON.stringify(events);
+  for (const kept of ["m_turn-1", pass.split(".")[2], "203.0.113", "Mozilla", "桂枝"]) assert.ok(!text.includes(kept), kept);
+  const db = await r.registry();
+  assert.deepEqual(db.rows("SELECT basis, calls, input_tokens, output_tokens, archive_status, visitor_id FROM question_events"),
+    [{ basis: "relay", calls: 3, input_tokens: 210, output_tokens: 120, archive_status: "not_archived", visitor_id: visitorOf(7) }]);
+  // a pass that is not one, or past its time, names no one: the call is counted all the same
+  const anon = withLedger({ upstream: () => usageStream() });
+  for (const bad of ["", "v_000000000000000000000007.zzzz.AAAAAAAAAAAAAAAAAAAAAA", await passFor(visitorOf(7), ACTIVITY_KEY, T1 - 3 * 86400000)]) {
+    await (await anon.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": `m_${bad.length}`, ...(bad ? { "X-Tao-Visitor": bad } : {}) }))).text();
+  }
+  await anon.settle();
+  assert.deepEqual(anon.events().filter((e) => e.event_type === "question_submitted").map((e) => e.visitor_id), [null, null, null]);
+}));
+
+test("a call that got no reply, and a call refused, are written down with why", () => logged(async () => {
+  const silent = withLedger({ upstream: () => new Response("{\"error\":{\"code\":\"server_error\"}}", { status: 500 }), env: { UPSTREAM_ATTEMPTS: "2", UPSTREAM_VIA: "direct" } });
+  assert.equal((await silent.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": "m_a" }))).status, 502);
+  await silent.settle();
+  const ended = silent.events().find((e) => e.event_type === "model_settled");
+  assert.deepEqual([ended.execution_status, ended.http_status, ended.asks, ended.retry_count, ended.input_tokens], ["upstream_error", 502, 2, 1, undefined]);
+  // the day's calls spent: the second call is refused, and that is an event too — with the reason, and no question of it
+  const full = withLedger({ env: { PER_DAY: "1" } });
+  await (await full.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": "m_b" }))).text();
+  assert.equal((await full.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": "m_c" }))).status, 429);
+  await full.settle();
+  const events = full.events();
+  assert.deepEqual(events.map((e) => [e.event_type, e.detail || null, e.status]), [["question_submitted", null, null], ["model_invocation", null, null],
+    ["model_settled", null, undefined], ["model_refused", "day", 429]]);
+  const db = await full.registry();
+  const s = await ledgerStats(db, { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([s.totals.questions, s.totals.model_calls_relay, s.questions.refusals], [1, 1, [["day", 1]]]);
+}));
+
+test("a record taken in archives its turn in the ledger, and says nothing of who: recorded and unrecorded questions are counted alike", () => quiet(async () => {
+  const r = withLedger({ upstream: () => usageStream() });
+  const pass = await passFor(visitorOf(3), ACTIVITY_KEY, T1);
+  for (const id of ["m_one", "m_two", "m_three"]) await (await r.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": id, "X-Tao-Visitor": pass }))).text();
+  // the visitor agreed to records: the first turn's arrives (twice: it was taken up again), then one of a turn asked of their own model
+  for (const record of [{ ...turn, id: "m_one" }, { ...turn, id: "m_one", resumed: 1 }, { ...turn, id: "m_own", provider: "custom-abc123", model: "my-private-deployment", rounds: 2 }]) {
+    assert.equal((await r.call("/v1/logs", post(record))).status, 204);
+  }
+  await r.settle();
+  const events = r.events();
+  const archived = events.filter((e) => e.event_type === "record_archived");
+  assert.equal(archived.length, 2);
+  assert.ok(archived.every((e) => !("visitor_id" in e) && !("question" in e) && !("answer" in e)));
+  assert.deepEqual([archived[0].execution_status, archived[0].tool_count, archived[0].input_tokens, archived[0].runtime, archived[0].turn_index], ["done", 1, 1200, "browser", 1]);
+  const own = events.filter((e) => e.event_type === "question_submitted").at(-1);
+  assert.deepEqual([own.basis, own.provider, own.model, own.visitor_id], ["record", "custom", null, null]); // their own endpoint and model are their settings
+  const text = JSON.stringify(events);
+  for (const kept of ["m_one", "m_own", "桂枝", "太阳中风", "c_x", "my-private", "abc123"]) assert.ok(!text.includes(kept), kept);
+  const db = await r.registry();
+  const s = await ledgerStats(db, { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([s.totals.questions, s.totals.questions_archived, s.totals.questions_unarchived], [4, 2, 2]);
+  assert.deepEqual(db.rows("SELECT basis, archive_status, visitor_id IS NOT NULL AS named, content_consent FROM question_events ORDER BY basis DESC, archive_status"), [
+    { basis: "relay", archive_status: "archived", named: 1, content_consent: 1 }, { basis: "relay", archive_status: "not_archived", named: 1, content_consent: null },
+    { basis: "relay", archive_status: "not_archived", named: 1, content_consent: null }, { basis: "record", archive_status: "archived", named: 0, content_consent: 1 }]);
+  // the book has the record whole, as before; nothing in the book says which visitor
+  assert.equal(r.book.records(0, 10).items.length, 3);
+  assert.ok(!JSON.stringify(r.book.records(0, 10)).includes(visitorOf(3)));
+}));
+
+test("a record of the default service's own turn is never a question more: the relay counted it when it answered", () => quiet(async () => {
+  // a tab left open since before the relay knew turns by name asks without X-Tao-Turn: the question is counted by what
+  // was asked.  Its record then names the turn — a name the ledger never heard — and was counted as a second question,
+  // with its tokens a second time.  And a record that comes after the relay has forgotten the turn (ACTIVITY_TURN_DAYS)
+  const r = withLedger({ upstream: () => usageStream() });
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK))).text();
+  assert.equal((await r.call("/v1/logs", post({ ...turn, id: "m_unnamed" }))).status, 204);
+  await r.settle();
+  const db = await r.registry();
+  const s = await ledgerStats(db, { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([s.totals.questions, s.totals.model_calls_relay, s.questions.by_basis], [1, 1, [["relay", 1]]]);
+  assert.deepEqual(db.rows("SELECT basis FROM question_events"), [{ basis: "relay" }]); // one row: its tokens once
+  assert.equal(r.book.records(0, 10).items.length, 1); // the record itself is kept as ever
+  // a record of a conversation held with the visitor's own model is still the only word of its question
+  assert.equal((await r.call("/v1/logs", post({ ...turn, id: "m_theirs", provider: "deepseek" }))).status, 204);
+  await r.settle();
+  const again = await ledgerStats(await r.registry(), { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([again.totals.questions, [...again.questions.by_basis].sort()], [2, [["record", 1], ["relay", 1]]]);
+}));
+
+test("a turn's end as the page tells it: a question asked of one's own model is counted, in counts and never in words", () => quiet(async () => {
+  const r = withLedger({ upstream: () => usageStream() });
+  const pass = await passFor(visitorOf(5), ACTIVITY_KEY, T1);
+  const told = { v: 1, kind: "turn", turn: "m_own-1", pass, provider: "deepseek", model: "deepseek-chat", status: "done", rounds: 4, tool_count: 6,
+    tools: { "classics.search": 5, "study.formula": 1, "not a tool": 3 }, retries: 1, input: 9000, output: 700, ms: 41000, runtime: "browser", corpus: "canon", module: "chat",
+    turn_index: 2, consent: false, lang: "zh", question: "must not be kept", answer: "nor this", key: "sk-secret" };
+  assert.equal((await r.call("/v1/activity", beaconOf(told))).status, 204);
+  assert.equal((await r.call("/v1/activity", beaconOf({ ...told, rounds: 5 }))).status, 204); // told again (the turn was taken up): one question still
+  // a diet conversation: counted, and for no one, whatever pass came with it
+  assert.equal((await r.call("/v1/activity", beaconOf({ ...told, turn: "m_diet", module: "diet" }))).status, 204);
+  // the default service's own turn: its question was counted with its call, the page adds how it ended
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": "m_relay", "X-Tao-Visitor": pass }))).text();
+  assert.equal((await r.call("/v1/activity", beaconOf({ ...told, turn: "m_relay", provider: "impf", model: "Tao-R1", input: 1, output: 1, consent: true }))).status, 204);
+  // the page answered it itself
+  assert.equal((await r.call("/v1/activity", beaconOf({ v: 1, kind: "turn", turn: "m_fixed", provider: "fixed", status: "done", rounds: 0, module: "chat" }))).status, 204);
+  await r.settle();
+  const events = r.events();
+  const text = JSON.stringify(events);
+  for (const kept of ["must not", "nor this", "sk-secret", "m_own-1", "not a tool", pass.split(".")[2]]) assert.ok(!text.includes(kept), kept);
+  const db = await r.registry();
+  assert.deepEqual(db.rows("SELECT basis, provider, model, visitor_id, module, rounds, calls, tool_count, tools, input_tokens, output_tokens, execution_status, content_consent, " +
+    "turn_index, runtime, ui_lang, retry_count FROM question_events ORDER BY provider, module"), [
+    { basis: "client", provider: "deepseek", model: "deepseek-chat", visitor_id: visitorOf(5), module: "chat", rounds: 5, calls: 0, tool_count: 6,
+      tools: '{"classics.search":5,"study.formula":1}', input_tokens: 9000, output_tokens: 700, execution_status: "done", content_consent: 0, turn_index: 2, runtime: "browser",
+      ui_lang: "zh", retry_count: 1 },
+    { basis: "client", provider: "deepseek", model: "deepseek-chat", visitor_id: null, module: "diet", rounds: 4, calls: 0, tool_count: 6,
+      tools: '{"classics.search":5,"study.formula":1}', input_tokens: 9000, output_tokens: 700, execution_status: "done", content_consent: 0, turn_index: 2, runtime: "browser",
+      ui_lang: "zh", retry_count: 1 },
+    { basis: "client", provider: "fixed", model: null, visitor_id: null, module: "chat", rounds: 0, calls: 0, tool_count: null, tools: null, input_tokens: null,
+      output_tokens: null, execution_status: "done", content_consent: null, turn_index: null, runtime: null, ui_lang: null, retry_count: null },
+    // the relay's own count of its turn's tokens stands (70 and 40), not the page's
+    { basis: "relay", provider: "impf", model: "Tao-R1", visitor_id: visitorOf(5), module: "chat", rounds: 4, calls: 1, tool_count: 6,
+      tools: '{"classics.search":5,"study.formula":1}', input_tokens: 70, output_tokens: 40, execution_status: "done", content_consent: 1, turn_index: 2, runtime: "browser",
+      ui_lang: "zh", retry_count: 1 }]);
+  const s = await ledgerStats(db, { from: "2026-11-25", to: "2026-11-25" });
+  assert.deepEqual([s.totals.questions, s.coverage.questions_client, s.coverage.questions_relay, s.totals.model_calls_relay, s.totals.model_calls_reported], [4, 3, 1, 1, 9]);
+}));
+
+test("who may tell a turn's end: the page, in the known fields, within its limits — and only where there is a ledger", () => quiet(async () => {
+  const r = withLedger();
+  const ok = { v: 1, kind: "turn", turn: "m_x", provider: "openai", status: "done", rounds: 1 };
+  assert.equal((await r.call("/v1/activity", beaconOf(ok, { Origin: "https://evil.example" }))).status, 403);
+  for (const bad of [{ ...ok, v: 2 }, { ...ok, kind: "log" }, { ...ok, turn: "has spaces" }, { ...ok, turn: undefined }, "not json", []]) {
+    assert.equal((await r.call("/v1/activity", typeof bad === "string" ? { ...beaconOf({}), body: bad } : beaconOf(bad))).status, 400);
+  }
+  assert.equal((await r.call("/v1/activity", beaconOf({ ...ok, padding: "x".repeat(5000) }))).status, 413);
+  assert.equal((await relay().call("/v1/activity", beaconOf(ok))).status, 404);
+  assert.equal((await withLedger({ burst: () => false }).call("/v1/activity", beaconOf(ok))).status, 429);
+  await r.settle();
+  assert.equal(r.events().filter((e) => e.event_type === "question_submitted").length, 0);
+  // the fields as they are kept
+  assert.equal(normalizeTurn({ ...ok, v: 2 }), null);
+  assert.deepEqual(normalizeTurn({ ...ok, provider: "custom-l8x2", model: "x".repeat(200), status: "weird", rounds: -3, tools: { "a.b": 2.9, "A.B": 1, "c.d": "3" }, input: 1e12,
+    module: "secret-module", consent: "yes", lang: "zh-Hant", pass: 7 }),
+    { turn: "m_x", pass: "", info: { provider: "custom", model: null, tools: { "a.b": 2 }, input_tokens: 1e9, ui_lang: "zh-Hant" } });
+}));
+
+test("a rating and a sponsorship are events of the ledger, without what was written or given", () => quiet(async () => {
+  const r = withLedger({ env: { SPONSOR_SECRET: "sponsor-secret-0123456789-0123456789-xyz" } });
+  assert.equal((await r.call("/v1/feedback", post({ v: 1, kind: "feedback", id: "m_one", conversation: "c_x", rating: "down", reasons: ["citation"], comment: "引文不对" }))).status, 204);
+  assert.equal((await r.call("/v1/sponsor", post({ v: 1, provider: "deepseek", model: "deepseek-chat", key: "sk-0123456789abcdef0123456789abcdef", agree: true }))).status, 204);
+  await r.settle();
+  const events = r.events();
+  assert.deepEqual(events.map((e) => [e.event_type, e.detail || null, e.route, e.visitor_id]), [["feedback_submitted", "down", "/v1/feedback", null], ["sponsor_submitted", null, "/v1/sponsor", null]]);
+  const text = JSON.stringify(events);
+  for (const kept of ["引文不对", "citation", "sk-0123", "deepseek"]) assert.ok(!text.includes(kept), kept);
+}));
+
+test("a request the relay only noted — a path that is not there, a caller that is not the page — is an event too, by what it was", () => quiet(async () => {
+  const r = withLedger();
+  assert.equal((await r.call("/v1/nothing", { headers: { "User-Agent": "curl/8.5.0", "CF-Connecting-IP": "198.51.100.7" } })).status, 404);
+  assert.equal((await r.call("/v1/chat/completions", { method: "POST", headers: { "User-Agent": "curl/8.5.0", "CF-Connecting-IP": "198.51.100.7", Origin: "https://evil.example",
+    "Content-Type": "application/json" }, body: JSON.stringify(PAGE_ASK) })).status, 403);
+  // (what another site's page made a reader's browser send is refused before any of this, and written nowhere: as before)
+  assert.equal((await r.call("/v1/chat/completions", post(PAGE_ASK, { Origin: "https://forum.example", "Sec-Fetch-Site": "cross-site" }))).status, 403);
+  await r.settle();
+  const events = r.events();
+  assert.deepEqual(events.map((e) => [e.event_type, e.route, e.status, e.traffic_class, e.visitor_id, e.n]),
+    [["request", "other", 404, "automation", null, 1], ["request", "/v1/chat/completions", 403, "automation", null, 1]]);
+}));
+
+test("the ledger does not depend on the sentinel: with the sentinel off a question is still written down, with where it came from", () => quiet(async () => {
+  const r = withLedger({ env: { SENTINEL: "off" }, upstream: () => usageStream() });
+  await (await r.call("/v1/chat/completions", post(PAGE_ASK, { "X-Tao-Turn": "m_quiet", "X-Tao-Visitor": await passFor(visitorOf(9), ACTIVITY_KEY, T1) }))).text();
+  await r.settle();
+  const [q] = r.events();
+  assert.deepEqual([q.event_type, q.visitor_id, q.country, q.region, q.browser_family, q.traffic_class, q.risk_score], ["question_submitted", visitorOf(9), "CN", "GD", "Chrome", "human", 0]);
+  assert.equal(r.watch.summary(T1).visitors, 0); // the sentinel kept nothing
+}));

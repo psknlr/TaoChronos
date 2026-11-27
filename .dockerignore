@@ -3,6 +3,7 @@
 !pyproject.toml
 !requirements/build.txt
 !requirements/runtime.txt
+!requirements/native.txt
 !README.md
 !src/
 !architecture-policy.yaml
@@ -15,5 +16,7 @@
 !skills/
 !cloud/store.json
 !cloud/.store/
+!rust/
+rust/target
 **/__pycache__
 **/*.pyc

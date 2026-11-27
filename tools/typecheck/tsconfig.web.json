@@ -1,0 +1,8 @@
+// The page: web/js but the two module workers (and inbox.js, theirs alone), with the browser's globals.  ES2022: the newest the browsers the page
+// supports all have, and the newest the code uses (Object.hasOwn).
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "lib": ["ES2022", "DOM"] },
+  "include": ["../../web/js/**/*.js"],
+  "exclude": ["../../web/js/worker.js", "../../web/js/unpack-worker.js", "../../web/js/inbox.js", "../../web/js/vendor/**"]
+}

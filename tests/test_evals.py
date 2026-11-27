@@ -31,6 +31,10 @@ def test_governance_detects_a_layering_violation(tmp_path):
     bad.write_text("from ..plugins.models.anthropic_provider import AnthropicProvider  # claude\n")
     rules = {v["rule"] for v in check(copy)["violations"]}
     assert {"layering", "kernel_forbidden_term"} <= rules
+    # a compiled kernel reached past its facade, which is the only module that may import one
+    (copy / "src" / "taochronos" / "plugins" / "retrieval" / "fast.py").write_text("def f():\n    import _taocore\n")
+    native = [v for v in check(copy)["violations"] if v["rule"] == "native_module"]
+    assert [(v["file"], v["detail"]) for v in native] == [("src/taochronos/plugins/retrieval/fast.py", "_taocore")]
 
 
 # ------------------------------------------------------------------ the alias layer (spec §3.10)

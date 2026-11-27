@@ -8,8 +8,9 @@ hyperedge stays the unit of record.
 
 from __future__ import annotations
 
+import threading
 from collections import Counter, defaultdict
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from ...protocol.claims import Claim, ClaimRelation, Role
 
@@ -18,29 +19,57 @@ CONTENT_ROLES = (
     Role.ETIOLOGY, Role.TREATMENT_PRINCIPLE, Role.TREATMENT_METHOD, Role.FORMULA, Role.HERB, Role.ORGAN,
     Role.CONDITION, Role.CONCEPT,
 )
+_INDEXES = ("by_term", "by_relation", "by_book", "by_passage")
+# a graph's indexes built (__getattr__) and its claims added (add) one at a time: a graph the server's threads share
+# (KnowledgeBase.hypergraph) is never read half indexed, nor added to while its indexes are built
+_INDEXING = threading.Lock()
 
 
 class ClaimHypergraph:
+    # claim ids by member term, relation, book and passage: built when first read (__getattr__)
+    by_term: dict[str, set[str]]
+    by_relation: dict[str, set[str]]
+    by_book: dict[str, set[str]]
+    by_passage: dict[str, set[str]]
+
     def __init__(self, claims: Iterable[Claim] = (), year_fn: Callable[[Claim], float | None] | None = None) -> None:
         self.claims: dict[str, Claim] = {}
-        self.by_term: dict[str, set[str]] = defaultdict(set)
-        self.by_relation: dict[str, set[str]] = defaultdict(set)
-        self.by_book: dict[str, set[str]] = defaultdict(set)
-        self.by_passage: dict[str, set[str]] = defaultdict(set)
         self.year_fn = year_fn or (lambda c: c.year())
+        # as add() keeps them — the first of an id — but without its lock: nobody else has this graph yet, there is no
+        # index to keep, and the graph route makes one for every search (the lock is every graph's: a search's graph
+        # is not to wait behind another graph's indexes being built)
         for claim in claims:
-            self.add(claim)
+            self.claims.setdefault(claim.id, claim)
+
+    def __getattr__(self, name: str) -> Any:
+        """The indexes, built from the claims in the order they were added when one is first read: the graph route
+        builds a hypergraph for every search and reads only ``claims`` and ``members``.  From then on ``add`` keeps
+        them."""
+        if name not in _INDEXES:
+            raise AttributeError(name)
+        with _INDEXING:
+            if name not in self.__dict__:  # not built by another thread while this one waited
+                built: dict[str, defaultdict[str, set[str]]] = {index: defaultdict(set) for index in _INDEXES}
+                for claim in self.claims.values():
+                    self._index(claim, built)
+                self.__dict__.update(built)  # all four, whole: a reader finds none of them, or each complete
+            return self.__dict__[name]
 
     # ------------------------------------------------------------ mutation
     def add(self, claim: Claim) -> None:
-        if claim.id in self.claims:
-            return
-        self.claims[claim.id] = claim
+        with _INDEXING:
+            if claim.id in self.claims:
+                return
+            self.claims[claim.id] = claim
+            if "by_term" in self.__dict__:
+                self._index(claim, self.__dict__)
+
+    def _index(self, claim: Claim, into: dict[str, Any]) -> None:
         for term in self.members(claim, include_negated=True):
-            self.by_term[term].add(claim.id)
-        self.by_relation[claim.relation.value].add(claim.id)
-        self.by_book[claim.book_id].add(claim.id)
-        self.by_passage[claim.passage_id].add(claim.id)
+            into["by_term"][term].add(claim.id)
+        into["by_relation"][claim.relation.value].add(claim.id)
+        into["by_book"][claim.book_id].add(claim.id)
+        into["by_passage"][claim.passage_id].add(claim.id)
 
     def __len__(self) -> int:
         return len(self.claims)

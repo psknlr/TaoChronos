@@ -1,0 +1,48 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 14
+   },
+   "by_provider": {
+    "impf": 14
+   },
+   "by_status": {
+    "done": 14
+   },
+   "model_calls": 108,
+   "questions": 14,
+   "tokens_in": 4486145,
+   "tokens_out": 186735,
+   "tool_calls": 257,
+   "tools": {
+    "audit.claim": 1,
+    "classics.canon": 1,
+    "classics.get_passage": 93,
+    "classics.list_books": 18,
+    "classics.search": 85,
+    "kg.claims": 2,
+    "kg.term": 4,
+    "modern.safety": 3,
+    "study.casefind": 3,
+    "study.commentaries": 4,
+    "study.concordance": 4,
+    "study.formula": 9,
+    "study.network": 9,
+    "study.term": 1,
+    "study.translate": 1,
+    "taochronos_catalog": 2,
+    "validation.verify_quote": 17
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-21",
+  "label": "2026-11-21",
+  "to": "2026-11-21"
+ },
+ "v": 1
+}

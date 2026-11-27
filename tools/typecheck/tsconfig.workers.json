@@ -1,0 +1,9 @@
+// The Cloudflare Workers — the relay (relay/src), the site's (cloud/site/src) — and the code both share
+// (security/), as one program, so that security/ is checked once; with workerd's globals and cloudflare:workers from
+// @cloudflare/workers-types (of the range relay's and cloud/site's wrangler names as its peer).  Their tests run
+// under Node and are not part of it.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "lib": ["ES2022"], "types": ["@cloudflare/workers-types"] },
+  "include": ["../../relay/src/**/*.js", "../../cloud/site/src/**/*.js", "../../security/*.js"]
+}

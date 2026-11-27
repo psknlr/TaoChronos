@@ -1,0 +1,8 @@
+// The page's module workers — the runtime's (worker.js, which starts Pyodide) and the one that unpacks the corpus for
+// it — and what they import (inbox.js first), with a worker's globals: no document, no localStorage, no window.  A module both sides
+// import (i18n.js, unpack.js) is checked under both, once it opts in.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "lib": ["ES2022", "WebWorker"] },
+  "files": ["../../web/js/worker.js", "../../web/js/unpack-worker.js"]
+}

@@ -2,8 +2,6 @@
 # but a published advisory rules out, and that its range keeps us from leaving upwards.  Remove an entry once the
 # dependency that holds it back allows the fixed release.
 
-# filelock 3.20.4–4.2.0: GHSA-v4x8-3wr5-3wq8 (CVE-2026-112940, high: ReadWriteLock on POSIX), GHSA-9vhv-jxww-xfm5 and
-# GHSA-567q-5qvw-pf92 (low, Windows); fixed in 4.2.1.  litellm (up to 1.106.5, 2026-10) requires filelock<4.0, and
-# releases before 3.20.3 have GHSA-w853-jp5j-5j7f and GHSA-qmgc-5h2g-mvrw: 3.20.3 is the one release with neither.
-# Only the LiteLLM provider's environment (litellm.txt) has filelock.
-filelock<3.20.4
+# (none now.  filelock was held at 3.20.3 here, the one release under 4 without an advisory, while litellm required
+# filelock<4.0; 3.20.3 has two since — GHSA-69hj-f68j-2879 and GHSA-8mx5-7m5m-r77g — and litellm allows filelock 4 from
+# 1.106.12: requirements/README.md.)

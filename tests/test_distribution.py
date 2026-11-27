@@ -286,6 +286,20 @@ def test_a_built_site_holds_what_the_policy_allows_and_the_audit_says_what_does_
     assert {"runtime/manifest.json is missing or unreadable", "runtime/home.zip is missing or not an archive"} <= set(audit_site(worse, ROOT, POLICY))
 
 
+def test_a_webassembly_module_the_build_ships_imports_nothing(site, tmp_path):
+    """The text scan reads no binary; of a module, the audit knows what it may reach.  TaoCore's (runtime/taocore.wasm)
+    imports nothing: it computes on its own memory and gives numbers back.  One that imports — or bytes that are no
+    module — is not shipped."""
+    assert distribution.wasm_imports((site / "runtime" / "taocore.wasm").read_bytes()) == 0
+    assert distribution.wasm_imports(b"\0asm\x01\0\0\0") == 0 and distribution.wasm_imports(b"not a module") is None
+    importing = b"\0asm\x01\0\0\0" + b"\x02\x07\x01\x01m\x01f\x00\x00"  # one import, m.f
+    assert distribution.wasm_imports(importing) == 1 and distribution.wasm_imports(importing[:-3]) is None
+    bad = _copy(site, tmp_path)
+    (bad / "runtime" / "taocore.wasm").write_bytes(importing)
+    assert audit_site(bad, ROOT, POLICY) == ["runtime/taocore.wasm: not a WebAssembly module of no imports (the build ships only "
+                                             "such: it computes and reaches nothing)"]
+
+
 def test_a_client_that_carries_a_credential_is_not_built(tmp_path):
     """The build checks what it built: a client with a key written into it stops there, and nothing publishes it."""
     web = Path(shutil.copytree(ROOT / "web", tmp_path / "web", ignore=shutil.ignore_patterns("node_modules", "tests")))

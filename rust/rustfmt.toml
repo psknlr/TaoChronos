@@ -1,0 +1,3 @@
+# the repository's width (its Python and JavaScript run to 120 columns)
+max_width = 120
+use_small_heuristics = "Max"

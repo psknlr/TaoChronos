@@ -1,0 +1,68 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 21
+   },
+   "by_provider": {
+    "deepseek": 3,
+    "fixed": 1,
+    "impf": 21
+   },
+   "by_status": {
+    "done": 20,
+    "error": 3,
+    "stopped": 2
+   },
+   "feedback": {
+    "up": 2
+   },
+   "model_calls": 273,
+   "questions": 25,
+   "tokens_in": 10649224,
+   "tokens_out": 407408,
+   "tool_calls": 645,
+   "tools": {
+    "audit.claim": 3,
+    "classics.canon": 2,
+    "classics.get_passage": 281,
+    "classics.list_books": 16,
+    "classics.search": 204,
+    "kg.claims": 1,
+    "kg.term": 16,
+    "modern.safety": 3,
+    "philology.assess_passage": 1,
+    "study.acupoints": 1,
+    "study.casefind": 1,
+    "study.commentaries": 11,
+    "study.compare": 2,
+    "study.concordance": 6,
+    "study.family": 2,
+    "study.formula": 14,
+    "study.fragments": 3,
+    "study.glosses": 1,
+    "study.herb": 7,
+    "study.network": 3,
+    "study.protocol": 2,
+    "study.reuse": 1,
+    "study.senses": 1,
+    "study.term": 22,
+    "study.translate": 2,
+    "study.usage": 5,
+    "study.witnesses": 1,
+    "taochronos_catalog": 9,
+    "taochronos_research": 1,
+    "validation.verify_quote": 23
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-02",
+  "label": "2026-11-02",
+  "to": "2026-11-02"
+ },
+ "v": 1
+}

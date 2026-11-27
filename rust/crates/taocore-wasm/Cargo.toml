@@ -1,0 +1,13 @@
+[package]
+name = "taocore-wasm"
+description = "TaoCore for the browser: a WebAssembly module of no imports, with a C ABI the runtime worker's loader speaks (web/js/taocore.js)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+taocore = { path = "../taocore" }

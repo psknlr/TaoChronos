@@ -75,11 +75,17 @@ def run(monkeypatch, tmp_path: Path, settings: dict, hosts=("chat.impf.ai",)) ->
 
 def test_the_dimensions_are_asked_for_as_the_zone_names_them(monkeypatch, tmp_path):
     result, api, rows = run(monkeypatch, tmp_path, zone_settings())
-    groups = api.of("httpRequestsAdaptiveGroups")
+    groups = [g for g in api.of("httpRequestsAdaptiveGroups") if "clientIP" in g[0]]
     assert len(groups) == 6  # the day in four-hour windows
     q = groups[0][0]
     assert f"dimensions {{ {' '.join(events.REQUEST_DIMENSIONS)} }}" in q
     assert "avg { sampleInterval }" in q and 'requestSource: "eyeball"' in q
+    # and the day's requests whatever became of them, asked by country and status alone: no address, no path, no agent
+    totals = [g for g in api.of("httpRequestsAdaptiveGroups") if "clientIP" not in g[0]]
+    assert len(totals) == 6 and all("dimensions { clientCountryName edgeResponseStatus }" in g[0] and "userAgent" not in g[0] for g in totals)
+    assert [r for r in rows if r["kind"] == "traffic"] == [{"key": "tr:chat.impf.ai:XX:403", "kind": "traffic", "day": "2026-10-05", "host": "chat.impf.ai", "country": "XX",
+                                                           "status": 403, "requests": 40, "complete": True}]
+    assert result["traffic"] == 1
     assert [r["clientRequestPath"] for r in rows if r["kind"] == "requests"] == ["/.env"]
     assert next(r for r in rows if r["kind"] == "requests")["requests"] == 40  # four sampled requests at one in ten
     assert sorted(r["datetime"] for r in rows if r["kind"] == "firewall") == FW_TIMES
@@ -101,7 +107,7 @@ def test_the_pulls_keep_within_how_far_back_and_how_wide_the_plan_allows(monkeyp
     fw = [(v["start"], v["end"]) for _, v in api.of("firewallEventsAdaptive")]
     assert fw == [("2026-10-05T07:05:00Z", "2026-10-05T13:05:00Z"), ("2026-10-05T13:05:00Z", "2026-10-05T19:05:00Z"),
                   ("2026-10-05T19:05:00Z", "2026-10-06T00:00:00Z")]
-    rq = [v["start"] for _, v in api.of("httpRequestsAdaptiveGroups")]
+    rq = [v["start"] for q, v in api.of("httpRequestsAdaptiveGroups") if "clientIP" in q]
     assert rq[0] == "2026-10-05T07:05:00Z" and len(rq) == 17
     assert all(datetime.fromisoformat(e.replace("Z", "+00:00")) - datetime.fromisoformat(s.replace("Z", "+00:00")) <= timedelta(hours=1)
                for (_, v) in api.of("httpRequestsAdaptiveGroups") for s, e in [(v["start"], v["end"])])
@@ -194,7 +200,8 @@ def test_the_runtimes_files_are_counted_by_day_without_addresses_and_who_takes_t
     assert set(by_ip) == {"198.51.100.3", "198.51.100.4", "198.51.100.5", "198.51.100.6"}  # not the two readers
     assert by_ip["198.51.100.3"]["why"] == ["ua_tool"] and by_ip["198.51.100.3"]["bytes"] == 16853896
     assert by_ip["198.51.100.4"]["why"] == ["artifact_agent"]
-    assert [by_ip["198.51.100.5"][k] for k in ("why", "requests", "fetched")] == [["artifact_volume"], 12, 32]
+    # (its requests are the day's: twelve in one window and twenty in another are one group of thirty-two)
+    assert [by_ip["198.51.100.5"][k] for k in ("why", "requests", "fetched", "bytes")] == [["artifact_volume"], 32, 32, 32 * 1468338]
     assert events.ARTIFACT_VOLUME == 30 and events.worth(windows["2026-10-05T08:00:00Z"][0], 1, 29) == []
     # a device's own networking under a browser or an app is a reader's, not a program's: no address for it
     for stack in ("Quark/7.4.5.680 (iPhone; iOS 18.1; Scale/3.00)", "NetworkingExtension/8621.1.15.10.7 Network/4277.42.2 iOS/18.1",
@@ -243,3 +250,99 @@ def test_a_catch_up_goes_no_further_back_than_the_plan_keeps(tmp_path):
     kept(tmp_path, "2026-07-01")
     days = events.days_to_pull(tmp_path, now)
     assert len(days) == events.CATCH_UP_DAYS and days[0] == datetime(2026, 9, 17, tzinfo=timezone.utc) and days[-1].strftime("%m-%d") == "10-17"
+
+
+def fake_groups(windows: dict[str, list[dict]], settings: dict, *, refuse=lambda q: False):
+    """A stand-in API answering the request groups of each window (by its start); refuse(q): a query the zone refuses."""
+    asked: list[str] = []
+
+    def api(token, q, variables):
+        if "settings" in q:
+            return {"viewer": {"zones": [{"settings": settings}]}}
+        if "firewallEventsAdaptive(" in q:
+            return {"viewer": {"zones": [{"firewallEventsAdaptive": []}]}}
+        asked.append(q)
+        if refuse(q):
+            raise SystemExit("the GraphQL API refused the query: unknown field")
+        rows = windows.get(variables["start"], [])
+        return {"viewer": {"zones": [{"httpRequestsAdaptiveGroups": [r for r in rows if ("clientIP" in r["dimensions"]) == ("clientIP" in q)]}]}}
+
+    return api, asked
+
+
+def test_a_group_is_counted_over_the_whole_day_and_judged_by_the_days_count(monkeypatch, tmp_path):
+    """The API is asked in windows of a few hours.  An address asking a hundred and ten times in each of three windows
+    asked three hundred and thirty times that day: one line with that number, kept for its volume.  It was three groups
+    of a hundred and ten — each under the day's three hundred, so none of them was kept at all."""
+    def group(ip, count):
+        return {"count": count, "avg": {"sampleInterval": 1},
+                "dimensions": {"clientIP": ip, "userAgent": CHROME, "clientRequestPath": "/api/passage", "clientRequestHTTPHost": "chat.impf.ai",
+                               "clientRequestHTTPMethodName": "GET", "edgeResponseStatus": 200}}
+
+    windows = {f"2026-10-05T{h:02d}:00:00Z": [group("198.51.100.9", 110), group("203.0.113.1", 40)] for h in (0, 8, 16)}
+    api, _ = fake_groups(windows, zone_settings())
+    monkeypatch.setattr(events, "query", api)
+    result = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    rows = [json.loads(line) for line in (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8").splitlines()]
+    kept = [r for r in rows if r["kind"] == "requests"]
+    assert [(r["clientIP"], r["requests"], r["why"]) for r in kept] == [("198.51.100.9", 330, ["volume"])]  # the reader's hundred and twenty are a reader's
+    assert result["requests"] == 1
+
+
+def test_a_day_pulled_again_takes_the_larger_count_and_adds_what_it_lacked(monkeypatch, tmp_path):
+    def group(ip, count, path="/.env", status=404):
+        return {"count": count, "avg": {"sampleInterval": 1},
+                "dimensions": {"clientIP": ip, "userAgent": "curl/8.4.0", "clientRequestPath": path, "clientRequestHTTPHost": "chat.impf.ai",
+                               "clientRequestHTTPMethodName": "GET", "edgeResponseStatus": status}}
+
+    def total(country, status, count):
+        return {"count": count, "avg": {"sampleInterval": 1}, "dimensions": {"clientCountryName": country, "edgeResponseStatus": status}}
+
+    morning = {"2026-10-05T00:00:00Z": [group("198.51.100.9", 5), total("CN", 200, 100), total("US", 404, 5)]}
+    api, _ = fake_groups(morning, zone_settings())
+    monkeypatch.setattr(events, "query", api)
+    first = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=DAY + timedelta(hours=6))  # pulled before the day was over
+    assert (first["requests"], first["traffic"]) == (1, 2)
+    whole = {**morning, "2026-10-05T12:00:00Z": [group("198.51.100.9", 7), group("198.51.100.10", 2), total("CN", 200, 300), total("SG", 200, 20)]}
+    api, _ = fake_groups(whole, zone_settings())
+    monkeypatch.setattr(events, "query", api)
+    again = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    rows = [json.loads(line) for line in (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert [(r["clientIP"], r["requests"]) for r in rows if r["kind"] == "requests"] == [("198.51.100.9", 12), ("198.51.100.10", 2)]
+    assert {(r["country"], r["status"]): r["requests"] for r in rows if r["kind"] == "traffic"} == {("CN", 200): 400, ("US", 404): 5, ("SG", 200): 20}
+    assert (again["requests"], again["traffic"]) == (2, 2)  # one line counts more, one is new; of the totals, one more and one new
+    assert len(rows) == len({r["key"] for r in rows})  # each line once
+    # pulled a third time, nothing changes and nothing is counted as new
+    third = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    assert (third["requests"], third.get("traffic", 0)) == (0, 0)
+    assert [json.loads(line) for line in (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8").splitlines()] == rows
+
+
+def test_the_days_totals_carry_bytes_and_visits_where_the_zone_lists_them_and_a_zone_that_refuses_them_costs_nothing_else(monkeypatch, tmp_path):
+    def total(country, status, count, size, visits):
+        return {"count": count, "avg": {"sampleInterval": 2}, "sum": {"edgeResponseBytes": size, "visits": visits},
+                "dimensions": {"clientCountryName": country, "edgeResponseStatus": status}}
+
+    probe = {"count": 3, "avg": {"sampleInterval": 1}, "dimensions": {"clientIP": "198.51.100.9", "userAgent": "curl/8.4.0", "clientRequestPath": "/.env",
+                                                                    "clientRequestHTTPHost": "chat.impf.ai", "clientRequestHTTPMethodName": "GET", "edgeResponseStatus": 404}}
+    windows = {"2026-10-05T08:00:00Z": [probe, total("CN", 200, 50, 9000, 12)], "2026-10-05T12:00:00Z": [total("CN", 200, 25, 1000, 3)]}
+    settings = zone_settings()
+    settings["httpRequestsAdaptiveGroups"]["availableFields"] += ["sum_edgeResponseBytes", "sum_visits"]
+    api, asked = fake_groups(windows, settings)
+    monkeypatch.setattr(events, "query", api)
+    result = events.pull("token", "zone", DAY, tmp_path, ["chat.impf.ai"], now=LATER)
+    rows = [json.loads(line) for line in (tmp_path / "2026" / "10" / "05.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert [r for r in rows if r["kind"] == "traffic"] == [{"key": "tr:chat.impf.ai:CN:200", "kind": "traffic", "day": "2026-10-05", "host": "chat.impf.ai", "country": "CN",
+                                                           "status": 200, "requests": 150, "bytes": 10000, "visits": 15, "complete": True}]
+    assert any("sum { edgeResponseBytes visits }" in q for q in asked)
+    # a zone that does not list the country of a request is not asked; one that refuses the question loses only the totals
+    bare = zone_settings(rq={"availableFields": ["count", "avg_sampleInterval", *(f"dimensions_{d}" for d in events.REQUEST_DIMENSIONS if d != "clientCountryName")]})
+    api, asked = fake_groups(windows, bare)
+    monkeypatch.setattr(events, "query", api)
+    result = events.pull("token", "zone", DAY, tmp_path / "bare", ["chat.impf.ai"], now=LATER)
+    assert all("clientIP" in q for q in asked) and result["requests"] == 1 and "traffic" not in result
+    assert "traffic of chat.impf.ai: the zone does not list the country and the status of a request" in result["skipped"]
+    api, _ = fake_groups(windows, zone_settings(), refuse=lambda q: "clientIP" not in q)
+    monkeypatch.setattr(events, "query", api)
+    result = events.pull("token", "zone", DAY, tmp_path / "refused", ["chat.impf.ai"], now=LATER)
+    assert result["requests"] == 1 and any(n.startswith("traffic of chat.impf.ai: not asked") for n in result["skipped"])

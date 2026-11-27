@@ -1,0 +1,44 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 6
+   },
+   "by_provider": {
+    "impf": 6
+   },
+   "by_status": {
+    "done": 4,
+    "error": 2
+   },
+   "model_calls": 26,
+   "questions": 6,
+   "tokens_in": 456056,
+   "tokens_out": 15772,
+   "tool_calls": 60,
+   "tools": {
+    "classics.get_passage": 9,
+    "classics.search": 26,
+    "kg.claims": 1,
+    "modern.safety": 1,
+    "study.commentaries": 3,
+    "study.compare": 3,
+    "study.concordance": 1,
+    "study.formula": 9,
+    "study.herb": 3,
+    "study.network": 2,
+    "study.term": 1,
+    "study.translate": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-10-17",
+  "label": "2026-10-17",
+  "to": "2026-10-17"
+ },
+ "v": 1
+}

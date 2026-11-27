@@ -1,0 +1,58 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 68
+   },
+   "by_provider": {
+    "custom": 3,
+    "deepseek": 7,
+    "impf": 68
+   },
+   "by_status": {
+    "done": 44,
+    "error": 34
+   },
+   "model_calls": 397,
+   "questions": 78,
+   "tokens_in": 12435235,
+   "tokens_out": 326447,
+   "tool_calls": 979,
+   "tools": {
+    "classics.canon": 3,
+    "classics.get_passage": 315,
+    "classics.list_books": 23,
+    "classics.search": 482,
+    "kg.claims": 1,
+    "kg.term": 27,
+    "modern.safety": 4,
+    "study.casefind": 9,
+    "study.commentaries": 13,
+    "study.compare": 4,
+    "study.concordance": 10,
+    "study.family": 2,
+    "study.formula": 13,
+    "study.herb": 2,
+    "study.network": 3,
+    "study.protocol": 3,
+    "study.term": 30,
+    "study.translate": 2,
+    "study.usage": 2,
+    "taochronos_call": 2,
+    "taochronos_catalog": 6,
+    "taochronos_research": 4,
+    "taochronos_session": 10,
+    "validation.verify_quote": 9
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-10-20",
+  "label": "2026-10-20",
+  "to": "2026-10-20"
+ },
+ "v": 1
+}

@@ -5,7 +5,7 @@
 export const day = (now) => new Date(now).toISOString().slice(0, 10);
 
 /** The kinds of model call that answer a visitor (the default model's, the second model's): such a call marks its caller
- * as answered (a record of the conversation may follow) and is counted for the settings' 统计 pane. */
+ * as answered (a record of the conversation may follow) and is counted in the owner's daily counts. */
 export const ANSWERS = new Set(["chat", "openai"]);
 
 /**

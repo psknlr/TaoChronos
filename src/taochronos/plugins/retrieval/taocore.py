@@ -1,0 +1,447 @@
+"""TaoCore: a search's own rankings over its candidates — BM25 of its query's tokens and the dense route's cosines —
+by a compiled kernel where one is present, by the Python definitions otherwise, the same numbers either way.
+
+On a large corpus each search ranks its few thousand candidates anew (``hybrid._local_indexes``), and those two
+rankings were most of a search's time: 70% of a warm one in CPython and in the browser's Pyodide alike, nearly all of
+it in loops Python runs a character at a time (docs/adr/0036-taocore.md has the measurements).  The kernel
+(``rust/``) runs those loops, in two builds behind one interface: ``_taocore``, a CPython extension
+(``rust/crates/taocore-py``), and ``_taocore_wasm``, the browser's WebAssembly module, which the runtime worker
+registers before Python starts (``web/js/taocore.js``).  Neither is needed.  Without one — or when one fails, or gives
+other rankings than the definitions on the self-test it runs before it is first used — a search runs the definitions
+here and in ``index.py``, which are the reference.
+
+What depends on the platform stays in Python: a token's weight (idf) is ``math.log`` of the C library Python runs on
+(glibc, musl and a wasm32 build disagree in the last bit of some), the average length is Python's int / int, and the
+kernel sums as this Python's ``sum()`` does (``COMPENSATED``: from CPython 3.12 a float sum is compensated).  So each
+result is the one the definitions give on the same interpreter: the extension's beside CPython, the module's beside
+Pyodide.
+
+``TAOCHRONOS_TAOCORE`` says how: ``auto`` (the default) uses a kernel that passed its self-test; ``off`` never does
+(nor does any value that is not a mode: a mistyped switch takes the kernel out); ``require`` fails a search rather
+than run it without one (how CI shows the kernel really ran); ``shadow`` computes both and answers with the
+definitions', counting any difference (``status()``).
+"""
+
+from __future__ import annotations
+
+import math
+import os
+import re
+import threading
+from array import array
+from typing import Any, Callable
+
+from .index import B, DENSE_FLOOR, K1, BM25Index, DenseIndex, HashingEmbedder, cosine, kept
+
+ABI = 1  # what the kernel's bindings must speak (rust/crates/taocore/src/lib.rs: ABI)
+SEPARATOR = "\x1f"  # between a batch's texts: no character the indexes read
+MODES = ("auto", "off", "require", "shadow")
+OFF = ("python", "0", "false", "no", "none", "disabled")  # what one may write meaning off, read as off
+MAX_NGRAM = 42  # the longest n-gram the kernel hashes (one BLAKE2b block)
+MAX_DIM = 1 << 20  # the largest dimension the kernel gives a vector (taocore::MAX_DIM); the embedder's is 512
+# which summation this Python's sum() does over floats: compensated (CPython 3.12 and later) or plain (3.11)
+COMPENSATED = sum([1e100, 1.0, -1e100]) == 1.0
+
+Ranked = list[tuple[str, float]]
+
+
+class Unsuitable(Exception):
+    """What this search asks is not the kernel's to compute (another embedder, a text holding the separator, a token
+    that is not one or two characters the indexes read): it runs the definitions, and the kernel stays in use."""
+
+
+def mode() -> str:
+    """``TAOCHRONOS_TAOCORE``, read each time: ``auto`` when unset; one of MODES as written; any other value ``off`` —
+    a mistyped switch takes the kernel out rather than leave it in (``status()`` names the value)."""
+    chosen = os.environ.get("TAOCHRONOS_TAOCORE", "").strip().lower()
+    if not chosen:
+        return "auto"
+    return chosen if chosen in MODES else "off"
+
+
+def _off_reason() -> str:
+    written = os.environ.get("TAOCHRONOS_TAOCORE", "").strip()
+    if written.lower() in ("off", *OFF):
+        return f"TAOCHRONOS_TAOCORE={written}"
+    return f"TAOCHRONOS_TAOCORE={written!r} is not one of {', '.join(MODES)}: taken as off"
+
+
+# ---------------------------------------------------------------- the kernels
+class _Native:
+    """``_taocore``, the CPython extension."""
+
+    name = "native"
+
+    def __init__(self, module: Any) -> None:
+        self._batch = module.Batch
+        self._grams = getattr(module, "grams", None)
+
+    def batch(self, data: bytes, count: int) -> Any:
+        return _NativeBatch(self._batch(data, count))
+
+    def grams(self, data: bytes, count: int) -> str:
+        if self._grams is None:
+            raise Unsuitable("an extension built before it computed the full-text tokens")
+        return self._grams(data, count)
+
+
+class _NativeBatch:
+    def __init__(self, batch: Any) -> None:
+        self._b = batch
+
+    def count(self, tokens: list[str]) -> tuple[list[int], int]:
+        return self._b.count(tokens)
+
+    def bm25(self, idf: list[float], avgdl: float, k: int) -> tuple[list[int], list[float]]:
+        return self._b.bm25(idf, avgdl, K1, B, k)
+
+    def dense(self, places: list[int], query: bytes, dim: int, ngram: list[int], k: int) -> tuple[list[int], list[float]]:
+        return self._b.dense(places, query, dim, ngram, COMPENSATED, DENSE_FLOOR, k)
+
+
+class _Wasm:
+    """``_taocore_wasm``, the browser's module as its loader presents it (web/js/taocore.js): arrays go in as Python
+    bytes (copied once into the module's memory), and come back as JavaScript arrays."""
+
+    name = "wasm"
+
+    def __init__(self, module: Any) -> None:
+        self._batch = module.batch  # bound once: a lookup on the module crosses into JavaScript each time
+        self._grams = getattr(module, "grams", None)
+
+    def batch(self, data: bytes, count: int) -> Any:
+        return _WasmBatch(self._batch(data, count))
+
+    def grams(self, data: bytes, count: int) -> str:
+        if self._grams is None:
+            raise Unsuitable("the loader offers no full-text tokens (a loader or module from before them)")
+        return str(self._grams(data, count))
+
+
+class _WasmBatch:
+    def __init__(self, batch: Any) -> None:
+        self._b = batch
+
+    def count(self, tokens: list[str]) -> tuple[list[int], int]:
+        got = self._b.count("\n".join(tokens).encode("utf-8"))
+        return [int(x) for x in got.df], int(got.total)
+
+    def bm25(self, idf: list[float], avgdl: float, k: int) -> tuple[list[int], list[float]]:
+        got = self._b.bm25(array("d", idf).tobytes(), avgdl, K1, B, k)
+        return [int(x) for x in got.places], [float(x) for x in got.scores]
+
+    def dense(self, places: list[int], query: bytes, dim: int, ngram: list[int], k: int) -> tuple[list[int], list[float]]:
+        got = self._b.dense(array("I", places).tobytes(), query, dim, array("I", ngram).tobytes(), int(COMPENSATED),
+                            DENSE_FLOOR, k)
+        return [int(x) for x in got.places], [float(x) for x in got.scores]
+
+
+def _find() -> tuple[Any, str]:
+    """The kernel this Python can reach, or None and why not."""
+    try:
+        import _taocore  # type: ignore[import-not-found]
+    except ImportError:
+        pass
+    else:
+        if getattr(_taocore, "ABI", None) == ABI:
+            try:
+                return _Native(_taocore), ""
+            except Exception as err:  # noqa: BLE001 — a module that is not what it says is not used
+                return None, f"_taocore: {type(err).__name__}: {err}"
+        return None, f"_taocore speaks ABI {getattr(_taocore, 'ABI', None)}, not {ABI}"
+    try:
+        import _taocore_wasm  # type: ignore[import-not-found]
+    except ImportError:
+        pass
+    else:
+        if getattr(_taocore_wasm, "abi", None) == ABI:
+            try:
+                return _Wasm(_taocore_wasm), ""
+            except Exception as err:  # noqa: BLE001
+                return None, f"_taocore_wasm: {type(err).__name__}: {err}"
+        return None, f"_taocore_wasm speaks ABI {getattr(_taocore_wasm, 'abi', None)}, not {ABI}"
+    return None, "no kernel: neither _taocore (rust/crates/taocore-py) nor the browser's _taocore_wasm is present"
+
+
+_lock = threading.Lock()
+_state: dict[str, Any] = {"checked": False, "kernel": None, "reason": ""}
+_counts = {"bm25": 0, "dense": 0, "grams": 0, "python": 0, "failed": 0, "differed": 0}
+
+
+def kernel() -> Any:
+    """The kernel in use: found, and checked against the definitions, at the first call (None when there is none)."""
+    if _state["checked"]:
+        return _state["kernel"]
+    with _lock:
+        if not _state["checked"]:
+            found, why = _find()
+            if found is not None:
+                try:
+                    why = _selftest(found)
+                except Exception as err:  # noqa: BLE001 — a kernel that fails its self-test is not used, whatever the failure
+                    why = f"the self-test failed: {type(err).__name__}: {err}"
+                if why:
+                    why, found = f"{found.name}: {why}", None
+            _state.update(checked=True, kernel=found, reason=why)
+    return _state["kernel"]
+
+
+def _put_aside(kern: Any, err: BaseException) -> None:
+    """A kernel that failed during a search is not used again in this process: the definitions answer from here."""
+    with _lock:
+        if _state["kernel"] is kern:
+            _state.update(kernel=None, reason=f"{kern.name}: put aside after {type(err).__name__}: {err}")
+    _counts["failed"] += 1
+
+
+def status() -> dict[str, Any]:
+    """Which kernel searches use and why (for the runtime's information), and how often each way ran."""
+    chosen = mode()
+    kern = kernel() if chosen != "off" else None
+    return {"mode": chosen, "kernel": kern.name if kern else None,
+            "reason": _off_reason() if chosen == "off" else _state["reason"], **_counts}
+
+
+def reset() -> None:
+    """Forget the kernel found (tests: after a change of what is importable)."""
+    with _lock:
+        _state.update(checked=False, kernel=None, reason="")
+        for key in _counts:
+            _counts[key] = 0
+
+
+def _bits(ranked: Ranked) -> list[tuple[str, str]]:
+    return [(pid, float(score).hex()) for pid, score in ranked]
+
+
+def _compute(route: str, fast: Callable[[Any], Any], slow: Callable[[], Any], same: Callable[[Any, Any], bool]) -> Any:
+    """``fast(kernel)`` where a kernel is in use and the mode allows, else ``slow()`` (the definitions); ``same`` says
+    whether two answers are one, for the shadow mode."""
+    chosen = mode()
+    kern = kernel() if chosen != "off" else None
+    if kern is None:
+        if chosen == "require":
+            raise RuntimeError(f"TAOCHRONOS_TAOCORE=require, and no kernel is in use: {_state['reason']}")
+        _counts["python"] += 1
+        return slow()
+    try:
+        got = fast(kern)
+    except Unsuitable:
+        _counts["python"] += 1
+        return slow()
+    except Exception as err:  # noqa: BLE001 — whatever went wrong in the kernel, the definitions answer
+        if chosen == "require":
+            raise
+        _put_aside(kern, err)
+        _counts["python"] += 1
+        return slow()
+    if chosen == "shadow":
+        want = slow()
+        if not same(got, want):
+            _counts["differed"] += 1
+            with _lock:
+                _state["reason"] = f"shadow: {route} differed from the definitions"
+        return want
+    _counts[route] += 1
+    return got
+
+
+def _ranked_same(a: Ranked, b: Ranked) -> bool:
+    return _bits(a) == _bits(b)
+
+
+# ---------------------------------------------------------------- the full-text index's tokens
+def grams_many(texts: list[str]) -> list[str]:
+    """``store.grams`` of each text — the tokens the browser's first visit indexes the 要籍语料 with
+    (``webcorpus.index_store``, 168,278 passages: in Pyodide a quarter of that indexing's time was this loop) — by the
+    kernel where there is one: the same strings."""
+    from ..classics.store import grams
+
+    if not texts:
+        return []
+    return _compute("grams", lambda kern: _grams_kernel(kern, texts), lambda: [grams(t) for t in texts], list.__eq__)
+
+
+def _grams_kernel(kern: Any, texts: list[str]) -> list[str]:
+    joined = SEPARATOR.join(texts)
+    if joined.count(SEPARATOR) != len(texts) - 1:
+        raise Unsuitable("a text holds the separator")
+    # a lone surrogate cannot be encoded: '?' stands for it, which ends a run of characters as it would have
+    out = kern.grams(joined.encode("utf-8", "replace"), len(texts)).split(SEPARATOR)
+    if len(out) != len(texts):
+        raise ValueError(f"{len(out)} results for {len(texts)} texts")
+    return out
+
+
+# ---------------------------------------------------------------- a search's indexes
+class LocalIndexes:
+    """A search's candidates, as its BM25 and dense routes read them (large corpora: ``hybrid._local_indexes``).
+
+    ``ids`` are in order, so that a tie broken by a candidate's place is broken by its id; ``texts`` are theirs,
+    normalised; ``dense`` names the places of the dense route's candidates, the index's best first.  Nothing is
+    computed until a route asks: the kernel's copy of the texts at the first route that uses it, and for the
+    definitions, each text's characters read once for both."""
+
+    def __init__(self, ids: list[str], texts: list[str], dense: list[int], embedder: Any) -> None:
+        self.ids = ids
+        self.texts = texts
+        self.dense_places = dense
+        self.embedder = embedder
+        self._batch: Any = None
+        self._batch_of: Any = None
+        self._kept: list[str] | None = None
+
+    # ---- the routes
+    def bm25(self, query: list[str], k: int) -> Ranked:
+        """BM25Index.search(query, k) over the candidates: the same scores, the same order."""
+        if not query or not self.ids:
+            return []
+        return _compute("bm25", lambda kern: self._bm25_kernel(kern, query, k), lambda: self._bm25_python(query, k),
+                        _ranked_same)
+
+    def dense(self, text: str, k: int) -> Ranked:
+        """DenseIndex.search(text, k) over the dense route's candidates: the same cosines, the same order."""
+        if not self.dense_places:
+            return []
+        return _compute("dense", lambda kern: self._dense_kernel(kern, text, k), lambda: self._dense_python(text, k),
+                        _ranked_same)
+
+    # ---- by the kernel
+    def _batch_for(self, kern: Any) -> Any:
+        if self._batch is None or self._batch_of is not kern:
+            joined = SEPARATOR.join(self.texts)
+            if joined.count(SEPARATOR) != len(self.texts) - 1:
+                raise Unsuitable("a text holds the separator")
+            # a lone surrogate cannot be encoded: '?' stands for it, which the indexes do not read either
+            self._batch = kern.batch(joined.encode("utf-8", "replace"), len(self.texts))
+            self._batch_of = kern
+        return self._batch
+
+    def _bm25_kernel(self, kern: Any, query: list[str], k: int) -> Ranked:
+        if not all(len(t) in (1, 2) and kept(t) == t for t in query):
+            raise Unsuitable("a token that is not one or two of the characters read")
+        if k < 0:
+            raise Unsuitable("a negative k: Python's slice, which drops from the end")
+        k = min(k, len(self.ids))  # the same results; a module's memory, which never shrinks, sized by what can come
+        batch = self._batch_for(kern)
+        df, total = batch.count(query)
+        n = len(self.ids)
+        idf = [math.log(1 + (n - x + 0.5) / (x + 0.5)) for x in df]  # BM25Index.idf, with this Python's log
+        places, scores = batch.bm25(idf, total / max(1, n), k)  # BM25Index.avgdl: int / int
+        return [(self.ids[p], s) for p, s in zip(places, scores)]
+
+    def _dense_kernel(self, kern: Any, text: str, k: int) -> Ranked:
+        e = self.embedder
+        if type(e) is not HashingEmbedder or not 1 <= e.dim <= MAX_DIM or not all(1 <= n <= MAX_NGRAM for n in e.ngram):
+            raise Unsuitable("an embedder the kernel does not compute")
+        if k < 0:
+            raise Unsuitable("a negative k: Python's slice, which drops from the end")
+        k = min(k, len(self.dense_places))
+        batch = self._batch_for(kern)
+        places, scores = batch.dense(self.dense_places, text.encode("utf-8", "replace"), e.dim, list(e.ngram), k)
+        return [(self.ids[p], s) for p, s in zip(places, scores)]
+
+    # ---- by the definitions
+    def _kept_texts(self) -> list[str]:
+        if self._kept is None:
+            self._kept = [kept(t) for t in self.texts]
+        return self._kept
+
+    def _bm25_python(self, query: list[str], k: int) -> Ranked:
+        """What BM25Index.search computes, from what it reads: each candidate's length and the query tokens' counts in
+        it (an index of every token of every candidate is built for nothing but these)."""
+        texts = self._kept_texts()
+        n = len(texts)
+        lengths = [2 * len(t) - 1 if t else 0 for t in texts]  # the characters and the bigrams
+        avgdl = sum(lengths) / max(1, n)
+        tf: dict[str, dict[int, int]] = {}
+        for tok in dict.fromkeys(query):
+            found: dict[int, int] = {}
+            if len(tok) == 2 and tok[0] == tok[1]:  # a doubled character's bigrams overlap: 汤汤汤 holds two
+                doubled = re.compile(re.escape(tok[0]) + "{2,}")
+                for d, t in enumerate(texts):
+                    c = sum(len(run) - 1 for run in doubled.findall(t))
+                    if c:
+                        found[d] = c
+            elif len(tok) in (1, 2):  # the tokens of a text are its characters and its bigrams, no other
+                for d, t in enumerate(texts):
+                    c = t.count(tok)
+                    if c:
+                        found[d] = c
+            tf[tok] = found
+        idf = {tok: math.log(1 + (n - len(found) + 0.5) / (len(found) + 0.5)) for tok, found in tf.items()}
+        k1, b = K1, B
+        scored = []
+        for d in set().union(*tf.values()):
+            norm = k1 * (1 - b + b * lengths[d] / avgdl)
+            s = 0.0
+            for q in query:
+                c = tf[q].get(d, 0)
+                if c:
+                    s += idf[q] * c * (k1 + 1) / (c + norm)
+            if s > 0:
+                scored.append((d, s))
+        scored.sort(key=lambda t: (-t[1], t[0]))
+        return [(self.ids[d], s) for d, s in scored[:k]]
+
+    def _dense_python(self, text: str, k: int) -> Ranked:
+        e = self.embedder
+        q = e.embed(text)
+        scored = []
+        for d in self.dense_places:
+            s = cosine(q, e.embed(self.texts[d]))
+            if s > DENSE_FLOOR:
+                scored.append((d, s))
+        scored.sort(key=lambda t: (-t[1], t[0]))
+        return [(self.ids[d], s) for d, s in scored[:k]]
+
+
+# ---------------------------------------------------------------- the self-test
+# Texts made to try the edges — none of the characters read, one, a doubled one, the private use area, Hangul, the
+# compatibility ideographs and the range's ends (written by number: an editor's normalisation turns U+F900 and its
+# neighbours into the unified forms), characters beyond the plane, a lone surrogate, marks between characters, a long
+# passage — and the queries asked of them.
+_SELFTEST_TEXTS = [
+    "", "。", "abc 123", "桂", "桂枝", "桂枝汤", "汤汤汤", "汤汤", "消渴消渴消渴消渴", "桂 枝,汤", "\ue3e7\uefbd 缺字", "한글 桂枝",
+    "\uf900\uf901\uf902\uf903\uf904\uf905\uf906\uf907", "\u3400\ud7ff\ue000\ufaff", "𠀀𠀁 桂枝 𪚥", "桂\ud800枝汤",
+    "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。", "阳浮而阴弱，阳浮者，热自发；阴弱者，汗自出。", "太陽病，頭痛，發熱", "麻黄汤主之，桂枝汤亦主之。" * 12, "渴而饮水，消渴，小便不利。",
+    "伤寒，脉浮缓，身不疼，但重，乍有轻时。", "\x1e", "桂枝汤桂枝汤",
+]
+_SELFTEST_QUERIES = [
+    (["桂枝", "枝汤"], "桂枝汤的主治"), (["汤汤"], "汤汤汤"), (["桂"], "桂"), (["消渴"] * 3, "消渴 三消"),
+    (["\ue3e7"], "\ue3e7\uefbd"), (["桂枝", "桂枝", "不存"], ""), (["\uf900\uf901", "\ufaff"], "abc"),
+    (["太阳", "阳病", "麻黄", "黄汤"], "太阳之为病，脉浮，头项强痛而恶寒"),
+]
+
+
+def _selftest(kern: Any) -> str:
+    """'' when the kernel ranks the edge texts as the definitions do, every score bit for bit, and gives their full-text
+    tokens; else what differed."""
+    from ..classics.store import grams
+
+    texts = [*_SELFTEST_TEXTS, "〇𠀀𪚥〓", "桂枝，汤。", "，桂", "\U0003134f\U00031350\u3007"]
+    try:
+        tokens = _grams_kernel(kern, texts)
+    except Unsuitable:
+        pass  # a kernel from before it computed them: searched with, the tokens made in Python
+    else:
+        if tokens != [grams(t) for t in texts]:
+            return "the full-text tokens differed"
+    # against the indexes themselves, each text read and embedded once (a browser's boot waits for this)
+    ids = [f"t{i:02d}" for i in range(len(_SELFTEST_TEXTS))]
+    places = list(range(len(ids)))[::-1]
+    bm25 = BM25Index()
+    for pid, text in zip(ids, _SELFTEST_TEXTS):
+        bm25.add(pid, text)
+    for embedder in (HashingEmbedder(), HashingEmbedder(dim=60, ngram=(2, 1, 4))):
+        local = LocalIndexes(ids, list(_SELFTEST_TEXTS), places, embedder)
+        dense = DenseIndex(embedder)
+        for place in places:
+            dense.add(ids[place], _SELFTEST_TEXTS[place])
+        for query, text in _SELFTEST_QUERIES:
+            for k in (100, 2):
+                if _bits(local._bm25_kernel(kern, query, k)) != _bits(bm25.search(query, k)):
+                    return f"BM25 differed for {query}"
+            if _bits(local._dense_kernel(kern, text, 100)) != _bits(dense.search(text, 100)):
+                return f"the dense route differed for {text!r} (dim {embedder.dim})"
+    return ""

@@ -74,6 +74,8 @@ def check(home: Path | None = None) -> dict[str, Any]:
     files = sorted((src / PACKAGE).rglob("*.py"))
     vendor = set(policy.get("vendor_sdks", []))
     vendor_ok = [p.replace("src/", "").replace("/", ".") for p in policy.get("vendor_sdk_allowed_in", [])]
+    native = set(policy.get("native_modules", []))
+    native_ok = [p.replace("src/", "").replace("/", ".").removesuffix(".py") for p in policy.get("native_modules_allowed_in", [])]
     for path in files:
         module = _module_of(path, src)
         layer = _layer_of(module, layers)
@@ -85,6 +87,8 @@ def check(home: Path | None = None) -> dict[str, Any]:
             root = target.split(".")[0]
             if root in vendor and not any(module.startswith(v) for v in vendor_ok):
                 violations.append({"rule": "vendor_sdk", "file": str(path.relative_to(home)), "line": line, "detail": target})
+            if root in native and not any(module == n or module.startswith(n + ".") for n in native_ok):
+                violations.append({"rule": "native_module", "file": str(path.relative_to(home)), "line": line, "detail": target})
             if not target.startswith(PACKAGE + "."):
                 continue
             target_layer = _layer_of(target, layers)
@@ -106,7 +110,7 @@ def check(home: Path | None = None) -> dict[str, Any]:
     violations += _check_identities(home, src, policy)
     violations += _check_agents(home, policy)
     return {"policy": str(home / "architecture-policy.yaml"), "files_checked": len(files), "violations": violations,
-            "rules": ["layering", "kernel_forbidden_term", "vendor_sdk", "agents_import_plugins", "privileged_identity",
+            "rules": ["layering", "kernel_forbidden_term", "vendor_sdk", "native_module", "agents_import_plugins", "privileged_identity",
                       "session_internals", "agent_specs"]}
 
 

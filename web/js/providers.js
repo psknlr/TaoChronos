@@ -1,3 +1,4 @@
+// @ts-check
 // Model providers (providers.json, written from the harness's own presets) and the user's settings.
 // API keys are kept in this browser's localStorage only, and sent only to the provider (or your local server's proxy).
 // 道乃久默认服务 (the site's relay, site.json) needs no key: the relay holds it, and no key is ever sent to it.
@@ -6,13 +7,38 @@ import { MODEL, PUBLISHER } from "./brand.js";
 import { storage } from "./util.js";
 import { T } from "./i18n.js";
 
+/**
+ * A model service as the page calls it: a preset (providers.json, src/taochronos/chat/providers.py web_providers), the
+ * default service (relayPreset) or an endpoint set by hand (customPreset).
+ * @typedef {{ id: string, label: string, format: "openai" | "anthropic", base_url: string, key_env?: string | null,
+ *   key_optional: boolean, max_tokens_param: string, extra_body: Record<string, unknown>, examples: string[],
+ *   default_model: string, reasoning: string | null, vision: boolean, stream_usage: boolean,
+ *   thinking_off?: Record<string, unknown> | null, note: string, relay?: boolean, unavailable?: boolean,
+ *   max_output?: number | null, full_url?: boolean, headers?: Record<string, string>, custom?: boolean }} Provider
+ * @typedef {Provider & { model: string, baseUrl: string, apiKey: string }} ActiveProvider  as configured now
+ * @typedef {{ id: string, label?: string, format?: string, base_url?: string, full_url?: boolean, model?: string,
+ *   headers?: Record<string, string>, extra_body?: Record<string, unknown>, max_tokens_param?: string,
+ *   reasoning?: string | null, vision?: boolean, stream_usage?: boolean }} CustomProvider  as kept in the settings
+ * @typedef {{ provider: string, models: Record<string, string>, baseUrls: Record<string, string>,
+ *   keys: Record<string, string>, temperature: number | null, maxTokens: number | null, thinking: boolean,
+ *   route: "auto" | "direct" | "proxy", runtime: "auto" | "browser" | "server", serverUrl: string,
+ *   serverToken: string, toolMode: "core" | "all", maxSteps: number, resultChars: number,
+ *   contextTokens: number | null, instructions: string, theme: "system" | "light" | "dark", verifyQuotes: boolean,
+ *   customProviders: CustomProvider[] }} Settings
+ * @typedef {{ url: string, ok: boolean, logs: boolean, pending?: boolean, model?: string, models?: string[],
+ *   default?: string, feedback?: boolean, sponsor?: boolean,
+ *   limits?: { per_day?: number, questions?: Record<string, number> }, maxOutput?: number | null }} Relay  the site's
+ *   relay, as its health said (app.js checkRelay)
+ */
 
+/** @type {Provider[]} */
 const FALLBACK = [{
   id: "deepseek", label: "DeepSeek", format: "openai", base_url: "https://api.deepseek.com/v1", key_env: "DEEPSEEK_API_KEY",
   key_optional: false, max_tokens_param: "max_tokens", extra_body: {}, examples: ["deepseek-chat", "deepseek-reasoner"],
   default_model: "deepseek-chat", reasoning: "reasoning_content", vision: false, stream_usage: true, note: "",
 }];
 
+/** @type {Settings} */
 export const DEFAULTS = {
   provider: "impf",           // 道乃久默认服务 when the site has it; else the first provider listed
   models: {},              // provider id → model name
@@ -44,7 +70,8 @@ const AUTO_TOKENS = { claude: 64000, other: 16000 };
 const OLD_DEFAULT = 16000; // what an older page kept as the visitor's number when they had set none
 
 /** The tokens a reply may use, its thinking included: the number the visitor set, within the service's own ceiling (the
- * default service's); with none set, that ceiling, or AUTO_TOKENS for a service that names none. */
+ * default service's); with none set, that ceiling, or AUTO_TOKENS for a service that names none.
+ * @param {Partial<Settings> | null} [settings] @param {Partial<Provider> | null} [provider] @returns {number} */
 export function outputLimit(settings, provider) {
   const set = Math.floor(Number(settings?.maxTokens)) || 0;
   const ceiling = Math.floor(Number(provider?.max_output)) || 0;
@@ -53,19 +80,23 @@ export function outputLimit(settings, provider) {
 }
 
 export const RELAY_ID = "impf";
+/** @type {Relay | null} */
 let relay = null; // {url, ok, model, models, default, logs, sponsor, limits} once the site's relay has answered (or failed to)
 
+/** @param {Relay | null} r */
 export function setRelay(r) { relay = r; }
 
 /** The models the default service counts in questions, not calls, and how many a visitor may ask each a day: its
- * health's limits.questions, {"GPT-6 Luna": 3}. */
+ * health's limits.questions, {"GPT-6 Luna": 3}.
+ * @returns {Record<string, number>} */
 export const relayQuestions = () => {
   const q = relay?.limits?.questions;
   return q && typeof q === "object" && !Array.isArray(q) ? q : {};
 };
 
 /** The default service as a provider: the site's relay, no key.  The page knows its models by the names the relay gives
- * (Tao-R1, and a second one it may offer); whatever the model behind it needs besides, the relay adds. */
+ * (Tao-R1, and a second one it may offer); whatever the model behind it needs besides, the relay adds.
+ * @returns {Provider | null} */
 function relayPreset() {
   if (!relay?.url) return null;
   const models = relay.models?.length ? relay.models : relay.model ? [relay.model] : [];
@@ -74,7 +105,7 @@ function relayPreset() {
     id: RELAY_ID, label: T("道乃久默认服务"), format: "openai", base_url: `${relay.url}/v1`, key_optional: true, relay: true,
     max_tokens_param: "max_completion_tokens", extra_body: {}, thinking_off: { thinking: { type: "disabled" } }, examples: models,
     // the model a visitor who has chosen none asks: the one the service names for now (its health's `default`)
-    default_model: (models.includes(relay.default) ? relay.default : relay.model) || models[0] || "", reasoning: "reasoning_details", vision: true, stream_usage: true,
+    default_model: (models.includes(/** @type {string} */ (relay.default)) ? relay.default : relay.model) || models[0] || "", reasoning: "reasoning_details", vision: true, stream_usage: true,
     unavailable: !relay.ok, max_output: relay.maxOutput || null,
     note: relay.ok
       ? T`${PUBLISHER}提供，无需 API Key，直接提问${relay.limits?.per_day ? T`；测试期间每人每天约 ${relay.limits.per_day} 次模型调用（一个问题通常用几次）` : ""}。`
@@ -83,6 +114,7 @@ function relayPreset() {
   };
 }
 
+/** @returns {Promise<Provider[]>} */
 export async function loadProviders() {
   try {
     const r = await fetch("providers.json", { cache: "no-cache" });
@@ -95,7 +127,8 @@ export async function loadProviders() {
   return providers;
 }
 
-/** An endpoint the user set by hand, as a provider the page can call. */
+/** An endpoint the user set by hand, as a provider the page can call.
+ * @param {CustomProvider} c @returns {Provider} */
 export function customPreset(c) {
   const anthropic = c.format === "anthropic";
   return {
@@ -107,33 +140,40 @@ export function customPreset(c) {
   };
 }
 
+/** @param {number} [n] @returns {CustomProvider} */
 export function newCustomProvider(n = 1) {
   return { id: `custom-${Date.now().toString(36)}`, label: T`我的 API ${n}`, format: "openai", base_url: "", full_url: false, model: "",
     headers: {}, extra_body: {}, max_tokens_param: "max_tokens", reasoning: null, vision: false };
 }
 
+/** @param {Settings} [settings] @returns {Provider[]} */
 export const allProviders = (settings) => {
   const r = relayPreset();
   return [...(r ? [r] : []), ...providers, ...(settings?.customProviders || []).map(customPreset)];
 };
+/** @param {string} id @param {Settings} [settings] @returns {Provider} */
 export const providerById = (id, settings) => allProviders(settings).find((p) => p.id === id) || providers[0];
 
+/** @returns {Settings} */
 export function loadSettings() {
-  const saved = storage.get("tc.settings", {}) || {};
+  const saved = /** @type {Partial<Settings>} */ (storage.get("tc.settings", {}) || {});
   if (saved.maxTokens === OLD_DEFAULT) delete saved.maxTokens; // the old default, kept by an older page: as outputLimit decides
   return { ...DEFAULTS, ...saved, models: { ...(saved.models || {}) }, baseUrls: { ...(saved.baseUrls || {}) }, keys: { ...(saved.keys || {}) },
     customProviders: Array.isArray(saved.customProviders) ? saved.customProviders.map((c) => ({ ...c })) : [] };
 }
 
+/** @param {Settings} settings */
 export function saveSettings(settings) {
   storage.set("tc.settings", settings);
 }
 
-/** How a provider is named on the page: the default service by its own name (the page names no vendor behind it). */
+/** How a provider is named on the page: the default service by its own name (the page names no vendor behind it).
+ * @param {ActiveProvider} p */
 export const modelLabel = (p) => (p.relay ? (p.model && ((relay?.models?.length || 0) > 1 || p.model !== MODEL) ? `${p.label} · ${p.model}` : p.label)
   : T`底层模型 ${p.model || T("未选")}（${p.label}）`);
 
-/** The provider as configured now: preset + the user's model, base URL and key. */
+/** The provider as configured now: preset + the user's model, base URL and key.
+ * @param {Settings} settings @returns {ActiveProvider} */
 export function activeProvider(settings) {
   const p = providerById(settings.provider, settings);
   return {
@@ -153,7 +193,8 @@ const SERVICE_FAILED = T("默认服务出错了，请稍后再试，或在“设
 const MODEL_REFUSED = T("默认服务不提供这个模型：请在“设置 → 模型”里选用道乃久默认服务，或改用自己的 API Key");
 
 /** An error of a default-service turn as the page shows it: the service's own words, without the model client's
- * preamble; anything else (what an older relay passed on) as a plain failure. */
+ * preamble; anything else (what an older relay passed on) as a plain failure.
+ * @param {string} text */
 export function publicError(text) {
   const m = /^(?:模型服务返回 \d+(?:（[^）]*）)?|模型服务报错|无法解析模型服务的回复)：([\s\S]*)$/.exec(String(text ?? ""));
   if (!m) return text;
@@ -166,6 +207,7 @@ export function publicError(text) {
  * A stored conversation as the default service presents itself now (turns kept by an older page named more): its turns
  * carry the service's model name, the reasoning they send back the service's format names, and their errors its own
  * words.  Returns whether anything changed, for the caller to store it again.
+ * @param {any} conv  as whichever version of the page kept it
  */
 export function publicConversation(conv) {
   let changed = false;

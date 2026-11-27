@@ -6,7 +6,9 @@
 # store is uploaded into); SITE_URL; STORE_TOKEN_SHA256 (optional: the sha256 of a store upload token, in place of
 # wrangler.toml's); CORPUS_DEPLOYED=1 when the corpus's container has just been deployed (otherwise the KV namespace says
 # whether it is); ARCHIVE_BUCKET (optional: the private R2 bucket the sentinel's events are drained into instead of the
-# repository — security/bind-archive.sh).  The wrangler it runs is the one package-lock.json names, installed here.
+# repository — security/bind-archive.sh); ACTIVITY_KEY (optional, 32+ characters: the activity ledger's key — with it the
+# Worker is bound to the ledger's registry, a D1 database, and gives visitors their ids: security/bind-ledger.sh).  The
+# wrangler it runs is the one package-lock.json names, installed here.
 set -euo pipefail
 cd "$(dirname "$0")"
 # wrangler and every package under it exactly as package-lock.json has them (versions and integrity hashes), with no
@@ -60,7 +62,8 @@ fi
 # The Worker answers from them only when there is no container, and only while they hold that version.
 d1=""
 if listed=$(curl -A "$UA" -fsS -H "$auth" "$api/d1/database?per_page=100" 2>/dev/null); then
-  d1=$(python3 -c 'import json,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if d["name"].startswith("taochronos-d1-")]' \
+  # (taochronos-d1-<number> alone: a database named in that style for something else — the ledger's, say — is not one)
+  d1=$(python3 -c 'import json,re,sys; [print(d["name"], d["uuid"]) for d in json.load(sys.stdin)["result"] if re.fullmatch(r"taochronos-d1-[0-9]+", d["name"])]' \
          <<< "$listed" || true)
 else
   echo "the D1 backup: the token may not use D1 (Account · D1 · Edit: cloud/SETUP.md, D1 备份), so none is bound"
@@ -82,6 +85,8 @@ fi
 
 # the archive's private bucket, when the owner named one and it is private (docs/adr/0023-workers-paid.md)
 UA="$UA" bash ../../security/bind-archive.sh wrangler.deploy.toml
+# the activity ledger's registry, when the owner switched the ledger on (security/README.md, 活动账本)
+UA="$UA" bash ../../security/bind-ledger.sh wrangler.deploy.toml
 
 # ---------------------------------------------------------------- deploy
 set +e
@@ -105,12 +110,10 @@ fi
 if [ -n "${SENTINEL_SALT:-}" ]; then
   printf '%s' "$SENTINEL_SALT" | tr -d '[:space:]' | npx --no -- wrangler secret put SENTINEL_SALT --config wrangler.deploy.toml
 fi
-# the token that reads the counts in the page's settings (统计; docs/web.md): optional, 16 characters or more
-stats="$(printf '%s' "${STATS_TOKEN:-}" | tr -d '[:space:]')"
-if [ "${#stats}" -ge 16 ]; then
-  printf '%s' "$stats" | npx --no -- wrangler secret put STATS_TOKEN --config wrangler.deploy.toml
-elif [ -n "$stats" ]; then
-  echo "::warning::STATS_TOKEN is shorter than 16 characters: not set, the counts stay closed (docs/web.md)"
+# the activity ledger's key, once the Worker has its registry: the same key as the relay's, and one that must stay what
+# it is — with another, every browser is a new visitor (security/visitor.js)
+if grep -q 'binding = "ACTIVITY_DB"' wrangler.deploy.toml; then
+  printf '%s' "${ACTIVITY_KEY:-}" | tr -d '[:space:]' | npx --no -- wrangler secret put ACTIVITY_KEY --config wrangler.deploy.toml
 fi
 
 # ---------------------------------------------------------------- check the site over HTTPS

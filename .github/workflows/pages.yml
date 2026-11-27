@@ -22,6 +22,7 @@ on:
       - "pyproject.toml"
       - "requirements/build.txt"
       - "requirements/runtime.txt"
+      - "rust/crates/taocore-wasm/taocore.wasm"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

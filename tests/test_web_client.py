@@ -2107,6 +2107,279 @@ def test_a_turn_keeps_within_its_context_budget_under_node(tmp_path):
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+# what the page tells the site of its own use (web/js/telemetry.js): counts, and only where it may
+NODE_TELEMETRY = r"""
+import assert from "node:assert/strict";
+
+const kept = new Map();
+globalThis.localStorage = { getItem: (k) => (kept.has(k) ? kept.get(k) : null), setItem: (k, v) => { kept.set(k, String(v)); }, removeItem: (k) => { kept.delete(k); } };
+const browser = {};
+Object.defineProperty(globalThis, "navigator", { value: browser, configurable: true });
+const sent = [];
+const site = { visitor: "v_0123456789abcdef01234567", off: false };
+globalThis.fetch = async (url, init = {}) => {
+  sent.push({ url: String(url), method: init.method || "GET", type: init.headers?.["Content-Type"], body: init.body ? JSON.parse(init.body) : null });
+  const told = () => (site.off ? { v: 1, ledger: true, ids: "notice", state: "off", visitor: null, pass: null, expires: null }
+    : { v: 1, ledger: true, ids: "notice", state: "valid", visitor: site.visitor, pass: "PASS", expires: Date.now() + 86400000 });
+  if (url === "api/activity/hello") return Response.json(told());
+  if (url === "api/activity/choice") { site.off = JSON.parse(init.body).ids === "off"; return Response.json(told()); }
+  if (url === "api/activity/forget") { site.off = true; return Response.json({ ...told(), forgotten: true }); }
+  return new Response(null, { status: 204 });
+};
+const t = await import("./js/telemetry.js");
+const RELAY = "https://relay.example";
+
+// no relay, or one without a ledger: the page sends what it always sent — a turn's name only where the relay takes it
+assert.equal(t.sending(), false);
+assert.deepEqual(t.turnHeaders("m_1"), {});
+assert.deepEqual(t.status(), { ledger: false, mode: null, on: false, declined: false, visitor: null, state: null });
+t.setRelay({ url: RELAY, ok: true, activity: { turn: true } });
+assert.deepEqual(t.turnHeaders("m_1"), { "X-Tao-Turn": "m_1" });
+assert.deepEqual(t.turnHeaders("m_1", { named: false }), {});
+assert.equal(await t.hello(), null);
+t.report({ v: 1 });
+assert.equal(sent.length, 0);
+
+// a site with a ledger: the page asks who this browser is, once, and its turns carry the name and the pass
+t.setRelay({ url: RELAY, ok: true, activity: { turn: true, beacon: true, ids: "notice" } });
+assert.equal(t.sending(), true);
+const told = await t.hello();
+await t.hello();
+assert.deepEqual(sent.map((x) => [x.url, x.method, x.body]), [["api/activity/hello", "POST", { v: 1, lang: "zh" }]]);
+assert.equal(told.visitor, site.visitor);
+assert.deepEqual(t.status(), { ledger: true, mode: "notice", on: true, declined: false, visitor: site.visitor, state: "valid" });
+assert.deepEqual(t.turnHeaders("m_1"), { "X-Tao-Turn": "m_1", "X-Tao-Visitor": "PASS" });
+assert.deepEqual(t.turnHeaders("m_1", { unnamed: true }), { "X-Tao-Turn": "m_1" }); // the visitor's own health or data: for no one
+
+// a turn's end: counts and short words — the tools by the site's names, never their arguments
+const trace = { tools: [{ name: "classics.search", args: { query: "我的病历" } }, { name: "taochronos_call", args: { tool: "study.formula", arguments: { name: "桂枝汤" } } },
+  { name: "classics__search", args: {} }, { name: "Not A Tool", args: {} }], requests: [{ attempt: 1 }, { attempt: 2 }, { attempt: 1 }] };
+const own = { id: "deepseek", model: "deepseek-chat", examples: ["deepseek-chat", "deepseek-reasoner"], apiKey: "sk-secret", baseUrl: "https://api.deepseek.com/v1" };
+const end = t.turnEnd({ id: "m_1", provider: own, status: "done", rounds: 3, usage: { input: 9000, output: 700 }, ms: 41234.6, trace, module: "chat", turnIndex: 2, consent: false,
+  runtime: "browser", corpus: "canon" });
+assert.deepEqual(end, { v: 1, kind: "turn", turn: "m_1", pass: "PASS", provider: "deepseek", model: "deepseek-chat", status: "done", rounds: 3, tool_count: 4,
+  tools: { "classics.search": 2, "study.formula": 1 }, retries: 1, input: 9000, output: 700, ms: 41235, runtime: "browser", corpus: "canon", module: "chat", turn_index: 2,
+  consent: false, lang: "zh" });
+for (const kept of ["病历", "桂枝", "sk-secret", "api.deepseek", "Not A Tool"]) assert.ok(!JSON.stringify(end).includes(kept), kept);
+// an endpoint and a model the visitor set by hand are their settings: neither is named
+const custom = t.turnEnd({ id: "m_2", provider: { id: "custom-l8x2", custom: true, model: "our-internal-model", examples: [] }, status: "error", rounds: 1 });
+assert.deepEqual([custom.provider, "model" in custom, custom.status], ["custom", false, "error"]);
+assert.equal("model" in t.turnEnd({ id: "m_3", provider: { id: "openai", model: "ft:private", examples: ["gpt-x"] }, status: "done" }), false);
+assert.deepEqual([t.turnEnd({ id: "m_4", provider: { id: "impf", relay: true, model: "Tao-R1" }, status: "done" }).model, t.turnEnd({ id: "m_5", provider: { id: "fixed", fixed: true } }).provider],
+  ["Tao-R1", "fixed"]);
+assert.equal("pass" in t.turnEnd({ id: "m_6", provider: own, status: "done", module: "diet", unnamed: true }), false);
+assert.equal(t.turnEnd({ id: "m_7", provider: own, status: "weird" }).status, undefined);
+sent.length = 0;
+t.report(end);
+assert.deepEqual(sent.map((x) => [x.url, x.method, x.type, x.body.turn]), [[`${RELAY}/v1/activity`, "POST", "text/plain;charset=UTF-8", "m_1"]]);
+
+// the visitor's switch: off — the site is told, and the page sends none of the three; on again — a new id
+sent.length = 0;
+assert.deepEqual(await t.setSending(false), { ledger: true, mode: "notice", on: false, declined: false, visitor: null, state: "off" });
+assert.deepEqual(sent.map((x) => [x.url, x.body]), [["api/activity/choice", { ids: "off" }]]);
+assert.deepEqual(t.turnHeaders("m_8"), { "X-Tao-Turn": "m_8" }); // the turn is still named: a question is counted once
+sent.length = 0;
+t.report(end);
+assert.equal(await t.hello(), null);
+assert.equal(sent.length, 0);
+assert.equal((await t.setSending(true)).on, true);
+assert.deepEqual(t.turnHeaders("m_9"), { "X-Tao-Turn": "m_9", "X-Tao-Visitor": "PASS" });
+// forgotten: asked of the site, and the switch is off
+assert.equal(await t.forget(), true);
+assert.deepEqual([t.sending(), t.status().visitor, kept.get("tc.stats")], [false, null, '"off"']);
+
+// a browser that asks not to be tracked is the switch already off; a site that asks first sends nothing until it is on
+kept.clear();
+browser.globalPrivacyControl = true;
+assert.deepEqual([t.sending(), t.declined(), t.turnHeaders("m_10")], [false, true, { "X-Tao-Turn": "m_10" }]);
+browser.globalPrivacyControl = false;
+browser.doNotTrack = "1";
+assert.equal(t.sending(), false);
+browser.doNotTrack = null;
+t.setRelay({ url: RELAY, ok: true, activity: { turn: true, beacon: true, ids: "optin" } });
+assert.equal(t.sending(), false);
+kept.set("tc.stats", '"on"');
+assert.equal(t.sending(), true);
+t.setRelay({ url: RELAY, ok: false, activity: { turn: true, beacon: true, ids: "notice" } }); // the relay down: nowhere to send it
+assert.equal(t.sending(), false);
+console.log("ok");
+"""
+
+
+def test_the_page_tells_its_own_use_in_counts_and_only_where_it_may_under_node(tmp_path):
+    """What the page sends for the site's activity ledger (web/js/telemetry.js): nothing where the site keeps none; with
+    one, a hello once a page, the turn's name and the visitor's pass on the relay's calls, and a turn's end in counts —
+    the tools by the site's own names, never their arguments, nor a provider or model the visitor set by hand, nor the
+    pass for a conversation that touches their own health or data; and none of it once the visitor switched the count
+    off, in a browser that asks not to be tracked, or — where the site asks first — before they switched it on."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_TELEMETRY, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+# a worker's global as a module worker has it while its imports are evaluated: messages arrive, a handler may be set
+NODE_INBOX = r"""
+import assert from "node:assert/strict";
+globalThis.self = globalThis;
+const { listen } = await import("./js/inbox.js");
+assert.equal(typeof self.onmessage, "function");  // set by the import itself, before anything can wait
+const post = (data) => self.onmessage({ data });
+post("init"); post({ id: 2 });  // what the page sent while the worker's other imports were still waited for
+const got = [];
+listen((e) => got.push(e.data));
+assert.deepEqual(got, ["init", { id: 2 }]);  // handed over as the handler is set, in the order they came
+post("later");
+assert.deepEqual(got, ["init", { id: 2 }, "later"]);  // and from then on the handler is the worker's own
+listen((e) => got.push(["second", e.data]));  // a handler set again is given nothing twice
+post("last");
+assert.deepEqual(got.slice(3), [["second", "last"]]);
+console.log("ok");
+"""
+
+
+def test_a_module_worker_holds_what_comes_before_it_listens_under_node(tmp_path):
+    """A module worker's code runs once everything it imports has run, and i18n.js waits for its dictionary on every
+    page but a Chinese one: the messages sent meanwhile were dropped, and a page in English lost its runtime's start one
+    time in three.  inbox.js holds them and hands them, in order, to the handler once it is set — and it is each
+    worker's first import, itself importing nothing and waiting for nothing: imported after i18n.js it would run too
+    late.  (The browser test of this is skipped where there is no Chromium: CI.)"""
+    js = ROOT / "web" / "js"
+    inbox = (js / "inbox.js").read_text(encoding="utf-8")
+    assert not re.search(r"^\s*import\b|\bawait\b", re.sub(r"//.*", "", inbox), re.M), "inbox.js must run at once"
+    for name in ("worker.js", "unpack-worker.js"):
+        source = (js / name).read_text(encoding="utf-8")
+        imports = re.findall(r'^import\s[^;]*?\sfrom\s+"([^"]+)";', source, re.M)
+        assert imports and imports[0] == "./inbox.js", f"{name}: its first import must be ./inbox.js, not {imports[:1]}"
+        assert "./i18n.js" in imports[1:], name  # what waits, after it
+        assert re.search(r"^listen\(", source, re.M) and not re.search(r"^\s*self\.onmessage\s*=", source, re.M), name
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(js, tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_INBOX, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+# worker.js's keeping(), as its source has it, with the locks a browser may give, withhold or refuse
+NODE_KEEPING = r"""
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const source = readFileSync("js/worker.js", "utf8");
+const body = /\nfunction keeping\(mode, fn\) \{\n[\s\S]*?\n\}\n/.exec(source)[0];
+const keeping = (locks) => new Function("self", "navigator", `${body}; return keeping;`)({ navigator: locks && { locks } }, { locks });
+const calls = [];
+const work = async () => { calls.push("ran"); return "done"; };
+const failing = async () => { calls.push("ran"); throw new Error("the work's own"); };
+
+// a browser with locks: the work runs under the lock asked for
+const asked = [];
+const given = { request: async (name, options, fn) => { asked.push([name, options.mode]); return fn(); } };
+assert.equal(await keeping(given)("shared", work), "done");
+assert.deepEqual(asked, [["taochronos-keep", "shared"]]);
+// none (not a secure context): at once
+assert.equal(await keeping(undefined)("exclusive", work), "done");
+// refused (a browser that keeps no site data): the work runs all the same, once
+calls.length = 0;
+const refused = { request: async () => { throw new DOMException("Access to the Locks API is denied in this context.", "SecurityError"); } };
+assert.equal(await keeping(refused)("shared", work), "done");
+const throwing = { request: () => { throw new TypeError("not here"); } };
+assert.equal(await keeping(throwing)("exclusive", work), "done");
+assert.deepEqual(calls, ["ran", "ran"]);
+// the work's own failure is the work's: not taken for a refusal, not run again
+calls.length = 0;
+await assert.rejects(keeping(given)("exclusive", failing), /the work's own/);
+await assert.rejects(keeping(refused)("exclusive", failing), /the work's own/);
+assert.deepEqual(calls, ["ran", "ran"]);
+console.log("ok");
+"""
+
+
+def test_a_lock_the_browser_refuses_is_never_why_the_runtime_does_not_start_under_node(tmp_path):
+    """The runtime's worker keeps and reads its store under a Web Lock, so that two tabs do not mix theirs.  A browser
+    set to keep no site data refuses its locks as it refuses IndexedDB (a SecurityError): the store is then read and
+    kept — that is, not found and not kept — as before the lock, and the runtime starts.  The work's own failure is
+    not taken for a refusal."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_KEEPING, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
+# worker.js's archive(), as its source has it, over a store of kept copies and a site that serves `served`
+NODE_ARCHIVE = r"""
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+const source = readFileSync("js/worker.js", "utf8");
+const body = /\nasync function archive\(base, name, sha, exact = false\) \{\n[\s\S]*?\n\}\n/.exec(source)[0];
+const hex = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const enc = new TextEncoder();
+const good = enc.encode("the package the manifest names"), other = enc.encode("another build's");
+const SHA = hex(good);
+
+function world({ keptCopy, served = good, hashes = true }) {
+  const log = [];
+  const store = new Map(keptCopy ? [["zip:a.zip", keptCopy]] : []);
+  const kept = { get: async (k) => store.get(k), put: async (k, v) => { log.push(`put ${k}`); store.set(k, v); return true; }, drop: async (k) => { log.push(`drop ${k}`); store.delete(k); return true; } };
+  const sha256 = async (bytes) => (hashes ? hex(bytes) : null);
+  const fetch = async (url) => { log.push(`fetch ${new URL(url).pathname}`); return { ok: true, status: 200, arrayBuffer: async () => served.slice().buffer }; };
+  const T = (strings, ...values) => String.raw({ raw: strings }, ...values);
+  const archive = new Function("kept", "sha256", "fetch", "T", `${body}; return archive;`)(kept, sha256, fetch, T);
+  return { archive: (exact) => archive("https://site.test/", "a.zip", SHA, exact), log, store };
+}
+const text = (r) => [new TextDecoder().decode(r.bytes), r.checked];
+const blob = (bytes) => new Blob([bytes]);
+const unreadable = { size: 30, arrayBuffer: async () => { throw new DOMException("A requested file or directory could not be found", "NotFoundError"); } };
+Object.setPrototypeOf(unreadable, Blob.prototype); // a Blob whose file the browser no longer has
+
+// a kept copy that is what the manifest names: used, nothing fetched
+let w = world({ keptCopy: { sha: SHA, blob: blob(good) } });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", true], []]);
+// one whose bytes can no longer be read: dropped, fetched anew, kept again — not the end of this start and every later one
+w = world({ keptCopy: { sha: SHA, blob: unreadable } });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", true], ["drop zip:a.zip", "fetch /runtime/a.zip", "put zip:a.zip"]]);
+assert.equal(await w.store.get("zip:a.zip").blob.text(), "the package the manifest names");
+// one that is no longer what its name says: the same
+w = world({ keptCopy: { sha: SHA, blob: blob(other) } });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", true], ["drop zip:a.zip", "fetch /runtime/a.zip", "put zip:a.zip"]]);
+// what is fetched and is not the manifest's: used this once, never kept; refused where only the right file will do
+w = world({ served: other });
+assert.deepEqual([text(await w.archive()), w.log], [["another build's", false], ["fetch /runtime/a.zip"]]);
+await assert.rejects(w.archive(true), /is not the file the manifest names/);
+// a browser that computes no hash: nothing can be checked, so nothing is kept, and a kept copy is not trusted
+w = world({ keptCopy: { sha: SHA, blob: blob(other) }, hashes: false });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", false], ["drop zip:a.zip", "fetch /runtime/a.zip"]]);
+await assert.rejects(w.archive(true), /cannot be checked here/);
+console.log("ok");
+"""
+
+
+def test_a_kept_archive_is_used_only_checked_and_one_that_cannot_be_read_is_fetched_anew_under_node(tmp_path):
+    """The runtime's worker keeps its archives by content.  A kept copy is used only when its bytes are what the
+    manifest names; one the browser can no longer read (its file gone from the profile) is dropped and fetched anew —
+    it used to end that start and every start after it, until the site's data was cleared; what is fetched and is not
+    the manifest's is used once and never kept; and where the browser computes no hash, nothing is kept or trusted."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_ARCHIVE, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2500:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""
@@ -3218,7 +3491,9 @@ def test_a_published_page_connects_to_a_server_and_remembers_it(tmp_path):
             pass
 
     rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
-    api = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT)
+    # no home: this server makes no runtime files for the browser.  With one, the browser's runtime starts wherever
+    # Pyodide can be fetched, and the page's last visit below ends ready where it is to end without a runtime
+    api = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web")
     locked = ChatServer(("127.0.0.1", 0), rt, web_root=ROOT / "web", home=ROOT, token="t0ken")
     pages = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Static, directory=str(ROOT / "web")))  # no runtime files
     for s in (api, locked, pages):
@@ -3552,10 +3827,143 @@ def test_the_default_service_asks_nothing_and_records_only_with_consent(tmp_path
         mock.shutdown()
 
 
+def test_the_page_counts_its_questions_for_the_sites_ledger_and_the_visitor_can_switch_it_off(tmp_path):
+    """A site with the activity ledger (web/js/telemetry.js; security/ledger.js): once the page has loaded it asks its own
+    host, once, who this browser is; every call the relay makes for a turn — its tool rounds and the self-check's rewrite
+    — carries the turn's name and the visitor's pass; a visitor who declines the records is still counted, the turn's end
+    told to the relay in counts and short words and never a word of the question.  设置 → 数据 → 访问统计 shows the id
+    and switches the count off: then the turns are still named (a question is one), with no pass and no end told, and a
+    page opened again asks nothing.  关于 says what is counted."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from urllib.parse import urlparse
+
+    from playwright.sync_api import Error, sync_playwright
+
+    from taochronos.chat import ChatRuntime
+    from taochronos.chat.server import ChatServer
+    from web_mock import MockProvider, MockRelay
+
+    mock = MockProvider().start()
+    relay = MockRelay(mock.base_url, activity=True).start()
+    web = tmp_path / "web"
+    _published(web, relay.url)
+    rt = ChatRuntime.create("full-discovery", kind="server", ephemeral=True, data_dir=tmp_path / "data")
+    srv = ChatServer(("127.0.0.1", 0), rt, web_root=web, home=ROOT)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    visitor = "v_0123456789abcdef01234567"
+    pass_ = f"{visitor}.abc.PASSPASSPASSPASSPASSPA"
+    site: list[tuple[str, dict | None]] = []  # what the page asked of its own host's ledger
+    off = {"now": False}
+
+    def ledger(route) -> None:
+        """The site's ledger endpoints (cloud/site/src/site.js): the server runtime has none, so they are answered here."""
+        path = urlparse(route.request.url).path
+        body = json.loads(route.request.post_data) if route.request.post_data else None
+        site.append((path, body))
+        if path.endswith("/choice"):
+            off["now"] = body.get("ids") == "off"
+        if path.endswith("/forget"):
+            off["now"] = True
+        on = not off["now"]
+        told = {"v": 1, "ledger": True, "ids": "notice", "state": "valid" if on else "off", "visitor": visitor if on else None,
+                "pass": pass_ if on else None, "expires": int(time.time() * 1000) + 86400000 if on else None}
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(told))
+
+    def until(check, wait=20.0) -> None:
+        end = time.time() + wait
+        while not check() and time.time() < end:
+            time.sleep(0.2)
+
+    def named(c: dict) -> dict:
+        return {k.lower(): v for k, v in c["headers"].items() if k.lower().startswith("x-tao-")}
+
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            page = browser.new_context(viewport={"width": 1280, "height": 900}, locale="zh-CN").new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.route("**/api/activity/**", ledger)
+            page.goto(f"http://127.0.0.1:{srv.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            page.wait_for_function("document.querySelector('.hero .keyhint')?.textContent.includes('默认服务')", timeout=20000)
+            until(lambda: site)
+            time.sleep(0.5)
+            assert site == [("/api/activity/hello", {"v": 1, "lang": "zh"})]
+
+            # a question, the records declined: counted all the same, in counts
+            page.fill("#input", "桂枝汤主治什么？请给出原文。")
+            page.keyboard.press("Enter")
+            page.wait_for_selector("#consent[open]", timeout=15000)
+            page.click("#consent .btn.secondary")  # 不记录
+            page.wait_for_selector(".msg.assistant .verify-bar", timeout=60000)
+            until(lambda: relay.beacons)
+            calls = [named(c) for c in relay.chat]
+            turn = calls[0]["x-tao-turn"]
+            assert turn.startswith("m_") and len(calls) >= 2  # its tool rounds and the self-check's rewrite
+            assert all(c == {"x-tao-turn": turn, "x-tao-visitor": pass_} for c in calls)
+            assert relay.records == []
+            [told] = relay.beacons
+            assert told["type"].startswith("text/plain")  # a simple request: no preflight
+            end = told["body"]
+            assert {k: end[k] for k in ("kind", "turn", "pass", "provider", "model", "status", "module", "consent", "turn_index", "lang")} == {
+                "kind": "turn", "turn": turn, "pass": pass_, "provider": "impf", "model": "Tao-R1", "status": "done", "module": "chat", "consent": False,
+                "turn_index": 1, "lang": "zh"}
+            assert end["rounds"] >= 2 and end["tool_count"] >= 1 and all(re.fullmatch(r"[a-z][a-z0-9_.]+", t) for t in end["tools"])
+            assert set(end) <= {"v", "kind", "turn", "pass", "provider", "model", "status", "rounds", "tool_count", "tools", "retries", "input", "output", "ms",
+                                "runtime", "corpus", "module", "turn_index", "consent", "lang"}
+            assert "桂枝" not in json.dumps(end, ensure_ascii=False)
+
+            # 设置 → 数据 → 访问统计: the visitor's id, and the switch
+            page.click("#settings-btn")
+            page.click("nav.settings-nav button:has-text('数据')")
+            field = page.locator(".settings-pane .field", has_text="访问统计")
+            assert visitor in field.inner_text()
+            box = field.locator("input[type=checkbox]")
+            assert box.is_checked()
+            box.uncheck()
+            until(lambda: site[-1][0] == "/api/activity/choice")
+            assert site[-1] == ("/api/activity/choice", {"ids": "off"})
+            until(lambda: visitor not in field.inner_text(), 5)
+            assert not box.is_checked() and visitor not in field.inner_text()
+            page.keyboard.press("Escape")
+
+            # switched off: the next turn is named, with no pass, and its end is not told
+            before = len(relay.chat)
+            page.fill("#input", "它的剂量出自哪里？")
+            page.keyboard.press("Enter")
+            page.wait_for_function("document.querySelectorAll('.msg.assistant .verify-bar').length >= 2", timeout=60000)
+            time.sleep(1.0)
+            later = [named(c) for c in relay.chat[before:]]
+            assert later and all(set(c) == {"x-tao-turn"} and c["x-tao-turn"] != turn for c in later)
+            assert len(relay.beacons) == 1
+            # opened again: nothing is asked of the site
+            asked = len(site)
+            page.reload()
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            time.sleep(1.5)
+            assert len(site) == asked
+            page.click("#settings-btn")
+            page.click("nav.settings-nav button:has-text('关于')")
+            assert "本站另以匿名编号统计访问与提问的次数" in page.inner_text(".settings-pane")
+            assert errors == []
+            browser.close()
+    finally:
+        srv.shutdown()
+        relay.shutdown()
+        mock.shutdown()
+
+
 def test_the_default_service_offers_a_second_model_and_takes_sponsorships(tmp_path):
     """道乃久默认服务 with a second model (GPT-6 Luna, counted in questions): offered beside Tao-R1 when the relay's health
     names it — and asked by a visitor who has chosen none while the health names it the default — each call of its turn
-    naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name none.  Switched in the chat's own
+    naming the turn (X-Tao-Turn) so the turn counts as one question; Tao-R1's calls name none (a relay that does not say it
+    counts every model's turns: one without the activity ledger, or older).  Switched in the chat's own
     picker or the settings, used at once.  And 赞助: a visitor's own key and model, sent once to the relay after they
     agree, kept nowhere on the page."""
     exe = _chromium()
@@ -4105,9 +4513,11 @@ def test_a_question_about_the_assistant_gets_the_fixed_reply(tmp_path):
 
 @pytest.mark.skipif(not os.environ.get("TAOCHRONOS_PYODIDE_E2E"), reason="set TAOCHRONOS_PYODIDE_E2E=1: builds the site with Pyodide")
 def test_the_published_site_runs_on_the_canon_corpus_in_the_browser(tmp_path):
-    """The built site in Chromium, on an http:// origin like the published one (no Cache API there): Pyodide starts, the
-    要籍语料 is downloaded and indexed — the first-ranked works before the runtime answers, the rest in the background —
-    and kept in IndexedDB, so that a reload has nothing to download or index; a turn cites it."""
+    """The built site in Chromium, on an http:// origin of another machine (not a secure context: no Cache API, no
+    crypto.subtle, no locks — the hardest case; the published site is https): Pyodide starts, the 要籍语料 is downloaded
+    and indexed — the first-ranked works before the runtime answers, the rest in the background — and kept in
+    IndexedDB, so that a reload has nothing to download or index; a turn cites it.  The archives, which cannot be
+    checked here, are not kept, and TaoCore's module is not used: the searches run in Python."""
     exe = _chromium()
     if exe is None:
         pytest.skip("playwright is not installed")
@@ -4286,6 +4696,7 @@ def test_my_data_with_a_server_on_this_machine(tmp_path):
 # (PY: its address, "" when it is the site's own) — the worker's own code, its IndexedDB and the page are the real ones
 STAND_IN = r"""
 const PY = "{py}";
+const MISSING = "{missing}"; // a package it cannot load ("" none): left out of what loadPackage gives, as Pyodide does
 function post(path, body, type) {
   const x = new XMLHttpRequest();
   x.open("POST", PY + path, false); // a worker may wait: Python's calls are synchronous too
@@ -4297,8 +4708,14 @@ function post(path, body, type) {
 export async function loadPyodide() {
   post("/py/start", "{}"); // a new visit: a new interpreter
   const rpc = (method, params) => post("/py/rpc", JSON.stringify({ method, params }));
+  const loadedPackages = {};
   return {
-    loadPackage: async () => {},
+    loadPackage: async (names, options) => names.filter((name) => {
+      if (name !== MISSING) loadedPackages[name] = "default channel";
+      else for (const m of [`The following error occurred while loading ${name}:`, "Failed to fetch"]) options?.errorCallback?.(m);
+      return name !== MISSING;
+    }).map((name) => ({ name })),
+    loadedPackages,
     unpackArchive: () => {},
     runPython: (code) => (code.includes("purelib") ? "/lib/python3.13/site-packages" : undefined),
     globals: { get: (name) => (name === "_rpc" ? rpc : undefined), set: () => {} },
@@ -4312,15 +4729,16 @@ export async function loadPyodide() {
 """
 
 
-def _browser_runtime(site: Path, tmp: Path, py: str = "") -> None:
-    """The in-browser runtime's files in ``site``, with the stand-in for Pyodide (its Python behind ``py``)."""
+def _browser_runtime(site: Path, tmp: Path, py: str = "", missing: str = "") -> None:
+    """The in-browser runtime's files in ``site``, with the stand-in for Pyodide (its Python behind ``py``; ``missing``:
+    a package it cannot load)."""
     (site / "runtime").mkdir(exist_ok=True)
     (site / "runtime" / "manifest.json").write_text(json.dumps({"version": "test", "pyodide_base": "pyodide/",
                                                                 "files": {"taochronos.zip": {}, "home.zip": {}}}), encoding="utf-8")
     for name in ("taochronos.zip", "home.zip"):
         (site / "runtime" / name).write_bytes(b"PK\x05\x06" + b"\x00" * 18)
     (site / "pyodide").mkdir(exist_ok=True)
-    (site / "pyodide" / "pyodide.mjs").write_text(STAND_IN.replace("{py}", py), encoding="utf-8")
+    (site / "pyodide" / "pyodide.mjs").write_text(STAND_IN.replace("{py}", py).replace("{missing}", missing), encoding="utf-8")
 
 
 def _python_behind(site: Path, tmp: Path):
@@ -4401,6 +4819,82 @@ def _prescriptions_book(tmp: Path) -> Path:
     book = tmp / "处方.xlsx"
     book.write_bytes(xlsx(rows))
     return book
+
+
+def test_the_browsers_runtime_starts_on_a_page_in_another_language(tmp_path):
+    """The runtime's worker on a page in English fetches its dictionary as it starts (i18n.js's top-level await), and the
+    page's init comes meanwhile: the worker's first import holds it until the worker listens (inbox.js).  The dictionary
+    is made slow here, so that the init comes first every time — and the runtime starts, as on a Chinese page."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    site = tmp_path / "site"
+    shutil.copytree(ROOT / "web", site)
+    _browser_runtime(site, tmp_path)
+    server = _python_behind(site, tmp_path)
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="en-US")
+            ctx.add_init_script("localStorage.setItem('tc.settings', JSON.stringify({runtime: 'browser'}));")
+            slowed: list[str] = []
+
+            def late(route) -> None:
+                slowed.append(route.request.url)
+                time.sleep(1.5)
+                route.continue_()
+
+            ctx.route("**/js/i18n-en.js*", late)
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{server.server_address[1]}/?lang=en")
+            page.wait_for_selector(".runtime-pill .dot.ok", timeout=60000)
+            assert any("worker.js" in w.url for w in page.workers) and len(slowed) >= 2, slowed  # the page's, the worker's
+            assert not errors, errors
+            browser.close()
+    finally:
+        server.shutdown()
+
+
+def test_a_package_pyodide_cannot_load_ends_the_start_saying_which(tmp_path):
+    """Pyodide's loadPackage settles without a package it could not load, and says why only to its callbacks: the
+    browser's runtime ends its start there, naming the package and why — not at an import that fails later, where all
+    the page could show was the end of a traceback."""
+    exe = _chromium()
+    if exe is None:
+        pytest.skip("playwright is not installed")
+    from playwright.sync_api import Error, sync_playwright
+
+    site = tmp_path / "site"
+    shutil.copytree(ROOT / "web", site)
+    _browser_runtime(site, tmp_path, missing="sqlite3")
+    server = _python_behind(site, tmp_path)
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**({"executable_path": exe} if exe else {}))
+            except Error as exc:
+                pytest.skip(f"no Chromium for Playwright: {exc}")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 860}, locale="zh-CN")
+            ctx.add_init_script("localStorage.setItem('tc.settings', JSON.stringify({runtime: 'browser'}));")
+            page = ctx.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{server.server_address[1]}/")
+            page.wait_for_selector(".runtime-pill .dot.bad", timeout=60000)
+            said = page.inner_text(".hero .status")
+            assert "无法载入 Python 运行时（sqlite3: Failed to fetch）" in said, said
+            assert "Traceback" not in said and "pyyaml" not in said, said
+            assert not errors, errors
+            browser.close()
+    finally:
+        server.shutdown()
 
 
 def test_my_data_in_the_browsers_own_runtime(tmp_path):

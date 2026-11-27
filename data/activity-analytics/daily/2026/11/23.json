@@ -1,0 +1,56 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 24,
+    "gpt-6-luna": 1
+   },
+   "by_provider": {
+    "impf": 25
+   },
+   "by_status": {
+    "done": 16,
+    "error": 8,
+    "stopped": 1
+   },
+   "model_calls": 161,
+   "questions": 25,
+   "tokens_in": 7554291,
+   "tokens_out": 254138,
+   "tool_calls": 349,
+   "tools": {
+    "audit.claim": 1,
+    "classics.get_passage": 154,
+    "classics.list_books": 6,
+    "classics.search": 108,
+    "kg.term": 4,
+    "modern.safety": 2,
+    "study.acupoints": 2,
+    "study.acupuncture_reason": 10,
+    "study.casefind": 1,
+    "study.commentaries": 5,
+    "study.compare": 2,
+    "study.concordance": 9,
+    "study.formula": 12,
+    "study.herb": 11,
+    "study.incompat": 2,
+    "study.network": 3,
+    "study.pairs": 1,
+    "study.term": 1,
+    "study.translate": 1,
+    "study.usage": 2,
+    "taochronos_catalog": 6,
+    "validation.verify_quote": 6
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-23",
+  "label": "2026-11-23",
+  "to": "2026-11-23"
+ },
+ "v": 1
+}

@@ -11,6 +11,10 @@
 //
 //   chat-logs/YYYY/MM/DD/<id>.json                  a conversation record (the relay)
 //   security-logs/<source>/YYYY/MM/DD/<id>.json     an event of a sentinel (source: relay | site)
+//   activity-logs/<source>/YYYY/MM/DD/HH.jsonl.gz   an hour of the activity ledger's events (security/ledger.js): many a
+//                                                   line, gzip, written once the hour is over (a further part of a busy
+//                                                   hour: HH.p01.jsonl.gz); activity-logs/manifests/<source>/YYYY/MM/DD.json
+//                                                   says what a day's objects are and what each must hash to
 //
 // No name, address or text is in a key.  While a Worker has the bucket, the archive is its stores' only collector: the
 // repository's acknowledgement is refused (409), so that two collectors never delete from the same store.  The holder of
@@ -90,7 +94,7 @@ export class Drainer {
   async arm(now = Date.now()) {
     if (!this.bucket || this.armed) return;
     this.armed = true;
-    if ((await this.storage.getAlarm()) === null) await this.storage.setAlarm(now + this.delay);
+    await sooner(this.storage, now + this.delay);
   }
 
   async run(now = Date.now()) {
@@ -99,22 +103,75 @@ export class Drainer {
     const out = await drain(this.job.store, this.bucket, this.job);
     if (out.failed || out.more) {
       this.armed = true;
-      await this.storage.setAlarm(now + (out.failed ? this.retry : 1000));
+      await sooner(this.storage, now + (out.failed ? this.retry : 1000));
     }
     return out;
   }
 }
 
 /**
- * GET <path>?day=YYYY-MM-DD&cursor=&limit=  the items archived that day under `prefix`, oldest first, for the holder of
- * the collector's token: {day, items, cursor, more}.  Without a bucket, 404.
+ * A Durable Object has one alarm, and may have more than one thing to wake for (this drain; the ledger's:
+ * security/ledger.js).  Each asks for the alarm no later than it needs; the one already set for sooner stands, and the
+ * object's alarm() runs them all.
  */
-export async function serveArchive(request, url, { bucket, prefix, token, cors = {} }) {
-  if (!bucket) return json({ error: { message: "没有归档", type: "not_found" } }, 404, cors);
-  if (request.method !== "GET") return json({ error: { message: "GET", type: "bad_request" } }, 405, { ...cors, Allow: "GET" });
-  if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401, cors);
+export async function sooner(storage, at) {
+  const set = await storage.getAlarm();
+  if (set === null || set > at) await storage.setAlarm(at);
+}
+
+// ------------------------------------------------------------------ batches: many lines an object
+export const ACTIVITY = (source) => `activity-logs/${source}/`;
+export const MANIFESTS = (source) => `activity-logs/manifests/${source}/`;
+
+/** Text as gzip, and back (CompressionStream: a Worker has it, and so has Node). */
+export async function gzip(text) {
+  return new Uint8Array(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
+}
+
+export async function gunzip(bytes) {
+  return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+
+/** The key of an hour's batch under a prefix (the hour as UTC milliseconds): YYYY/MM/DD/HH.jsonl.gz; a further part of
+ * the same hour, HH.pNN.jsonl.gz. */
+export function batchKey(prefix, hour, part = 0) {
+  const d = new Date(hour).toISOString();
+  return `${prefix}${d.slice(0, 4)}/${d.slice(5, 7)}/${d.slice(8, 10)}/${d.slice(11, 13)}${part ? `.p${String(part).padStart(2, "0")}` : ""}.jsonl.gz`;
+}
+
+/**
+ * Lines into the bucket as one gzip object, R2 checking its sha256 on the way in: → {key, events, bytes, sha256}.
+ * Throws when it is not written; a write repeated lands on the same key.
+ */
+export async function putBatch(bucket, key, lines, customMetadata = {}) {
+  const body = await gzip(lines.map((line) => `${line}\n`).join(""));
+  const sha256 = hex(await crypto.subtle.digest("SHA-256", body));
+  // a .gz file wherever it is read: no Content-Encoding, which a client would undo and leave the name wrong
+  const put = await bucket.put(key, body, { sha256, httpMetadata: { contentType: "application/gzip" },
+    customMetadata: { ...customMetadata, events: String(lines.length) } });
+  if (!put) throw new Error("not written");
+  return { key, events: lines.length, bytes: body.byteLength, sha256 };
+}
+
+/** A batch read back: its lines, parsed (a line that is not JSON: {unreadable: true}); null when it is not there. */
+export async function readBatch(bucket, key) {
+  const got = await bucket.get(key);
+  if (!got) return null;
+  const text = await gunzip(new Uint8Array(await got.arrayBuffer()));
+  return text.split("\n").filter(Boolean).map((line) => { try { return JSON.parse(line); } catch { return { unreadable: true }; } });
+}
+
+/**
+ * GET <path>?day=YYYY-MM-DD&cursor=&limit=  the items archived that day under `prefix`, oldest first, for the holder of
+ * the collector's token alone: {day, items, cursor, more}.  Without a bucket, 404 — told, like everything here, to the
+ * token's holder only.  No CORS headers: no page, the site's own or another's, reads it.
+ */
+export async function serveArchive(request, url, { bucket, prefix, token }) {
+  if (request.method !== "GET") return json({ error: { message: "GET", type: "bad_request" } }, 405, { Allow: "GET" });
+  if (!(await bearerOk(request, token))) return json({ error: { message: "需要收集令牌", type: "unauthorized" } }, 401);
+  if (!bucket) return json({ error: { message: "没有归档", type: "not_found" } }, 404);
   const day = url.searchParams.get("day") || "";
-  if (!DAY.test(day)) return json({ error: { message: "day=YYYY-MM-DD", type: "bad_request" } }, 400, cors);
+  if (!DAY.test(day)) return json({ error: { message: "day=YYYY-MM-DD", type: "bad_request" } }, 400);
   const limit = Math.min(100, Math.max(1, Math.floor(Number(url.searchParams.get("limit") || 100)) || 100));
   const listed = await bucket.list({ prefix: `${prefix}${day.slice(0, 4)}/${day.slice(5, 7)}/${day.slice(8, 10)}/`, limit,
     cursor: url.searchParams.get("cursor") || undefined });
@@ -124,5 +181,5 @@ export async function serveArchive(request, url, { bucket, prefix, token, cors =
     if (!got) continue; // removed since it was listed
     try { items.push(JSON.parse(await got.text())); } catch { items.push({ key: o.key, unreadable: true }); }
   }
-  return json({ day, items, cursor: listed.truncated ? listed.cursor : null, more: Boolean(listed.truncated) }, 200, cors);
+  return json({ day, items, cursor: listed.truncated ? listed.cursor : null, more: Boolean(listed.truncated) }, 200);
 }

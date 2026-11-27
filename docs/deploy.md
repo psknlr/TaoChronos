@@ -127,9 +127,9 @@ variables in the **Variables** tab.
 | `MINIMAX_API_KEY` | the MiniMax key | yes, for the default service |
 | `OPENAI_API_KEY` | an OpenAI key for the second model, GPT-6 Luna (3 questions per visitor per day; relay/SETUP.md) | optional |
 | `SPONSOR_SECRET` | 32+ random characters: `openssl rand -hex 32` — encrypts visitors' sponsored keys, and lets you read them | optional (**设置 → 赞助**) |
-| `LOG_EXPORT_TOKEN` | 16+ random characters: `openssl rand -hex 32` | yes |
+| `LOG_EXPORT_TOKEN` | 16+ random characters: `openssl rand -hex 32` — the collector's token: the workflows read the conversation records, the sentinel's events and the usage counts with it.  The counts are the owner's alone: no page shows them; read them in `data/activity-analytics/SUMMARY.md` and the D1 console ([web.md](web.md), 使用统计) | yes |
 | `SENTINEL_SALT` | `openssl rand -hex 32` | recommended |
-| `STATS_TOKEN` | 16+ random characters | optional (**设置 → 统计**) |
+| `ACTIVITY_KEY` | 32+ random characters: `openssl rand -hex 32` — **never change it once set**. Switches on the activity ledger: different visitors, visits, every question, model use ([security/README.md](../security/README.md), 活动账本; [ADR 0035](adr/0035-the-activity-ledger.md)). Needs D1 on the deploy token | optional |
 | `CLOUDFLARE_SECURITY_TOKEN` | Zone WAF, Zone Settings, Bot Management: Edit; Zone: Read; Account Filter Lists: Edit (zone `impf.ai`) | for the edge rules |
 | `CLOUDFLARE_ANALYTICS_TOKEN` | Zone Analytics: Read (zone `impf.ai`) | for the edge's daily events |
 

@@ -17,7 +17,7 @@ from collections import Counter
 from taochronos.plugins.retrieval import index
 from taochronos.plugins.retrieval.index import BM25Index, DenseIndex, HashingEmbedder, cosine, query_tokens, tokens
 
-KEEP = re.compile(r"[㐀-鿿豈-﫿]")
+KEEP = re.compile(r"[\u3400-\ud7ff\ue000-\ufaff]")  # by number: see index._KEEP
 
 
 # ---------------------------------------------------------------- the plain definitions
@@ -96,7 +96,9 @@ def plain_dense_search(vectors: dict[str, list[float]], text: str, k: int, candi
 # ---------------------------------------------------------------- texts
 EDGES = [
     "", "。", "abc 123", "桂", "桂枝", "桂枝汤", "太阳病，头痛，发热，汗出，恶风，桂枝汤主之。",
-    "太陽病，頭痛，發熱（繁體）", "〇○々 桂 枝", "豈更車賈滑串句龜 — the compatibility ideographs", "𠀀𠀁 beyond the plane 桂枝 𪚥",
+    "太陽病，頭痛，發熱（繁體）", "〇○々 桂 枝",
+    "\uf900\uf901\uf902\uf903\uf904\uf905\uf906\uf907 — the compatibility ideographs (by number)",
+    "𠀀𠀁 beyond the plane 桂枝 𪚥",
     "消渴消渴消渴消渴", "阳浮而阴弱，阳浮者，热自发；阴弱者，汗自出。", "ａｂ　全角　与　半角 mixed 桂 枝\n汤\t主之",
 ]
 
@@ -138,7 +140,21 @@ def test_an_embedder_keeps_only_so_many_hashes_and_gives_the_same_vectors(monkey
     embedder = HashingEmbedder()
     for text in texts():
         assert embedder.embed(text) == plain_embed(text)
-        assert len(embedder._slots) <= 50
+        assert len(embedder._slots) <= 25 and len(embedder._old) <= 25  # two halves: GRAMS_KEPT in all
+
+
+def test_the_characters_read_are_named_by_number():
+    """The class was once written with the characters themselves, and an editor's normalisation had turned the first of
+    the compatibility ideographs (U+F900) into its unified form (U+8C48): one range, U+3400–U+FAFF, which the indexes
+    read to this day.  Written by number now, and pinned here by number."""
+    for cp in (0x3400, 0x4E00, 0x8C48, 0x9FFF, 0xA000, 0xAC00, 0xD7A3, 0xD7FF, 0xE000, 0xE3E7, 0xF8FF, 0xF900, 0xFA0E, 0xFAFF):
+        assert index.kept(chr(cp)) == chr(cp) and index.han(chr(cp)) == [chr(cp)], hex(cp)
+    for cp in (0x41, 0x3000, 0x3007, 0x33FF, 0xD800, 0xDBFF, 0xDC00, 0xDFFF, 0xFB00, 0xFF0C, 0x20000, 0x2A6A5):
+        assert index.kept(chr(cp)) == "" and index.han(chr(cp)) == [], hex(cp)
+    for text in texts():
+        assert index.kept(text) == "".join(index.han(text))
+    # a lone surrogate (an unpaired escape in JSON, bytes read with surrogateescape) is not read: no token, no n-gram
+    assert tokens("桂\ud800枝") == tokens("桂枝") and HashingEmbedder().embed("桂\udfff枝") == plain_embed("桂枝")
 
 
 def test_bm25_scores_and_ranks_as_the_plain_index_does():

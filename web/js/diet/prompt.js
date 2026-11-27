@@ -1,3 +1,4 @@
+// @ts-check
 // The standing instructions of the diet mode, added after the platform's own (taochronos.chat.prompt, which still hold:
 // identity, evidence discipline for the classics, nothing of the inside named, no diagnosis or prescription).  They
 // keep the model to the tools' numbers and screening, to one or two questions a turn, and to the visitor's own region —

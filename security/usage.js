@@ -1,9 +1,12 @@
-// Usage by day and place, counted by both Workers for the 统计 pane of the page's settings (docs/web.md): pages opened
-// and by how many visitors (the site), questions asked of the default service, the model calls they took and by how many
-// visitors (the relay) — each by the country and first-level region Cloudflare places the request in.  No address is
-// kept: a visitor is counted once a day by the sentinel's hashed key, and the keys go after two days.  The days are the
-// site's readers' (UTC+8 unless STATS_UTC_OFFSET says otherwise).  Who may read them: the holder of STATS_TOKEN, or
-// anyone when STATS_PUBLIC = "1".
+// Usage by day and place, counted by both Workers: pages opened and by how many visitors (the site), questions asked of
+// the default service, the model calls they took and by how many visitors (the relay) — each by the country and
+// first-level region Cloudflare places the request in.  No address is kept: a visitor is counted once a day by the
+// sentinel's hashed key, and the keys go after two days.  The days are the site's readers' (UTC+8 unless
+// STATS_UTC_OFFSET says otherwise).
+//
+// The counts are the owner's and are shown on no page.  They are read with the collector's token (LOG_EXPORT_TOKEN, a
+// secret of the repository and of the Workers) — by the repository's workflows (security/activity.py) — and by nobody
+// else: there is no public mode, no token a page asks for, and no answer a browser on another origin may read.
 
 import { bearerOk, json } from "./sentinel.js";
 
@@ -17,11 +20,7 @@ const MAX_PLACES = 500;
 export function usageConfig(env = {}) {
   const raw = env.STATS_UTC_OFFSET;
   const offset = raw === undefined || raw === null || String(raw).trim() === "" ? 8 : Number(raw);
-  return {
-    token: String(env.STATS_TOKEN || "").trim(),
-    public: String(env.STATS_PUBLIC || "").trim() === "1",
-    offset: Number.isFinite(offset) && Math.abs(offset) <= 14 ? offset : 8,
-  };
+  return { offset: Number.isFinite(offset) && Math.abs(offset) <= 14 ? offset : 8 };
 }
 
 /** The day a moment falls on, `offset` hours from UTC. */
@@ -117,14 +116,13 @@ export class UsageCore {
   }
 }
 
-/** GET …/stats?days=N: the counts for the holder of the token (or anyone, when public).  stats(days) → the counts.
- * Anyone may ask, so a refusal says no more than the page shows: how the counts are opened is in docs/web.md. */
-export async function serveStats(request, url, { cfg, stats, cors = {}, today }) {
-  if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "method not allowed" }, 405, cors);
-  if (!cfg.public) {
-    if (!cfg.token) return json({ error: "统计尚未开放", token_required: true, configured: false }, 401, cors);
-    if (!(await bearerOk(request, cfg.token))) return json({ error: "统计令牌不对", token_required: true, configured: true }, 401, cors);
-  }
+/** GET …/stats?days=N: the counts, for the holder of the collector's token (`token`) alone; stats(days) → the counts
+ * (null: there are none here — which, too, is told to the holder alone).  No CORS headers: no page, ours or another's,
+ * reads them.  Without the token set on the Worker, nobody does. */
+export async function serveStats(request, url, { token, stats, today, offset = 8 }) {
+  if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "method not allowed" }, 405);
+  if (!(await bearerOk(request, token))) return json({ error: "需要收集令牌" }, 401);
+  if (!stats) return json({ error: "这里没有统计" }, 404);
   const days = Math.min(Math.max(Math.floor(Number(url.searchParams.get("days"))) || 30, 1), MAX_DAYS);
-  return json({ v: 1, asOf: today, offset: cfg.offset, ...(await stats(days)) }, 200, cors); // today: its counts
+  return json({ v: 1, asOf: today, offset, ...(await stats(days)) }, 200); // today: its counts
 }

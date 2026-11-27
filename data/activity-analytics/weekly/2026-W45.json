@@ -1,0 +1,89 @@
+{
+ "backfill": {
+  "days": 7,
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 125,
+    "gpt-6-luna": 22
+   },
+   "by_provider": {
+    "custom": 9,
+    "deepseek": 8,
+    "fixed": 2,
+    "gemini": 2,
+    "impf": 147
+   },
+   "by_status": {
+    "done": 50,
+    "error": 108,
+    "stopped": 10
+   },
+   "feedback": {
+    "down": 1,
+    "up": 2
+   },
+   "model_calls": 705,
+   "questions": 168,
+   "tokens_in": 21841134,
+   "tokens_out": 848201,
+   "tool_calls": 1391,
+   "tools": {
+    "analysis.temporal_profile": 2,
+    "audit.claim": 5,
+    "bridge.map": 1,
+    "bridge.phenotype": 1,
+    "bridge.reverse": 4,
+    "classics.canon": 12,
+    "classics.get_passage": 521,
+    "classics.list_books": 69,
+    "classics.search": 450,
+    "kg.claims": 3,
+    "kg.term": 24,
+    "literature.modern_evidence": 4,
+    "modern.safety": 6,
+    "modern.search": 6,
+    "philology.assess_passage": 1,
+    "rwd.ask": 2,
+    "study.acupoints": 2,
+    "study.acupuncture_reason": 13,
+    "study.case": 3,
+    "study.casefind": 7,
+    "study.citations": 1,
+    "study.commentaries": 20,
+    "study.compare": 5,
+    "study.concordance": 8,
+    "study.family": 4,
+    "study.formula": 25,
+    "study.fragments": 3,
+    "study.glosses": 1,
+    "study.herb": 11,
+    "study.metrology": 44,
+    "study.names": 1,
+    "study.network": 7,
+    "study.pairs": 3,
+    "study.properties": 2,
+    "study.protocol": 3,
+    "study.reading": 1,
+    "study.reuse": 1,
+    "study.senses": 2,
+    "study.term": 39,
+    "study.translate": 5,
+    "study.usage": 6,
+    "study.witnesses": 1,
+    "taochronos_call": 3,
+    "taochronos_catalog": 30,
+    "taochronos_research": 2,
+    "validation.verify_quote": 27
+   }
+  }
+ },
+ "complete": true,
+ "kind": "weekly",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-02",
+  "label": "2026-W45",
+  "to": "2026-11-08"
+ },
+ "v": 1
+}

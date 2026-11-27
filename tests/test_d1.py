@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import gzip
 import json
+import os
 import re
+import shutil
 import sqlite3
+import subprocess
 import threading
 import urllib.parse
 import uuid
@@ -317,6 +320,32 @@ class FakeCloudflare:
             con.close()
 
 
+def test_the_backups_databases_are_its_numbered_ones_and_the_ledgers_registry_never_one(tmp_path):
+    """The backup owns the names taochronos-d1-<k>: its import deletes and remakes them with a new store, and the site's
+    deployment binds each as a backup database.  A database named in that style for something else is neither bound as
+    one (cloud/site/deploy.sh) nor may the activity ledger's registry be named so (security/bind-ledger.sh refuses it
+    before it asks Cloudflare anything): it was bound twice, and deleted at the next reset with all it held."""
+    deploy = (ROOT / "cloud" / "site" / "deploy.sh").read_text(encoding="utf-8")
+    assert 're.fullmatch(r"taochronos-d1-[0-9]+", d["name"])' in deploy and '.startswith("taochronos-d1-")' not in deploy
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("bash is not installed")
+    tools = tmp_path / "bin"
+    tools.mkdir()
+    (tools / "curl").write_text(f"#!/bin/sh\necho called >> {tmp_path / 'curl.log'}\nexit 22\n", encoding="utf-8")
+    (tools / "curl").chmod(0o755)
+    config = tmp_path / "wrangler.deploy.toml"
+    for name, refused in (("taochronos-d1-activity", True), ("taochronos-d1-7", True), ("taochronos-activity", False)):
+        config.write_text('name = "x"\n', encoding="utf-8")
+        (tmp_path / "curl.log").unlink(missing_ok=True)
+        env = {**os.environ, "PATH": f"{tools}{os.pathsep}{os.environ['PATH']}", "ACTIVITY_KEY": "k" * 40, "ACTIVITY_DB_NAME": name,
+               "CLOUDFLARE_API_TOKEN": "none", "CLOUDFLARE_ACCOUNT_ID": "none"}
+        run = subprocess.run([bash, str(ROOT / "security" / "bind-ledger.sh"), str(config)], env=env, capture_output=True, text=True, timeout=30)
+        assert run.returncode == 0 and config.read_text(encoding="utf-8") == 'name = "x"\n', run.stdout  # (the stand-in curl: no D1 either)
+        assert ("::error::ACTIVITY_DB_NAME" in run.stdout) is refused, run.stdout
+        assert (tmp_path / "curl.log").exists() is not refused  # refused before Cloudflare is asked anything
+
+
 def test_the_import_speaks_d1s_rest_api(site_store, tmp_path, monkeypatch):
     """ApiTarget (the daily job's way to D1) against the stand-in: the databases found by name across the account's
     pages and made where missing, near the site's readers; a statement a /query with its parameters; the rows written
@@ -366,11 +395,18 @@ def test_the_import_speaks_d1s_rest_api(site_store, tmp_path, monkeypatch):
         with pytest.raises(TargetError, match="no such table") as bad:
             api.query(0, "SELECT * FROM missing")
         assert not bad.value.transient and not bad.value.exhausted
-        # another store: the backup's databases made anew, the account's others untouched
+        # another store: the backup's databases made anew, the account's others untouched — one named in the backup's
+        # style for something else too (the activity ledger's registry, were it named so, was deleted with them)
+        for other in ("taochronos-d1-activity", "taochronos-d1-", "taochronos-d1-1x", "my-taochronos-d1-0"):
+            fake._create(other)
+        assert [d1.backup_number(n) for n in ("taochronos-d1-0", "taochronos-d1-12", "taochronos-d1-activity", "taochronos-d1-", "taochronos-d1-1x",
+                                              "my-taochronos-d1-0", "taochronos-activity")] == [0, 12, None, None, None, None, None]
         before = dict(api.ids)
         api.reset(plan.databases)
         assert sorted(api.ids) == sorted(before) and not set(api.ids.values()) & set(before.values())
         assert sum(1 for n, _ in fake.dbs.values() if n.startswith("another-app-")) == 120
+        assert {n for n, _ in fake.dbs.values() if "taochronos-d1-" in n} == {
+            "taochronos-d1-activity", "taochronos-d1-", "taochronos-d1-1x", "my-taochronos-d1-0", *(f"taochronos-d1-{k}" for k in before)}
         assert status(api, 0) == {}
     finally:
         fake.close()
@@ -570,8 +606,6 @@ def test_the_workers_tables_carry_the_alias_layer_the_full_corpus_reads():
 def test_the_workers_tables_refuse_a_local_layer_and_a_source_that_may_not_ship(tmp_path):
     """Nothing local reaches the Worker: a full-corpus profile that reads a local layer, or a layer crediting a source
     sources.yaml does not ship, is refused."""
-    import shutil
-
     from taochronos.chat.d1tables import _aliases
 
     domain = tmp_path / "domains" / "classics" / "aliases"
@@ -634,6 +668,33 @@ def test_the_full_corpus_searches_with_the_alias_layer_and_the_backup_alike():
     assert any(args.get("k", 10) * 3 // 10 == 0 for args in searches) and any(args.get("k", 10) < 1 for args in searches)
     assert "人参汤即理中汤" in asked
     assert any(args.get("books") for args in searches) and any("最早" in args["query"] for args in searches)
+
+
+def test_the_workers_search_ranks_with_the_servers_constants():
+    """search.js copies what route_bm25 and the fusion are made of: BM25's k1 and b, the characters a token is made of
+    (index._KEEP, by number), the query's tokens, the routes' weights and the fusion's 60.  The hits are not compared (the
+    candidates differ by design, ADR 0017); these are, so that a change on the server's side cannot leave the Worker's
+    behind unnoticed."""
+    from taochronos.plugins.retrieval import hybrid, index
+
+    text = SEARCH.read_text(encoding="utf-8")
+
+    def const(name: str) -> str:
+        return re.search(rf"^(?:export )?const {name} = (.+?);(?: *//[^\n]*)?$", text, re.MULTILINE).group(1)
+
+    assert float(const("K1")) == index.K1 and float(const("B")) == index.B
+    assert const("HAN") == f"/{index._KEEP.pattern}/u"
+    weights = {k: float(v) for k, v in re.findall(r"(\w+): ([\d.]+)", const("WEIGHTS"))}
+    assert weights == hybrid.DEFAULT_WEIGHTS
+    assert "hit.score += w / (60 + rank + 1);" in text  # hybrid.py's reciprocal-rank fusion
+    assert "hit.score += w / (60 + rank + 1)" in (ROOT / "src/taochronos/plugins/retrieval/hybrid.py").read_text(encoding="utf-8")
+    node = shutil.which("node")
+    if node:  # queryTokens itself, on what tries the edges
+        samples = ["桂", "桂枝汤", "abc", "", "桂 枝,汤", "\uf900\uf901\uf902", "\ue3e7缺字", "한글桂枝", "𠀀桂𪚥枝", "汤汤汤", "\u3400\ufaff\ufb00"]
+        script = (f"import {{ queryTokens }} from {json.dumps(SEARCH.as_uri())};"
+                  f"console.log(JSON.stringify({json.dumps(samples)}.map(queryTokens)));")
+        got = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, check=True).stdout
+        assert json.loads(got) == [index.query_tokens(s) for s in samples]
 
 
 def test_the_workers_search_reads_a_question_with_the_servers_rules():

@@ -1,0 +1,48 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 4,
+    "gpt-6-luna": 3
+   },
+   "by_provider": {
+    "impf": 7
+   },
+   "by_status": {
+    "done": 4,
+    "error": 3
+   },
+   "model_calls": 68,
+   "questions": 7,
+   "tokens_in": 3306920,
+   "tokens_out": 92893,
+   "tool_calls": 160,
+   "tools": {
+    "classics.get_passage": 64,
+    "classics.list_books": 6,
+    "classics.search": 70,
+    "kg.term": 1,
+    "modern.safety": 1,
+    "study.commentaries": 2,
+    "study.concordance": 2,
+    "study.herb": 3,
+    "study.incompat": 1,
+    "study.pairs": 2,
+    "study.term": 3,
+    "study.usage": 1,
+    "taochronos_catalog": 1,
+    "taochronos_research": 2,
+    "validation.verify_quote": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-15",
+  "label": "2026-11-15",
+  "to": "2026-11-15"
+ },
+ "v": 1
+}

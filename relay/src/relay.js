@@ -23,6 +23,10 @@
 //                               the records, never logged (relay/src/sponsors.js)
 //   GET  /v1/sponsors           the sponsorships, keys hinted only; ?reveal=ID one key in full (Bearer SPONSOR_SECRET);
 //                               POST /v1/sponsors/delete removes one
+//   POST /v1/activity           a turn's end as the page tells it, in counts (how it ended, its rounds, its tools, its
+//                               tokens) — the only word of a question asked of a visitor's own model, which never passes
+//                               here; never what was asked or answered.  Only with the activity ledger
+//   GET  /v1/activity/health    the ledger's outbox here: what waits, what was dropped (Bearer LOG_EXPORT_TOKEN)
 //
 // A second model, GPT-6 Luna (OpenAI), is offered beside the default one when the Worker has OPENAI_API_KEY: the page
 // asks for it by its public name, the relay sends it to OpenAI with that key, and a visitor may ask it a few questions a
@@ -34,10 +38,17 @@
 // refused for a while.  An answer's tokens, as the upstream reports them, count against the visitor's day and the day.
 // A request the page of another site made a reader's browser send (security/sentinel.js, ledFrom) is answered 403
 // before any of that: it is none of the reader's doing, so nothing of it is counted or kept against the address.
+//
+// A question is a turn, not a call.  The page names each turn (X-Tao-Turn) on every call of it, and the turn's first
+// call is the question, whatever the calls after it end with (gate.js).  With the activity ledger (security/ledger.js:
+// the Worker has ACTIVITY_KEY and ACTIVITY_DB) each question and each model call is written down — for the visitor the
+// page's pass names (X-Tao-Visitor: security/visitor.js), with how the call ended and what it cost, and never with the
+// page's name of the turn, which a conversation record carries: the ledger cannot say who asked what.
 
 import { EVENTS, RECORDS, serveArchive } from "../../security/archive.js";
 import { assess, bodyShape, fingerprint, ipKey, isHoneypot, ledFrom, logLine, sentinelConfig, serveSecurity } from "../../security/sentinel.js";
 import { place, serveStats, usageConfig, usageDay } from "../../security/usage.js";
+import { ledgerConfig, readPass, turnKey } from "../../security/visitor.js";
 import { normalizeSponsor, sealSponsor, sponsorReady, unseal } from "./sponsors.js";
 import { day } from "./state.js";
 
@@ -196,6 +207,12 @@ export async function handle(request, env, deps) {
   const scfg = sentinelConfig(env);
   const fp = fingerprint(request, deps.now());
   const s = scfg.mode === "off" ? null : { cfg: scfg, fp, origins: cfg.origins, deps };
+  // the activity ledger (security/ledger.js): on with its key, its registry and the object that keeps its outbox.  A:
+  // what a request is to it — its route, and what an event of it needs besides what the sentinel read
+  const lcfg = ledgerConfig(env);
+  const A = { lcfg, fp, now: deps.now(), route: ROUTES.has(url.pathname) ? url.pathname : "other",
+    L: lcfg.on && env.ACTIVITY_DB && deps.ledger ? { offset: usageConfig(env).offset, flagScore: scfg.flagScore } : null };
+  if (s) s.A = A;
   // a request the page of another site made a reader's browser send (an image, a form, a script's fetch pointed here):
   // this host answers the project's own pages only — a rule of access, whether or not the sentinel records — and
   // nothing of it is counted or kept against the reader's address
@@ -215,7 +232,8 @@ export async function handle(request, env, deps) {
     }
     return new Response(null, {
       status: 204,
-      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-Tao-Turn",
+      // (no Authorization: the page sends the relay no key, and reads nothing of it that needs one)
+      headers: { ...cors, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Accept, X-Tao-Turn, X-Tao-Visitor",
         "Access-Control-Max-Age": "86400" },
     });
   }
@@ -226,22 +244,26 @@ export async function handle(request, env, deps) {
     }
     if (s && url.pathname.startsWith("/v1/security/")) {
       if (url.pathname === "/v1/security/csp" && (await bursting(request, deps))) return error(429, "报告太频繁", "rate_limited", { ...cors, "Retry-After": "10" });
-      if (url.pathname === "/v1/security/archive") return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("relay"), token: env.LOG_EXPORT_TOKEN || "", cors });
+      if (url.pathname === "/v1/security/archive") return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: EVENTS("relay"), token: env.LOG_EXPORT_TOKEN || "" });
       const res = await serveSecurity(request, url, { prefix: "/v1/security", token: env.LOG_EXPORT_TOKEN || "", watch: deps.watch, cfg: scfg, fp: s.fp,
         now: deps.now(), cors, archived: Boolean(env.ARCHIVE) });
       if (res) return res;
     }
     switch (`${request.method} ${url.pathname}`) {
-      case "GET /v1/health": return health(env, cfg, cors, deps.now());
-      case "GET /v1/stats": return await stats(request, env, url, cors, deps);
+      case "GET /v1/health": return health(env, cfg, cors, deps.now(), A);
+      case "GET /v1/stats": return await stats(request, env, url, deps);
       case "GET /v1/egress": return await egress(request, env, cfg, cors, deps);
-      case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s);
-      case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s);
-      case "POST /v1/feedback": return await feedback(request, cfg, cors, allowed, deps, s);
+      case "POST /v1/chat/completions": return await chat(request, env, cfg, cors, allowed, deps, s, A);
+      case "POST /v1/logs": return await submit(request, cfg, cors, allowed, deps, s, A);
+      case "POST /v1/feedback": return await feedback(request, cfg, cors, allowed, deps, s, A);
+      case "POST /v1/activity": return await beacon(request, cfg, cors, allowed, deps, s, A);
+      case "GET /v1/activity/health":
+        if (!(await authorized(request, env))) return error(401, "需要收集令牌", "unauthorized");
+        return A.L ? json({ v: 1, relay: await deps.ledger.health(), ids: lcfg.ids }) : error(404, "这里没有活动账本", "activity_off");
       case "GET /v1/logs/export": return await records(request, env, url, deps);
       case "POST /v1/logs/ack": return await ack(request, env, deps);
       case "GET /v1/logs/archive": return await serveArchive(request, url, { bucket: env.ARCHIVE, prefix: RECORDS, token: env.LOG_EXPORT_TOKEN || "" });
-      case "POST /v1/sponsor": return await sponsor(request, env, cfg, cors, allowed, deps, s);
+      case "POST /v1/sponsor": return await sponsor(request, env, cfg, cors, allowed, deps, s, A);
       case "GET /v1/sponsors": return await sponsors(request, env, url, deps, s);
       case "POST /v1/sponsors/delete": return await unsponsor(request, env, deps, s);
       default:
@@ -260,6 +282,7 @@ const json = (data, status = 200, headers = {}) =>
 
 /** Errors in the shape the page's model clients read (an OpenAI-style error object). */
 const error = (status, message, type, headers = {}, extra = {}) => json({ error: { message, type } }, status, { ...headers, ...extra });
+const refusal = error;
 
 const encoder = new TextEncoder();
 
@@ -326,8 +349,43 @@ async function bursting(request, deps) {
 function note(s, route, status, extra = {}) {
   const a = assess(s.fp, { route, origins: s.origins, ownPrefix: s.cfg.ownPrefix });
   logLine("relay", s.fp, a, null, status, s.cfg);
-  s.deps.defer(s.deps.observe(s.fp, a, { status, ...extra }, s.cfg));
+  // (with the ledger: an event of it too, written by the object in the same round trip)
+  s.deps.defer(s.deps.observe(s.fp, a, { status, ...extra, ...(s.A?.L ? { activity: written(s.A, { route: route === "honeypot" ? "honeypot" : s.A.route }) } : {}) }, s.cfg));
 }
+
+// ------------------------------------------------------------------ the activity ledger (security/ledger.js)
+// the relay's own addresses, as an event names them; anything else is "other" (a path a scanner made up is in no event)
+const ROUTES = new Set(["/v1/health", "/v1/stats", "/v1/egress", "/v1/chat/completions", "/v1/logs", "/v1/feedback", "/v1/activity", "/v1/sponsor",
+  "/v1/sponsors", "/v1/logs/export", "/v1/logs/ack", "/v1/logs/archive", "/v1/security/csp"]);
+// the page's id for a turn (app.js: its answer's message id), sent with each of the turn's calls
+const TURN_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** What an event of this request needs besides what the sentinel read of it (gate.js: eventOf). */
+const written = (A, more = {}) => ({ ledger: true, route: A.route, offset: A.L.offset, flagScore: A.L.flagScore, keep: A.lcfg.keep, ...more });
+
+/**
+ * Which turn a call belongs to, for the object's gate (gate.js): the page's name for it (X-Tao-Turn) as a keyed digest
+ * — or, from a page that names none, a digest of what the visitor last asked, per caller and day: a turn's tool rounds
+ * repeat it, and then only a call that ends with it may be a question.  With the ledger: the visitor the page's pass
+ * names (X-Tao-Visitor), and what is written down of the call.
+ */
+async function activityOf(request, A, { who, messages, model }) {
+  const named = request.headers.get("X-Tao-Turn") || "";
+  let t;
+  if (TURN_ID.test(named)) t = { key: await turnKey(named, A.lcfg.key), explicit: true, turn: true };
+  else {
+    let user = null;
+    for (let i = messages.length - 1; i >= 0; i--) if (messages[i]?.role === "user") { user = messages[i]; break; }
+    t = { key: `q${hex(await sha256(`${who}|${JSON.stringify(user?.content ?? "")}`)).slice(0, 32)}`, explicit: false, turn: messages[messages.length - 1]?.role === "user" };
+  }
+  const out = { ...t, turnMs: A.lcfg.turnDays * 86400000 };
+  if (!A.L) return out;
+  const visitor = A.lcfg.ids === "off" ? null : await readPass(request.headers.get("X-Tao-Visitor") || "", A.lcfg.key, A.now);
+  return { ...out, ...written(A, { fp: A.fp, visitor, more: { provider: RELAY_PROVIDER, model } }) };
+}
+
+/** How a call ended, for the ledger: told once the reply has gone (or could not), after the answer. */
+const settling = (gate, deps) => (gate.invocation_id ? (outcome) => deps.defer(deps.ledger.settle({ invocation_id: gate.invocation_id, turn_id: gate.turn_id, ...outcome })) : null);
 
 const BLOCKED = "该地址因异常访问已被暂时限制，请稍后再试";
 
@@ -363,13 +421,17 @@ function limited(gate, limits, cors, what = "请求", second = null) {
 }
 
 // ------------------------------------------------------------------ endpoints
-function health(env, cfg, cors, now) {
+function health(env, cfg, cors, now, A) {
   const second = secondReady(env, cfg) ? cfg.openai : null;
   const models = [cfg.publicModel, ...(second ? [second.publicModel] : [])];
   return json({
     ok: Boolean(env.MINIMAX_API_KEY), service: "taochronos-relay", version: VERSION, model: cfg.publicModel, models,
     default: defaultModel(models, cfg, now), // what the page chooses for a visitor who has chosen none
     logs: cfg.logs, feedback: cfg.feedback, sponsor: cfg.sponsor && sponsorReady(env), max_output_tokens: cfg.maxTokens,
+    // what the page may send besides its calls: its name for each turn (a question is then counted once however many
+    // calls it takes) and, with the ledger, a turn's end in counts (POST /v1/activity) and its visitor's pass — ids:
+    // whether visitors have ids at all (notice: unless they switch it off; optin: once they switch it on; off: none)
+    activity: { turn: true, ...(A?.L ? { beacon: true, ids: A.lcfg.ids } : {}) },
     limits: { per_minute: cfg.chat.perMinute, per_day: cfg.chat.perDay, tokens_per_day: cfg.chat.tokensPerDay,
       // a model counted in questions, not calls: questions per visitor per day
       ...(second ? { questions: { [second.publicModel]: second.questions.perDay } } : {}) },
@@ -380,7 +442,7 @@ function health(env, cfg, cors, now) {
 const BASE_RESP = { 1004: [503, "upstream_auth"], 2049: [503, "upstream_auth"], 1008: [503, "upstream_quota"], 1002: [429, "upstream_rate"],
   1039: [429, "upstream_rate"] };
 
-async function chat(request, env, cfg, cors, allowed, deps, s) {
+async function chat(request, env, cfg, cors, allowed, deps, s, A) {
   if (!allowed) {
     if (s) note(s, "chat", 403);
     return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
@@ -411,7 +473,7 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   const asked = body.model;
   // the second model, by its public name (or OpenAI's): its own key, its own limits (secondChat)
   if (typeof asked === "string" && asked && (asked === cfg.openai.publicModel || asked === cfg.openai.model) && secondReady(env, cfg)) {
-    return await secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a });
+    return await secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a }, A);
   }
   if (!env.MINIMAX_API_KEY) return notConfigured();
   // the default service's model by its public name, or by none (pages older than it send the upstream's own name)
@@ -448,10 +510,11 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   const reserve = Math.ceil(raw.length / 3);
   let gate;
   try {
-    // the call is counted with the gate's round trip for the settings' 统计 pane (security/usage.js): its day, its place,
+    // the call is counted with the gate's round trip for the owner's daily counts (security/usage.js): its day, its place,
     // and whether it is a question or a tool round of one
     const usage = s ? { day: usageDay(deps.now(), usageConfig(env).offset), ...place(s.fp), turn: Boolean(shape?.turn) } : null;
-    gate = await deps.gate({ who, kind: "chat", limits: cfg.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve, usage });
+    gate = await deps.gate({ who, kind: "chat", limits: cfg.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve, usage,
+      activity: await activityOf(request, A, { who, messages: body.messages, model: cfg.publicModel }) });
   } catch (err) {
     // the counters cannot be asked (the object's day's allowance spent, or a failure): a call is never let through
     // uncounted — the visitor is told to come back, and may use a key of their own
@@ -468,7 +531,7 @@ async function chat(request, env, cfg, cors, allowed, deps, s) {
   };
 
   return relayed({ url: `${cfg.upstream}/chat/completions`, key: env.MINIMAX_API_KEY, payload, request, cors, view: cfg, spend, noReasoning, deps,
-    ways: waysOf(cfg.via, deps) });
+    ways: waysOf(cfg.via, deps), settle: settling(gate, deps) });
 }
 
 /** The ways a model service is asked, in order: from where the Worker runs, and through an object placed elsewhere
@@ -483,9 +546,25 @@ function waysOf(via, deps) {
  * The upstream asked, and its reply as a visitor may see it: its refusals in the default service's words (with what to
  * do instead), its stream or its JSON renamed and filtered for `view` — the model's public name and the upstream's
  * reasoning-format prefix (publicText, publicFilter) — and, asked for no thinking, without reasoning.  `label` names the
- * upstream in the Worker's log (a status code only, never a body).
+ * upstream in the Worker's log (a status code only, never a body).  `settle`, when given, is told how the call ended —
+ * a word for it (ok, or the refusal's type), the status the visitor got, the asks it took and from where, its tokens, how
+ * long the model service took to begin and the whole took — once: when the reply has gone, or could not.  A reply the
+ * visitor left before its end is told by nobody: its call stays open in the ledger.
  */
-async function relayed({ url, key, payload, request, cors: plain, view, spend, noReasoning, deps, label = "upstream", ways }) {
+async function relayed({ url, key, payload, request, cors: plain, view, spend, noReasoning, deps, label = "upstream", ways, settle = null }) {
+  const began = deps.now();
+  let got = null;
+  let first = null;
+  let used = null;
+  let told = false;
+  const end = (execution_status, http_status) => {
+    if (told || !settle) return;
+    told = true;
+    settle({ execution_status, http_status, asks: got?.asks || 0, retry_count: Math.max(0, (got?.asks || 1) - 1), via: got?.via,
+      input_tokens: used ? Number(used.prompt_tokens) || 0 : undefined, output_tokens: used ? Number(used.completion_tokens) || 0 : undefined,
+      latency_ms: first === null ? undefined : Math.max(0, first - began), duration_ms: Math.max(0, deps.now() - began) });
+  };
+  const counted = (usage) => { used = usage; spend(usage); };
   const init = {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: request.headers.get("Accept") || "application/json",
@@ -493,16 +572,19 @@ async function relayed({ url, key, payload, request, cors: plain, view, spend, n
     body: payload,
   };
   // the visitor leaving, or stopping the answer, ends the model call too (request.signal)
-  const got = await reach({ ways, url, init, signal: request.signal, ms: view.firstByteMs, hedgeMs: view.hedgeMs, attempts: view.attempts, label,
+  got = await reach({ ways, url, init, signal: request.signal, ms: view.firstByteMs, hedgeMs: view.hedgeMs, attempts: view.attempts, label,
     pause: deps.pause || pauseFor, health: deps.routes, now: deps.now, at: request.cf?.colo });
   // how the reply came, for the page's record of the turn: the asks it took, and the place the reply is from
   const cors = { ...plain, "X-Tao-Asks": String(got.asks || 0), ...(got.via ? { "X-Tao-Via": got.via } : {}) };
+  // a refusal in the default service's words; its type is the word the ledger keeps for how the call ended
+  const error = (status, message, type, headers = {}, extra = {}) => { end(type, status); return refusal(status, message, type, headers, extra); };
   if (!got.res) {
     if (got.silent) return error(504, "默认服务的模型服务暂时没有回应，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_timeout", cors);
     return got.failed
       ? error(502, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "upstream_error", cors)
       : error(502, "默认服务暂时连不上模型服务，请稍后再试", "upstream_unreachable", cors);
   }
+  first = deps.now();
   const upstream = got.res;
   const type = upstream.headers.get("Content-Type") || "application/json";
   if (upstream.status === 401 || upstream.status === 403) {
@@ -545,13 +627,18 @@ async function relayed({ url, key, payload, request, cors: plain, view, spend, n
       return error(status, `${msg}，请稍后再试，或在“设置 → 模型”里填入自己的 API Key`, kind, cors);
     }
     const out = noReasoning && j ? JSON.stringify(withoutReasoning(j)) : text;
-    return new Response(publicText(out, view, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    const said = publicText(out, view, counted);
+    end("ok", upstream.status);
+    return new Response(said, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
   if (!type.includes("event-stream") || !upstream.body) {
     const text = await upstream.text().catch(() => "");
-    return new Response(publicText(text, view, spend), { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
+    const said = publicText(text, view, counted);
+    end("ok", upstream.status);
+    return new Response(said, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
   }
-  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(view, spend));
+  // (the stream's end tells how the call ended: by then its usage, when the upstream reports one, has passed)
+  const stream = (noReasoning ? upstream.body.pipeThrough(reasoningFilter()) : upstream.body).pipeThrough(publicFilter(view, counted, () => end("ok", upstream.status)));
   return new Response(stream, { status: upstream.status, headers: { ...cors, "Content-Type": type, "Cache-Control": "no-store" } });
 }
 
@@ -816,8 +903,6 @@ export async function placedFetch(request, env, fetcher) {
 // temperature the model may refuse) stays here
 const OPENAI_FIELDS = ["messages", "tools", "tool_choice", "parallel_tool_calls", "stream", "stream_options", "response_format", "stop", "seed"];
 const MESSAGE_FIELDS = ["role", "content", "name", "tool_calls", "tool_call_id"];
-// the page's id for a turn (app.js: its answer's message id), sent with each of the turn's calls
-const TURN_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** The page's request in OpenAI's terms: the known fields only, each message without the reasoning another model sent
  * back, the output within [minTokens, maxTokens].  With tools, no reasoning: on Chat Completions GPT-6 Luna calls
@@ -852,7 +937,7 @@ async function questionOf(request, messages) {
 
 /** A call for the second model: counted in questions per visitor per day (and, under them, in calls and tokens), sent
  * to OpenAI with the Worker's OPENAI_API_KEY, its reply passed on under the model's public name. */
-async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a }) {
+async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, a }, A) {
   const o = cfg.openai;
   const payload = JSON.stringify(openaiBody(body, o.model, cfg.maxTokens, o.minOutput));
   const noReasoning = body.thinking?.type === "disabled";
@@ -863,7 +948,8 @@ async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, 
   try {
     const usage = s ? { day: usageDay(deps.now(), usageConfig(env).offset), ...place(s.fp), turn: Boolean(shape?.turn) } : null;
     gate = await deps.gate({ who, kind: "openai", limits: o.chat, fp: s?.fp, a, shape, cfg: s?.cfg, reserve, usage,
-      question: { kind: "openai-q", limits: o.questions, id: q.id, turn: q.turn } });
+      question: { kind: "openai-q", limits: o.questions, id: q.id, turn: q.turn },
+      activity: await activityOf(request, A, { who, messages: body.messages, model: o.publicModel }) });
   } catch (err) {
     console.error("gate", err?.name || "Error");
     return error(503, "默认服务暂时不可用，请稍后再试，或在“设置 → 模型”里填入自己的 API Key", "unavailable", { ...cors, "Retry-After": "60" });
@@ -880,7 +966,7 @@ async function secondChat(request, env, cfg, cors, deps, s, { body, raw, shape, 
   const far = Boolean(o.locations.length && deps.egress);
   const ways = [far ? { name: o.locations.join("+"), placed: true, fetch: placed(o.locations, deps) } : { name: DIRECT, fetch: deps.fetch }];
   return relayed({ url: `${o.upstream}/chat/completions`, key: env.OPENAI_API_KEY, payload, request, cors, view, spend, noReasoning, deps,
-    label: "upstream openai", ways });
+    label: "upstream openai", ways, settle: settling(gate, deps) });
 }
 
 // ------------------------------------------------------------------ what a visitor sees of the upstream: nothing
@@ -980,7 +1066,7 @@ function streamPattern(cfg) {
  * and every byte of an answer passes through here, so nothing is done twice (about 5 ms per MB of stream under Node,
  * most of it decoding and encoding; a long answer is well under 1 MB).
  */
-export function publicFilter(cfg, onUsage) {
+export function publicFilter(cfg, onUsage, onEnd = null) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const pattern = streamPattern(cfg);
@@ -1008,6 +1094,7 @@ export function publicFilter(cfg, onUsage) {
     flush(controller) {
       buffer += decoder.decode();
       if (buffer) controller.enqueue(pass(buffer));
+      if (onEnd) { try { onEnd(); } catch { /* the count is not the visitor's concern */ } }
     },
   });
 }
@@ -1152,9 +1239,14 @@ export function normalizeFeedback(r) {
   return JSON.parse(JSON.stringify(out)); // without the undefined fields
 }
 
-async function submit(request, cfg, cors, allowed, deps, s) {
-  return intake(request, cfg, cors, allowed, deps, s, {
+async function submit(request, cfg, cors, allowed, deps, s, A) {
+  return intake(request, cfg, cors, allowed, deps, s, A, {
     route: "logs", kind: "log", on: cfg.logs, limits: cfg.log, normalize: normalizeRecord, what: "记录",
+    // to the ledger: the turn is archived — and, where the ledger never heard of the turn, counted (ledger.js: recorded),
+    // unless it is the default service's own: its question was counted here with its first call, whatever it was known
+    // by.  Told by a keyed digest of the turn's id; the record itself goes to the book, and nothing of it but counts here
+    kept: async (record, model, act) => deps.ledger.recorded(act, await turnKey(record.id, A.lcfg.key), recordInfo(record, model),
+      record.provider === RELAY_PROVIDER),
     off: ["对话记录已关闭", "logs_off"], full: "对话记录暂存已满，这条记录未保存",
     // a record of the default service's own conversation comes from a visitor it answered today; a record of a
     // conversation held with the visitor's own key (another provider) never passed through here, and is taken on its
@@ -1166,9 +1258,10 @@ async function submit(request, cfg, cors, allowed, deps, s) {
 
 /** Feedback is the visitor's own act, on a turn of any day: taken on its origin and its own limits, and kept with the
  * records (the collector takes both).  The visitor waits for it: a feedback that could not be kept says so. */
-async function feedback(request, cfg, cors, allowed, deps, s) {
-  return intake(request, cfg, cors, allowed, deps, s, {
+async function feedback(request, cfg, cors, allowed, deps, s, A) {
+  return intake(request, cfg, cors, allowed, deps, s, A, {
     route: "feedback", kind: "feedback", on: cfg.feedback, limits: cfg.rate, normalize: normalizeFeedback, what: "反馈",
+    kept: async (record, model, act) => deps.ledger.logged({ ...act, type: "feedback_submitted", more: { detail: record.rating || "none" } }),
     off: ["反馈已关闭", "feedback_off"], full: "暂存已满，这条反馈未保存",
     day: `今天的反馈已达上限（每人每天 ${cfg.rate.perDay} 条），明天再来`,
     lost: () => error(503, "反馈暂时无法提交，请稍后再试", "feedback_unavailable", { ...cors, "Retry-After": "60" }),
@@ -1177,7 +1270,7 @@ async function feedback(request, cfg, cors, allowed, deps, s) {
 
 /** What the page sends to be kept (a record, a feedback): from the page's origins, within the ten-second gate and the
  * size limit, of the known fields, past the sentinel and the counters — then into the book for the collector. */
-async function intake(request, cfg, cors, allowed, deps, s, how) {
+async function intake(request, cfg, cors, allowed, deps, s, A, how) {
   const { route, what } = how;
   if (!allowed) {
     if (s) note(s, route, 403);
@@ -1201,6 +1294,7 @@ async function intake(request, cfg, cors, allowed, deps, s, how) {
     return error(400, `${what}格式不对`, "bad_record", cors);
   }
   // the page names the default service's model by its public name; the records (the owner's) keep the one that answered
+  const named = record.model;
   if (record.model === cfg.publicModel) record.model = cfg.model;
   else if (record.model === cfg.openai.publicModel) record.model = cfg.openai.model;
   const a = s ? assess(s.fp, { route, origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
@@ -1221,6 +1315,97 @@ async function intake(request, cfg, cors, allowed, deps, s, how) {
     console.error("logs full", cfg.keep);
     return error(503, how.full, "logs_full", { ...cors, "Retry-After": "3600" });
   }
+  // (the ledger hears of it after the answer; a record names no visitor, and its event none either)
+  if (A?.L && how.kept && typeof record.id === "string" && TURN_ID.test(record.id)) {
+    deps.defer(how.kept(record, named, written(A, { fp: s?.fp || A.fp, a, w: gate.watch, status: 204 })));
+  }
+  return new Response(null, { status: 204, headers: cors });
+}
+
+// ------------------------------------------------------------------ a turn's end, as the page tells it
+const SLUG = /^[a-z0-9][a-z0-9_-]{0,39}$/;
+const MODULES = new Set(["chat", "diet", "medicinal", "mydata", "research"]);
+// a turn that touched the visitor's own health or their own data is counted, and for no one (the page sends no pass
+// with it either: web/js/telemetry.js)
+const UNNAMED = new Set(["diet", "medicinal", "mydata"]);
+const ACTIVITY_MAX_BYTES = 4096;
+const ACTIVITY_LIMITS = { perMinute: 30, perDay: 1000, total: 0 };
+
+/** A provider as the ledger names it: the default service, the page's own reply, a preset's id — or "custom" for an
+ * endpoint a visitor set by hand (its id is theirs, and so is its address). */
+const providerOf = (v) => (typeof v !== "string" || !v ? null : v.startsWith("custom") ? "custom" : SLUG.test(v) ? v : "other");
+
+/** What a conversation record says of its turn, in counts: for a turn the page did not tell the end of. */
+function recordInfo(r, model) {
+  return {
+    provider: providerOf(r.provider), model: r.provider === RELAY_PROVIDER ? str(model, 80) ?? null : null, // a visitor's own model is their setting
+    execution_status: str(r.status, 20), rounds: num(r.rounds), tool_count: Array.isArray(r.tools) ? r.tools.length : undefined,
+    retry_count: Array.isArray(r.requests) ? r.requests.filter((q) => q.attempt > 1).length : undefined,
+    input_tokens: num(r.usage?.input), output_tokens: num(r.usage?.output), duration_ms: num(r.ms), runtime: str(r.runtime, 20), corpus: str(r.corpus, 20),
+    turn_index: num(r.turn),
+  };
+}
+
+/**
+ * A turn's end as the page sends it (web/js/telemetry.js), reduced to the known fields and their limits: which turn (the
+ * page's id of it), the visitor's pass, and how it went in words from a short list and counts — never a question, an
+ * answer, a tool's arguments, an address or a key.  Null when it is not one.
+ */
+export function normalizeTurn(r) {
+  if (!obj(r) || r.v !== 1 || r.kind !== "turn" || typeof r.turn !== "string" || !TURN_ID.test(r.turn)) return null;
+  const word = (v, re) => (typeof v === "string" && re.test(v) ? v : undefined);
+  const count = (v, most) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.min(most, Math.floor(v)) : undefined);
+  const tools = {};
+  if (obj(r.tools)) {
+    for (const [name, n] of Object.entries(r.tools).slice(0, 20)) if (/^[a-z][a-z0-9_.]{1,60}$/.test(name) && count(n, 10000)) tools[name] = count(n, 10000);
+  }
+  const info = {
+    provider: providerOf(r.provider), model: word(r.model, /^[A-Za-z0-9][A-Za-z0-9 ._:/-]{0,79}$/) ?? null,
+    execution_status: word(r.status, /^(?:done|error|stopped)$/), rounds: count(r.rounds, 1000), tool_count: count(r.tool_count, 100000),
+    tools: Object.keys(tools).length ? tools : undefined, retry_count: count(r.retries, 1000), input_tokens: count(r.input, 1e9), output_tokens: count(r.output, 1e9),
+    duration_ms: count(r.ms, 86400000), runtime: word(r.runtime, /^(?:browser|server)$/), corpus: word(r.corpus, /^[a-z]{1,12}$/),
+    module: MODULES.has(r.module) ? r.module : undefined, turn_index: count(r.turn_index, 100000),
+    content_consent: r.consent === true ? true : r.consent === false ? false : undefined, ui_lang: word(r.lang, /^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$/),
+  };
+  return { turn: r.turn, pass: typeof r.pass === "string" ? r.pass.slice(0, 120) : "", info: JSON.parse(JSON.stringify(info)) };
+}
+
+/**
+ * POST /v1/activity: from the page's origins, within the ten-second gate, a small body of the known fields, past the
+ * sentinel and its own counters — then to the ledger, after the answer.  A question asked of a visitor's own model, or
+ * answered by the page itself, never passes the relay: this is the only word of it, and it is the page's.
+ */
+async function beacon(request, cfg, cors, allowed, deps, s, A) {
+  if (!allowed) {
+    if (s) note(s, "activity", 403);
+    return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
+  }
+  if (!A.L) return error(404, "这里不收使用统计", "activity_off", cors);
+  if (await bursting(request, deps)) {
+    if (s) note(s, "activity", 429);
+    return limited({ reason: "burst" }, ACTIVITY_LIMITS, cors, "提交");
+  }
+  const raw = await readBody(request, ACTIVITY_MAX_BYTES);
+  if (raw === null) return error(413, "内容过大", "too_large", cors);
+  let r;
+  try { r = JSON.parse(raw); } catch { r = null; }
+  const turn = normalizeTurn(r);
+  if (!turn) {
+    if (s) note(s, "activity", 400);
+    return error(400, "格式不对", "bad_activity", cors);
+  }
+  const a = s ? assess(s.fp, { route: "activity", origins: cfg.origins, ownPrefix: s.cfg.ownPrefix }) : null;
+  let gate;
+  try {
+    gate = await deps.gate({ who: await caller(request, deps.now()), kind: "activity", limits: ACTIVITY_LIMITS, fp: s?.fp, a, cfg: s?.cfg });
+  } catch (err) {
+    console.error("gate", err?.name || "Error");
+    return new Response(null, { status: 204, headers: cors }); // let go: it is not the visitor's concern
+  }
+  if (s) logLine("relay", s.fp, a, gate.watch, gate.ok ? 204 : gate.reason === "blocked" ? 403 : 429, s.cfg);
+  if (!gate.ok) return limited(gate, ACTIVITY_LIMITS, cors, "提交");
+  const visitor = A.lcfg.ids === "off" || UNNAMED.has(turn.info.module) ? null : await readPass(turn.pass, A.lcfg.key, A.now);
+  deps.defer((async () => deps.ledger.finished(written(A, { fp: s?.fp || A.fp, a, w: gate.watch, status: 204, visitor }), await turnKey(turn.turn, A.lcfg.key), turn.info))());
   return new Response(null, { status: 204, headers: cors });
 }
 
@@ -1289,7 +1474,7 @@ const SPONSOR_MAX_BYTES = 8192;
 /** A visitor gives the service an API key of their own, and the model it is for: from the page's origins, within the
  * ten-second gate and its own counters, of the known fields — then encrypted into the sponsors' book (never the
  * records', which the repository collects).  Nothing of it is logged. */
-async function sponsor(request, env, cfg, cors, allowed, deps, s) {
+async function sponsor(request, env, cfg, cors, allowed, deps, s, A) {
   if (!allowed) {
     if (s) note(s, "sponsor", 403);
     return error(403, "这个服务只供道乃久网页使用", "forbidden_origin", cors);
@@ -1329,6 +1514,7 @@ async function sponsor(request, env, cfg, cors, allowed, deps, s) {
     console.error("sponsors full", cfg.sponsorKeep);
     return error(503, "赞助暂存已满，请稍后再试", "sponsor_full", { ...cors, "Retry-After": "3600" });
   }
+  if (A?.L) deps.defer(deps.ledger.logged(written(A, { type: "sponsor_submitted", fp: s?.fp || A.fp, a, w: gate.watch, status: 204 }))); // that one was given: never what
   return new Response(null, { status: 204, headers: cors });
 }
 
@@ -1366,12 +1552,13 @@ async function unsponsor(request, env, deps, s) {
   return json(await deps.sponsors.remove(id));
 }
 
-// ------------------------------------------------------------------ the counts for the settings' 统计 pane
-async function stats(request, env, url, cors, deps) {
-  if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { ...cors, "Retry-After": "10" });
+// ------------------------------------------------------------------ the daily counts: the owner's
+/** GET /v1/stats: for the holder of the collector's token alone (security/usage.js), and for no page: no CORS headers. */
+async function stats(request, env, url, deps) {
+  if (await bursting(request, deps)) return error(429, "请求太频繁，请稍后再试", "rate_limited", { "Retry-After": "10" });
   const ucfg = usageConfig(env);
   const today = usageDay(deps.now(), ucfg.offset);
-  return serveStats(request, url, { cfg: ucfg, stats: (days) => deps.stats(days, today), cors, today });
+  return serveStats(request, url, { token: env.LOG_EXPORT_TOKEN || "", stats: (days) => deps.stats(days, today), today, offset: ucfg.offset });
 }
 
 async function records(request, env, url, deps) {

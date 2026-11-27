@@ -1,0 +1,29 @@
+# What the Rust workspace may depend on (cargo-deny; .github/workflows/audit.yml checks it each week and on every change
+# to Cargo.lock): crates from crates.io only, by version (no wildcard), under permissive licences, none with a published
+# advisory (RustSec), none yanked.  The kernel itself (taocore) and the browser's module depend on nothing; what is here
+# is the CPython binding's (PyO3) and its build.
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+
+[licenses]
+version = 2
+allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "Unicode-3.0"]
+confidence-threshold = 0.9
+
+# the workspace's own crates are not published and carry no licence of their own: the repository's terms are theirs
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

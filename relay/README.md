@@ -20,8 +20,10 @@
 | `GET /v1/security/export`、`POST /v1/security/ack`、`GET /v1/security/summary` | 哨兵记下的可疑请求事件（取走、确认删除）与当前概览（按分数排列的访客、正在被拒绝的地址）；需 `LOG_EXPORT_TOKEN` |
 | `POST /v1/security/csp` | 浏览器上报的内容安全策略违规（存为事件） |
 | `POST /v1/sponsor` | 访客**赞助**的自己的 API Key 与模型名（「设置 → 赞助」，勾选同意后才发送）：只保留已知字段，密钥以 `SPONSOR_SECRET` 派生的密钥 AES-GCM 加密，存在单独的 Durable Object（`SponsorBook`）里——**不与对话记录存在一起，不会被 chat-logs 工作流取进仓库**，不写日志；同一把密钥再交一次只更新说明。每人每天 `SPONSOR_PER_DAY` 次，最多存 `SPONSOR_KEEP` 条；没有 `SPONSOR_SECRET` 时关闭 |
+| `POST /v1/activity` | **活动账本**（`security/ledger.js`，有 `ACTIVITY_KEY` 时才有；[security/README.md](../security/README.md)「活动账本」）：网页在一轮结束时报来的一组**计数**——怎么结束、几轮、用了哪些工具各几次、token——只保留已知字段，不含问题、回答、工具参数、密钥，也不含访客自设接口的地址与模型名。访客用自己的模型提问时请求不经过中转，这是唯一的凭据。每个地址每分钟 30 条、每天 1000 条 |
+| `GET /v1/activity/health` | 账本在中转这边的发件箱：等着多少条、丢弃与丢失的计数（需 `LOG_EXPORT_TOKEN`） |
 | `GET /v1/sponsors`、`POST /v1/sponsors/delete` | 发布方查看赞助（密钥只显示首尾几位）、`?reveal=编号` 解密一把、删除一条；需 `Authorization: Bearer SPONSOR_SECRET`（`python3 relay/collect.py sponsors`） |
-| `GET /v1/stats?days=N` | 网页「设置 → 统计」读取的提问与模型调用次数（按天、国家与省份；需 `STATS_TOKEN`，`STATS_PUBLIC = "1"` 时公开；docs/web.md） |
+| `GET /v1/stats?days=N` | 提问与模型调用次数（按天、国家与省份）：只给站长——只认收集令牌 `LOG_EXPORT_TOKEN`、不带 CORS 头，任何网页都读不到；activity 工作流读它（docs/web.md「使用统计」） |
 
 访客按“IP + 日期”的哈希计数，IP 本身不保存；记录里没有 IP。一个问题通常要调用模型几次（每轮工具调用一次）。模型回复末尾报告的
 用量（输入 + 输出 token）也计入该访客当天与全体当天的额度（`TOKENS_PER_DAY`、`TOTAL_TOKENS_PER_DAY`）：用完即拒绝下一次调用。

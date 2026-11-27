@@ -10,8 +10,13 @@ from dataclasses import dataclass, field
 
 from ...protocol.documents import Passage
 from .domain import DomainPack
+from .kept import TextMemo
 
 PUNCT = set("，。；：、？！“”‘’（）《》…—·「」『』 \n\t,.;:!?()[]")
+# passages whose comparable form compare keeps (_comparable, kept.TextMemo): a research run's 1,130 compared texts (some
+# 115,000 characters) several times over; 14 to 38 bytes a character in the 要籍语料, so some 19 MB at the most
+TEXTS_KEPT = 4096
+TEXTS_CHARS = 500_000
 
 
 def strip_punct(text: str) -> tuple[str, list[int]]:
@@ -55,6 +60,7 @@ class TextReuseDetector:
         self._corpus = None  # large corpora: document frequencies come from the full-text index on demand
         self._n = 0
         self.intertext = None  # an IntertextAnalyzer: types each match (直接引用, 转述, 引而驳之 …)
+        self._texts: TextMemo[tuple[str, list[int], str]] = TextMemo(TEXTS_KEPT, TEXTS_CHARS)  # text → _comparable(text)
 
     def fit(self, passages: list[Passage]) -> None:
         df: Counter = Counter()
@@ -87,6 +93,17 @@ class TextReuseDetector:
         masked = "".join(chars)
         return re.sub(r"主之|宜", lambda mt: "□" * len(mt.group(0)), masked)
 
+    def _comparable(self, text: str) -> tuple[str, list[int], str]:
+        """A passage's text variant-normalised without punctuation, the map back to its offsets, and that text masked:
+        what every comparison of the passage starts from.  A passage is compared in many pairs (lineage pairs each
+        passage of its scope with the others), so the form is kept, under the text itself (TextMemo, TEXTS_KEPT and
+        TEXTS_CHARS)."""
+        kept = self._texts.get(text)
+        if kept is None:
+            clean, index = strip_punct(self.pack.variants.normalize_text(text))
+            kept = self._texts.put(text, (clean, index, self._masked(clean)))
+        return kept
+
     def _formulaic(self, block: str) -> bool:
         """A block that is (nearly) only a formula name — a formula term inside it at least its length less three —
         or only prescription formulae.  The terms that can qualify are substrings of the block, so the block's own
@@ -100,10 +117,8 @@ class TextReuseDetector:
 
     def compare(self, a: Passage, b: Passage) -> ReuseMatch | None:
         """Compare two passages; ``a`` is treated as the later witness when dates differ."""
-        na = self.pack.variants.normalize_text(a.text)
-        nb = self.pack.variants.normalize_text(b.text)
-        ca, ia = strip_punct(na)
-        cb, ib = strip_punct(nb)
+        ca, ia, ma = self._comparable(a.text)
+        cb, ib, mb = self._comparable(b.text)
         if len(ca) < 4 or len(cb) < 4:
             return None
         matcher = difflib.SequenceMatcher(None, ca, cb, autojunk=False)
@@ -121,7 +136,6 @@ class TextReuseDetector:
                         "size": blk.size,
                     }
                 )
-        ma, mb = self._masked(ca), self._masked(cb)
         shorter = ma if len(ca) <= len(cb) else mb
         shared = {bg for bg in set(bigrams(ma)) & set(bigrams(mb)) if "□" not in bg}
         total_w = sum(self.idf(bg) for bg in set(bigrams(shorter))) or 1.0

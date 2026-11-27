@@ -103,12 +103,27 @@ excerpts.  Two steps choose them:
   questions it answers (`index_store(phase=…, limit=…)`, resumable).  The text of every book is there from the start; only
   the search of the later ones waits, a few seconds.  The page does not show it (the side panel's pill carries it as
   `data-indexing`, for scripts and tests).
-* **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written last,
-  so that a half-kept store is never read), with the runtime archives.  IndexedDB, unlike the Cache API, is there on an
-  http:// page too — the site is served over http until its certificate is issued — so a later visit downloads and indexes
-  nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's bytecode is kept too (compiled
-  once after the first visit's indexing), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`),
-  and the store's counts come with the store.
+* **Kept in the browser** — once it is all indexed, the store is kept in IndexedDB (in 16 MB parts; the head written
+  last, so that a half-kept store is never read; one tab keeps it at a time, under a Web Lock where the browser gives
+  one, and a kept store whose parts do not add up to its size is not read), with the runtime archives.  IndexedDB,
+  unlike the Cache API, is there on an http:// page too (`taochronos serve` reached from another machine), so a later
+  visit downloads and indexes nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's
+  bytecode is kept too (compiled once after the first visit's indexing, from the package the manifest names and only
+  from it), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`), and the store's counts
+  come with the store.  What is kept and can no longer be read (its file gone from the browser's profile) is forgotten
+  and fetched, or made, again, where it ended every later start; and a call that comes while the store is being kept
+  waits for it, a fraction of a second, so that neither its lock nor its open transaction is held for as long as Python
+  runs the call.  An archive is kept only once its SHA-256 is the manifest's: on an http:// page of another machine,
+  where the browser computes none, the archives are downloaded each visit, and TaoCore's module is not used.
+* **Searches on a compiled kernel** — TaoCore ([ADR 0036](adr/0036-taocore.md), [`rust/`](../rust/README.md)): what a
+  search computes over its candidates, BM25 of the query's tokens and the hashed n-gram cosines, runs in a WebAssembly
+  module of no imports (`runtime/taocore.wasm`, 50 KB) that the worker fetches beside the archives, instantiates (in the
+  worker: the page's own policy compiles no WebAssembly) and hands to Python as `_taocore_wasm`.  The same numbers as
+  Python's own, bit for bit, about three times faster on a warm search (Pyodide, the 13 measured queries: 12.2 s → 4.1 s);
+  the first visit's full-text tokens are made there too (its indexing 15% shorter).  Python checks the module against
+  its definitions before its first use, and computes in Python where it does not load or is refused (the runtime's
+  info says which, as Python found it: `taocore` — `kernel` `"wasm"` or `null` with the `reason`, and how often each
+  way ran).
 * **The conversation starts at once** — the build writes `runtime/boot.json`: what the runtime will report once loaded (its
   info with the standing instructions, and its tool catalogs), computed on the same code and corpus.  The page puts the first
   question to the model with it while the runtime loads; the tools the model calls wait for the runtime.
@@ -276,7 +291,10 @@ characters differ); Thai dates count Gregorian years, and Thai, Hindi and Sanskr
 
 The code is written in Chinese: every string a visitor reads goes through `T` (`web/js/i18n.js`), which looks it up in
 `web/js/i18n-<code>.js` by the Chinese (a template's `{0}`, `{1}`… are its values); a string with no translation there
-is shown in Chinese, and a Chinese page fetches no dictionary at all.  The Traditional Chinese dictionary is the Chinese
+is shown in Chinese, and a Chinese page fetches no dictionary at all.  A worker is told the page's language in its
+address and fetches the dictionary as it starts (a top-level await): its first import, `web/js/inbox.js`, holds the
+messages that come meanwhile and hands them on once the worker listens — without it a page in any language but Chinese
+lost the runtime's start one time in three, and never answered.  The Traditional Chinese dictionary is the Chinese
 converted with OpenCC (`s2twp`, Taiwan wording, 「」 quotation marks).  The model is asked to answer in the page's
 language, quoting the classics in the original Chinese (exactly as the tools return them, so that the quotation check
 still holds) with a translation; the corpus is searched in Chinese as always.  The About page (`about.html`) carries
@@ -446,24 +464,55 @@ tools, the screening, the regions, the data and their sources, and the limits: [
 [ADR 0031](adr/0031-medicinal-dishes.md); the tests:
 `tests/test_diet.py`.
 
-## 设置 → 统计 — how much the site is used, and from where
+## 使用统计 — how much the site is used, for its owner alone
 
-The site's owner reads the site's usage under **设置 → 统计**, over the last 7, 30 or 90 days: pages opened and their
-visitors (the site's Worker counts a page a browser opens — crawlers and scripts are not counted), questions asked of
-道乃久默认服务, the model calls they took and who asked (the relay counts each call it lets through; a tool round of a
-question is a call, not a question).  Four stat tiles with the change against the days before, a day-by-day line for
-pages and one for questions, and the countries and China's provinces by pages opened — every chart switches to a table.
-A day runs on Beijing time.  Visitors are counted once a day by the sentinel's hashed key (dropped after two days); a
-place is the country and first-level region Cloudflare puts the request in (ISO 3166-2; the page names China's
-provinces); no address is kept (`security/usage.js`, `/api/stats` on the site, `/v1/stats` on the relay).
+No page of the site shows how much it is used, to a visitor or to anyone else: the counts are the owner's, read through
+the owner's own GitHub and Cloudflare accounts and never through the site.
 
-The counts are read with a token: create the repository secret **`STATS_TOKEN`** (16 characters or more, e.g.
-`openssl rand -hex 24`), let the site and relay workflows deploy (a push, or Run workflow), then enter the same value in
-the pane once — it is kept in that browser only, and **忘记令牌** removes it.  `STATS_PUBLIC = "1"` in both
-`wrangler.toml` files shows the counts to every visitor instead; `STATS_UTC_OFFSET` moves the day boundary.  The pane
-and the endpoints tell a visitor nothing of how the counts are opened — that is here only: without the token set (and on
-a page with neither the site's server nor the relay: a local server, the GitHub Pages copy) the pane says just
-统计尚未开放, and with it set it asks for the token and nothing more.
+**What is counted.**  The site's Worker counts the pages a browser opens (one it already holds and asks about too —
+crawlers and scripts are not counted) and their visitors; the relay counts the questions asked of 道乃久默认服务, the
+model calls they took and who asked (each call it lets through; a question is a turn: its tool rounds, the self-check's
+rewrite, an answer written on and a call made again are calls of it, not questions — `relay/src/gate.js`).  By the day
+— Beijing's (`STATS_UTC_OFFSET` moves it) — and the country and first-level region Cloudflare puts the request in (ISO
+3166-2); a visitor is counted once a day by the sentinel's hashed key (dropped after two days); no address is kept
+(`security/usage.js`).  Where the site keeps an **activity ledger** (`security/ledger.js`,
+[ADR 0035](adr/0035-the-activity-ledger.md); the owner switches it on with the repository secret `ACTIVITY_KEY`:
+[security/README.md](../security/README.md), 活动账本) it counts much more: the *different* visitors of any stretch
+(never the days' counts added up), visits, returning visitors, every question whether or not its conversation was
+recorded, model calls and tokens, tools, devices, the sites visitors came from, how long a visit lasts, and how complete
+the data is.
+
+**Where the owner reads them.**
+
+- **GitHub** — the **activity** workflow (`.github/workflows/activity.yml`) asks both Workers each night and commits
+  `data/activity-analytics/`: [`SUMMARY.md`](../data/activity-analytics/SUMMARY.md) — yesterday, seven days, thirty
+  days and all of it side by side, who came back, and the last thirty days' places, models, tools, devices and the sites
+  visitors came from — beside the day, week, month and year reports and `lifetime.json`; each run's summary page shows the
+  same.  Until the ledger is switched on, `SUMMARY.md` is the Workers' daily counts instead — pages, visitors a day,
+  questions and calls of the default service, places: what the old pane showed — and each night keeps those days in
+  `daily/`, before the Workers drop them after a year.  The repository is private: whoever can read it reads them.  Sums only: no visitor's id leaves Cloudflare, and a
+  place with fewer visitors than `ACTIVITY_MIN_CELL` (3) is folded into "other".
+- **Cloudflare** — the ledger's rows are in the D1 database `taochronos-activity`, which the dashboard's D1 console (or
+  `wrangler d1 execute`) queries; the queries for the usual questions are in
+  [security/README.md](../security/README.md), 活动账本 → 日常.
+
+The endpoints the workflow reads — `GET /api/stats` and `/api/activity/stats` on the site, `GET /v1/stats` on the relay —
+answer the collector's token alone (`LOG_EXPORT_TOKEN`, a repository secret and a secret of each Worker) and carry no CORS
+headers, so no page — the site's own or another's — can read them; without the token set nobody can.  The token is in no
+page and in no visitor's browser.  (An earlier version showed the counts under 设置 → 统计, opened with `STATS_TOKEN`
+or, with `STATS_PUBLIC = "1"`, to everyone; both are gone, and the secret `STATS_TOKEN` can be deleted.)
+
+**What the page sends for the ledger** (`web/js/telemetry.js`), and nothing a visitor wrote: once loaded on the site's
+own host it asks who this browser is to the ledger (`POST /api/activity/hello` — an id made from a cookie no script
+reads, and a day's pass for the relay); every call the relay makes for a turn carries the turn's name (`X-Tao-Turn`, so
+that a question is counted once however many calls it takes) and the pass (`X-Tao-Visitor`), unless the conversation
+touches the visitor's own health or data; and each turn's end is told to the relay in counts (`POST /v1/activity`: how it
+ended, its rounds, its tools by name, its tokens) — the only word of a question asked of a visitor's own model, which
+never passes the relay.  Never the question, the answer, a tool's arguments, a key, or the name of an endpoint or model
+the visitor set by hand.  **设置 → 数据 → 访问统计** is the visitor's switch: it shows their id, turns the count off (no
+hello, no pass, no end: the page then sends what it sent before there was a ledger) and deletes everything held under the
+id.  It shows no count, not even of their own visits.  A browser that asks not to be tracked (Global Privacy Control, Do
+Not Track) is the switch already off.  The field appears only where the site has a ledger.
 
 ## What the model is offered
 
@@ -903,15 +952,17 @@ taochronos web build -o _site --pyodide cdn # without Pyodide: the page loads it
 python -m http.server -d _site 8000
 ```
 
-The site (about 26 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package as the browser can import it:
+The site (about 32 MB) holds: the client (`web/`), `runtime/taochronos.zip` (the package as the browser can import it:
 the modules reachable from what the page's worker imports — not the server, the command line, the build, the evaluation
 suites or the corpus pipeline), `runtime/home.zip` (the browser's profiles, domain packs, the demonstration corpus,
 catalogs with the 要籍 list, agents, skills; the lexicon harvested from the full corpus is left out, and so are the gold
 sets and every record), `runtime/corpus.sqlite.xz` (the 要籍语料 as a store without its index, 13.3 MB;
 built from `corpus/web` by the build, the same bytes for the same pack; `TAOCHRONOS_WEB_XZ_PRESET` trades size for build
-time, the tests use 1), `runtime/boot.json` (the runtime's info and catalogs, for the conversation to start while it
-loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by content in IndexedDB, and the corpus
-once indexed), `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and
+time, the tests use 1), `runtime/taocore.wasm` (TaoCore's module, committed as `rust/crates/taocore-wasm/taocore.wasm`
+and rebuilt byte for byte by CI: the build needs no Rust), `runtime/boot.json` (the runtime's info and catalogs, for the
+conversation to start while it loads), `runtime/manifest.json` (sizes and SHA-256; the worker keeps the archives by
+content in IndexedDB — only bytes that are what the manifest names: a download cut short is used once and fetched anew —
+and the corpus once indexed), `providers.json` (from `taochronos.chat.providers`) and, by default, the Pyodide core with the PyYAML and
 SQLite wheels, checksums verified against `pyodide-lock.json`.  Archives are deterministic.  Every path is relative.
 
 **What may ship is written down, and the build enforces it** ([`distribution-policy.yaml`](../distribution-policy.yaml),
@@ -1056,7 +1107,7 @@ and the model told, its figures not shown twice), and the 工具台's charts; an
 analysed, a `mine:` row cited and checked, nothing naming a patient sent to the model and no record sent; the browser's
 own runtime (the worker's code and IndexedDB, with a stand-in for Pyodide whose Python runs in the test) keeping a
 workbook across a reload; and the page working with a server elsewhere keeping the data in the browser; and, with
-`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin like the published one (no Cache API) —
+`TAOCHRONOS_PYODIDE_E2E=1`, the built site in Chromium on an http:// origin of another machine (no Cache API) —
 Pyodide, the 要籍语料 downloaded, the first-ranked works indexed before it answers and the rest in the background, the
 store kept in IndexedDB and a reload that downloads no corpus, a turn answered on it.  The browser tests are skipped where Playwright or Chromium is missing.  `relay/test/relay.test.js`
 (`node --test`, in CI) — the Worker's handler and its two stores on SQLite: the key added by the relay and never shown,
@@ -1074,6 +1125,12 @@ collector's token, cursor, deletion and ids never reused.
 committed with them, deleted only once held, a deployment checked (and a refused key explained; the places the model
 service's host answers from told in the log, never the deployment's failure).  The site build writes
 `site.json` only when given a relay, carries the texts' attribution, and never a conversation record or a key.
+
+**Types.**  The JavaScript is type-checked as it is, with no build: a file whose first line is `// @ts-check` is read by
+`tsc` under strict, its types written in JSDoc, and what reaches the page from the chat runtime — its answers, the
+messages to and from its worker — declared in `tools/typecheck/types/`, outside `web/`, which the site copies whole.
+CI runs it (`ci.yml`, `typecheck`); [tools/typecheck/README.md](../tools/typecheck/README.md) says how to run it, how to
+opt a file in, and why JSDoc rather than TypeScript files.
 
 ## Limits
 

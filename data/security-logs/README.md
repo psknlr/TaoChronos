@@ -33,5 +33,8 @@ Worker 绑定了归档存储桶后（仓库变量 `ARCHIVE_BUCKET`，[ADR 0023](
 | `firewall` | 边缘的安全事件：哪条规则对哪个请求做了什么（`action`、`ruleId`、`rayName`、`clientIP`、`userAgent`、`clientRequestPath`……） |
 | `requests` | 值得一看的请求组（同一地址、UA、路径、状态、方法）：`requests`（次数）、`why`（`status_4xx`、`security_block`、`scanner_path`、`ua_tool`、`ua_empty`、`volume`，以及 `artifact_agent`、`artifact_volume`：用工具或成批取走运行环境文件的；后者带 `fetched`，当天的次数）、`bytes`（计划提供时） |
 | `artifacts` | 运行环境文件（`/runtime/` 下）一天的下载合计，按 `path`、`status`、`method`、`agent`（UA 的种类）：`requests`、`bytes`、`addresses`（多少个不同的地址）、`complete`（当天的请求组是否取全）。**没有地址**：这是每个读者自己的下载 |
+| `traffic` | 当天到这个主机的**全部**请求，按 `country` 与 `status` 合计：`requests`、`bytes` 与 Cloudflare 自己数的 `visits`（计划提供时）、`complete`。**没有地址、路径与 UA**。Worker 看到的与没看到的（不经 Worker 的静态文件、被边缘拦下的请求）都在内：活动账本的计数拿它做对照（`data/activity-analytics/README.md`） |
+
+请求组（`requests`）的次数是**整天的**：同一组在几个时间窗口里出现的合成一行（2026-11-25 之前只是第一个窗口的数）。某天被重新取回时，每行取较大的数。
 
 研究任务与会话的编号不进这里：路径记作 `/api/research/…`、`/api/session/…`。

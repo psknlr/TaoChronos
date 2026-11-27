@@ -1,0 +1,115 @@
+name: activity
+
+# The activity ledger's counts (security/ledger.js; security/README.md, 活动账本), kept in this repository as sums nobody
+# can be picked out of: every day, a little after the readers' day has ended (16:00 UTC is midnight in Beijing),
+# security/activity.py asks the site for each day not yet kept and writes data/activity-analytics/daily/…, then the
+# week, the month and the year those days fall in — each asked for as a whole: a month's visitors are the different
+# visitors of the month, which no sum of its days gives — and lifetime.json.  Then it checks the pipeline: what waits in
+# each Worker's outbox, what was dropped, lost or failed to be written since the last look, yesterday's archive against
+# its manifest.  What is wrong fails the run, after the reports are committed.
+#
+# The rows the sums are of — a visitor's id, an event — stay in the registry (D1) and the archive (R2) and never come
+# here.  A place with fewer than MIN_CELL visitors (the repository variable ACTIVITY_MIN_CELL, default 3) is folded
+# into "other".  Needs the LOG_EXPORT_TOKEN secret (the collector's).  Until the Workers have a ledger (ACTIVITY_KEY: see
+# security/README.md), or until its first day is over, SUMMARY.md is the Workers' daily counts — what the site counted
+# before the ledger: pages, visitors a day, questions and calls of the default service, places — and each night keeps
+# those days here (backfill), with the conversation records and edge records committed here, before the Workers drop
+# them after a year.
+#
+# By hand (Run workflow): `backfill` writes the days before the ledger again, once it is on.
+#
+# The counts are the owner's: no page of the site shows them.  They are read here, with the collector's token, and kept
+# in this private repository — data/activity-analytics/SUMMARY.md and each run's summary are the readable view — and in
+# Cloudflare (the D1 database taochronos-activity: security/README.md, 活动账本).
+on:
+  schedule:
+    - cron: "37 16 * * *"
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Also write the days before the ledger, from the daily counts and the records kept of them"
+        type: boolean
+        default: false
+      day:
+        description: "report one day again (YYYY-MM-DD; when empty, every day not yet kept)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: activity
+  cancel-in-progress: false
+
+env:
+  RELAY_URL: ${{ vars.RELAY_URL || 'https://chat-api.impf.ai' }}
+  SITE_URL: ${{ vars.SITE_URL || 'https://chat.impf.ai' }}
+  MIN_CELL: ${{ vars.ACTIVITY_MIN_CELL || '3' }}
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is the collector's token set?
+        id: ready
+        env:
+          TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+        run: |
+          # the collector's token goes to our own hosts only (the addresses are repository variables): the host itself
+          for u in "$RELAY_URL" "$SITE_URL"; do
+            h="${u#https://}"; h="${h%%/*}"
+            case "$u" in https://*) ;; *) echo "::error::$u is not https (RELAY_URL / SITE_URL)"; exit 1;; esac
+            case "$h" in chat.impf.ai|chat-api.impf.ai|*.impf.ai) ;; *) echo "::error::$h is not one of our hosts (RELAY_URL / SITE_URL)"; exit 1;; esac
+          done
+          case "$MIN_CELL" in ''|*[!0-9]*) echo "::error::ACTIVITY_MIN_CELL is not a number ($MIN_CELL)"; exit 1;; esac
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::LOG_EXPORT_TOKEN is not set: nothing to report"
+            echo "go=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.ready.outputs.go == '1'
+      - name: The days not yet kept, their week, month and year, and the lifetime
+        id: report
+        if: steps.ready.outputs.go == '1'
+        env:
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+          DAY: ${{ inputs.day }}
+        run: |
+          if [ -n "$DAY" ]; then python3 security/activity.py report --site "$SITE_URL" --relay "$RELAY_URL" --min-cell "$MIN_CELL" --day "$DAY"
+          else python3 security/activity.py report --site "$SITE_URL" --relay "$RELAY_URL" --min-cell "$MIN_CELL"; fi
+      - name: The days before the ledger, from what was kept of them (each night while there is no ledger)
+        id: backfill
+        if: steps.ready.outputs.go == '1' && (inputs.backfill || steps.report.outputs.ledger != '1')
+        env:
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+        run: python3 security/activity.py backfill --site "$SITE_URL" --relay "$RELAY_URL"
+      - name: The pipeline — outboxes, losses, yesterday's archive, the counts against themselves
+        id: validate
+        if: steps.ready.outputs.go == '1' && steps.report.outputs.ledger == '1'
+        continue-on-error: true
+        env:
+          LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
+        run: python3 security/activity.py validate --site "$SITE_URL" --relay "$RELAY_URL"
+      - name: Commit them
+        if: steps.ready.outputs.go == '1'
+        run: |
+          git add data/activity-analytics
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "activity: the ledger's counts through ${{ steps.report.outputs.through || 'the days before it' }} [skip ci]"
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push -q origin HEAD:main; then pushed=1; break; fi
+            sleep $((attempt * 5))
+            git pull -q --rebase origin main
+          done
+          [ "$pushed" = 1 ] || { echo "::error::the reports could not be pushed; the next run writes them again"; exit 1; }
+      - name: What the pipeline's check found
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "::error::the activity ledger's pipeline needs a look: see the step above (security/README.md, 活动账本 → 出了问题)"
+          exit 1

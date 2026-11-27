@@ -14,6 +14,10 @@ chat.impf.ai（网站）与 chat-api.impf.ai（道乃久默认服务的中转）
 
 设计与取舍见 [ADR 0018](../docs/adr/0018-sentinel-and-edge-rules.md)。本文说明每一层做什么、怎样启用、平时怎么看、出事怎么办。
 
+这个目录还放着两个 Worker 共用的另一件东西：**活动账本**（`ledger.js`、`ledger-d1.js`、`visitor.js`）——把每个请求记成一条不含地址的事件，
+用来数访客、访问、提问与模型用量。它与哨兵分开：哨兵决定拒绝谁、留下可疑请求的地址；账本不留地址、不做任何决定。见第四节与
+[ADR 0035](../docs/adr/0035-the-activity-ledger.md)。
+
 ## 一、哨兵（Worker 内）
 
 两个 Worker——`relay/`（中转）与 `cloud/site/`（网站）——都引入 `security/sentinel.js`；它只依赖 Worker 的标准 API，在 Node 下跑测试
@@ -194,7 +198,7 @@ Web Analytics，访客看不出差别）。上线前用 Chromium 在本地按部
 |---|---|---|---|---|
 | 1 | `tc-own-clients` | skip（只跳过浏览器完整性检查） | 仓库自己的客户端：`taochronos-collector/1`（收集器）、`taochronos-deploy/1`（`deploy.sh` 的检查） | 冒充这个 UA 只能绕过这一项（突发限制也不免：自己的客户端一小时只发几十个请求），其余规则照常 |
 | 2 | `tc-scanner-paths` | block | `wp-`、`.php`、`xmlrpc`、`/../`……，以及**任何一层以点开头的文件或目录**（`/.git`、`/.env`、`/.ssh`、`/.openai/credentials.json`……）：这些主机上根本不存在的路径（与哨兵的列表同源） | 无：网站没有这些路径；`/.well-known/` 除外 |
-| 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs`、`/v1/feedback` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数**；以及**别的区域的 Worker 转发**到两个中转（`chat-api.impf.ai`、science.impf.ai 的 Tao-S1）`/v1/*` 的请求（`cf.worker.upstream_zone` 既不为空、也不是 `impf.ai`）：Worker 可以随意填写 Origin，来源检查拦不住它（见下文「封禁名单」里的 2a06:98c0:3600::103）；以及中转上 **`/v1/` 之外的一切路径**（中转只有 `/v1/*` 的接口：UCloud 香港的扫描器轮换地址，每个地址一天几百上千次地在这里找交易所与 App 的后台接口，10 至 11 月约 8500 次） | 无：浏览器一定带 Origin，网页的请求也从不经 Worker 转发；本区域自己的 Worker 放行；仓库自己的客户端（收集器、部署检查）只用 `/v1/*`；证书签发（`/.well-known/acme-challenge/`）与 `/cdn-cgi/` 除外；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
+| 3 | `tc-relay-origin` | block | 向中转 `POST /v1/chat/…`、`/v1/logs`、`/v1/feedback`、`/v1/activity` 而 `Origin` 不是网页的来源——中转自己也会拒，但在边缘拒绝**不进 Worker、不计次数**；以及**别的区域的 Worker 转发**到两个中转（`chat-api.impf.ai`、science.impf.ai 的 Tao-S1）`/v1/*` 的请求（`cf.worker.upstream_zone` 既不为空、也不是 `impf.ai`）：Worker 可以随意填写 Origin，来源检查拦不住它（见下文「封禁名单」里的 2a06:98c0:3600::103）；以及中转上 **`/v1/` 之外的一切路径**（中转只有 `/v1/*` 的接口：UCloud 香港的扫描器轮换地址，每个地址一天几百上千次地在这里找交易所与 App 的后台接口，10 至 11 月约 8500 次） | 无：浏览器一定带 Origin，网页的请求也从不经 Worker 转发；本区域自己的 Worker 放行；仓库自己的客户端（收集器、部署检查）只用 `/v1/*`；证书签发（`/.well-known/acme-challenge/`）与 `/cdn-cgi/` 除外；来源表与 `relay/wrangler.toml` 一致，改一处要改另一处 |
 | 4 | `tc-tooling-and-spoofed-crawlers` | block | 只为训练模型抓取的爬虫（`training_agents`：GPTBot、ClaudeBot、CCBot、meta-externalagent……，**验证与否都拦**，与站点 robots.txt 的名单一致）；没有 UA；`python*`、`Go-http-client`、`Java/`、扫描器名、Lightpanda（给自动化与 AI 代理用的无头浏览器，按站长要求）；以及自称 Googlebot、bingbot、ChatGPT-User、PerplexityBot…… 却**没有通过 Cloudflare 验证**（`not cf.client.bot`）的 | 真正的搜索引擎与 AI 助手（验证通过）放行；`curl`、`wget` 不拦（站长自己会用）；HeadlessChrome 不拦（本项目自己的检查就是它）；`/.well-known/acme-challenge/` 除外 |
 | 5 | `tc-block-list` | block | 列表 `taochronos_block` 里的地址与网段（全站），由 `security/blocklist.yaml` 管理，见下文「封禁名单」。没有列表时这条省略 | 只拦名单上的 |
 | 速率 | `tc-api-burst` | block 10 秒 | `/api/*`、`/v1/*`（两个主机共用计数；`/api/security/csp` 除外）每个地址每个节点 10 秒 240 次 | 网页核对引文时几秒内最多取 60 段原文、再做最多 60 次规范化调用，仍在其下 |
@@ -277,7 +281,8 @@ data/security-logs/
   relay/年/月/日.jsonl    中转哨兵的事件（字段见 data/security-logs/README.md）
   site/年/月/日.jsonl     网站哨兵的事件（含 csp 报告）
   edge/年/月/日.jsonl     边缘：Cloudflare 的安全事件（kind: firewall）与值得一看的请求组（kind: requests：错误、安全动作、扫描器路径、非浏览器 UA、一天 ≥ 300 次，
-                          以及用工具或成批取走运行环境文件的）；运行环境文件每天的下载合计（kind: artifacts，没有地址）
+                          以及用工具或成批取走运行环境文件的）；运行环境文件每天的下载合计（kind: artifacts，没有地址）；
+                          当天全部请求按主机、国家与状态的合计（kind: traffic，没有地址、路径与 UA——Worker 看到的与没看到的都在内）
   edge/suspects.json      近 30 天按地址汇总：事件数、拦截数、请求数、扫描器路径数、取走的运行环境文件数、网络、UA、路径与分数
 ```
 
@@ -287,6 +292,9 @@ data/security-logs/
   （`ua_tool`、`ua_empty`，或 `artifact_agent`：既不是浏览器也不是已知工具的 UA），或一个地址一天取同一个文件 ≥ 30 次（`artifact_volume`，
   `fetched` 是当天的次数）。镜像（GitHub Pages）上的下载哪里都没有记录。更早的日子在计划的保留期内可以补取：
   `python3 security/events.py pull --day 2026-11-20`。
+- **请求组按整天计**：接口一次只能问几小时的窗口，同一组（地址、UA、路径、状态、方法）在几个窗口里出现的，合成一行、次数相加，
+  「一天 ≥ 300 次」按相加后的数判断（2026-11-25 之前只留第一个窗口的数，也只按它判断）。某天被重新取回（当天没过完就取过，或某个窗口取满了）时，
+  每行取较大的那个数，再补上原先没有的。
 - **每周看一眼**：`python3 security/events.py suspects`（按分数排）；`LOG_EXPORT_TOKEN=… python3 security/collect.py summary`（哨兵现在看到什么）。
 - **从 observe 到 enforce**：看两周的 `shadow` 事件（本应拒绝的）。如果没有一条是真实访客（真实访客的特征：浏览器 UA、Sec-Fetch 齐全、中文或英文的 Accept-Language、
   运营商网络、网页形状的请求体），把两个 `wrangler.toml` 的 `SENTINEL` 改为 `"enforce"` 合入 main。如果有：提高 `BLOCK_SCORE`，或把误判的理由在 `assess()` 里调轻。
@@ -296,7 +304,165 @@ data/security-logs/
 - **设 `KNOWN_PROMPTS`**：`summary` 的 `prompts` 里次数最多的哈希就是网页自己的系统提示（网页版本更新时会换），抄前 16 位填进中转的 `KNOWN_PROMPTS`。
 - **阈值的依据**：`TOKENS_PER_DAY`、速率限制、`BLOCK_SCORE` 的默认值都标注了记录里见到的基线；基线变了（比如语料变大、一轮的 token 翻倍）就按比例调。
 
-## 四、已知局限
+## 四、活动账本（与哨兵分开）
+
+哨兵只在请求可疑时才整条记下；按日计数（`usage.js`）只有每天的合计，访客按地址的哈希每天去重、两天后删掉。于是说不出一个月有多少**不同的**访客、
+多少人回来过、有多少提问是访客没同意记录的、一个问题花了多少。活动账本补的就是这些（[ADR 0035](../docs/adr/0035-the-activity-ledger.md)）。
+
+```
+两个 Worker ──▶ 事件（envelope）──▶ Durable Object 里的发件箱（LedgerCore：网站的 Watch、中转的 Limiter）
+                                      ├─▶ D1「登记册」（ledger-d1.js）：访客、每日活跃、访问、事件、提问、模型调用、每日合计 —— 日报与站长读这里
+                                      └─▶ R2「归档」（archive.js，绑定了 ARCHIVE 时）：一小时一个 gzip 对象 + 每天一份清单
+仓库 ◀── activity 工作流每天取回汇总（activity.py → data/activity-analytics/），只有计数
+```
+
+**这些数只给站长看**：网站上没有哪一页显示它们，读它们的接口只认收集令牌（`LOG_EXPORT_TOKEN`）、不带 CORS 头（任何网页——本站的或别人的——都读不到），
+令牌不在任何网页里。站长在自己的 GitHub（这个私有仓库的 `data/activity-analytics/`）和 Cloudflare（D1 `taochronos-activity`）里看，见下文「日常」。
+
+**没有密钥就没有账本**：仓库 Secret `ACTIVITY_KEY` 未设时，两个 Worker 与从前完全一样——不发 Cookie、不记事件、没有这些接口。
+
+### 一条事件留下什么
+
+| 类别 | 字段 | 不留什么 |
+|---|---|---|
+| 事件本身 | `event_id`（按时间可排序，重复写入只算一次）、`timestamp`、`day`（北京时间的日子）、`schema_version`、`source`（site / relay）、`event_type` | |
+| 请求 | `host`、`route`（网站自己的路径：`/`、`/api/passage`、`/v1/chat/completions`……别的一律 `other`）、`method`、`status`、`latency_ms`、`n`（这一行代表几次请求） | 不存在的路径、查询串、研究任务的编号 |
+| 浏览器 | `browser_family`（Chrome / Safari / WeChat……）、`os_family`、`device_type`（手机 / 平板 / 电脑）、`language` —— 四个词，很多访客共有 | UA 原文、版本号、Client Hints、TLS 握手摘要、往返时延：这些能把一个浏览器和另一个分开，只留在哨兵标记的事件里 |
+| 网络 | `country`、`region`（省级）、`asn`、`http_protocol`、`tls_version` | **地址**、城市、网络名称 |
+| 哨兵怎么看 | `traffic_class`（human 访客的浏览器 / suspect 被标记的浏览器 / crawler / automation / own / cross_site / unknown）、`risk_score`、`security_action`（none / flagged / shadow / blocked / honeypot / rate_limited / cross_site） | |
+| 访客 | `visitor_id`（只给 human；归档里换成当天的别名 `visitor_day`） | 见下 |
+| 提问与模型 | `turn_id`（账本自己编的）、`basis`（relay / client / record）、`provider`、`model`、`invocation_id`、`execution_status`、`input_tokens` / `output_tokens`、`asks`、`retry_count`、`rounds`、`tool_count`、`tools`（工具名 → 次数）、`module`、`content_consent`、`archive_status` | 问题、回答、工具的参数、对话编号、网页给这一轮起的编号、访客自设接口的地址与模型名 |
+
+事件的种类：`page_view`（浏览器打开网页）、`page_ready`（网页加载完自己报一声）、`api_read`（同一访客一分钟内同样的读取合成一行，`n` 是次数）、
+`api_call`、`research_started`、`question_submitted`、`model_invocation`、`model_settled`（这次调用怎么结束、花了多少）、`model_refused`（被限额或哨兵拒绝，`detail` 是原因）、
+`turn_finished`（网页报告这一轮的结局）、`record_archived`、`feedback_submitted`、`sponsor_submitted`、`visitor_choice`、`request`（其余的一切；不是访客的——扫描、爬虫——按分钟合成一行）。
+别的网站的页面让浏览器发来的请求只记国家，不记访客，不记网络与浏览器。
+
+### 访客是谁：一个浏览器，而不是一个人
+
+- **Cookie** `__Host-tcv`：网站 Worker 在浏览器打开网页时发，128 位随机数加签名，`HttpOnly`（脚本读不到）、只属于 chat.impf.ai 这一个主机、
+  **自签发之日起 13 个月失效，来访不延长**。账本里存的是它的 HMAC（`v_` 开头）：拿到账本的人造不出 Cookie，拿到 Cookie 的人没有密钥也找不到它的记录。
+- **通行证**：中转是另一个主机，收不到这个 Cookie。网页加载后向自己的主机要一张当天有效的签名通行证（`POST /api/activity/hello`），调用中转时带上（`X-Tao-Visitor`）。
+- **不做指纹**：地址、UA、Canvas 之类能认出没同意被认出的人；Cookie 是访客自己可以删的。
+- **不给编号的**：浏览器要求不被跟踪的（`Sec-GPC: 1`、`DNT: 1`）；访客在「设置 → 数据 → 访问统计」里关掉的（Cookie 的值变成 `off`，别的什么都不留）；
+  不是浏览器的；别的网站带来的请求。他们的请求照样计数，只是不属于任何访客。
+- **带回来过一次才算访客**：发出去再没带回来的编号（爬虫、不存 Cookie 的浏览器）只算一次页面访问，不算访客，否则这样的浏览器每开一页就多一个“访客”。
+- **访客自己能做的**（设置 → 数据 → 访问统计）：看到自己的编号、关闭统计、**删除本站关于此编号的全部记录**（`POST /api/activity/forget`：
+  登记册里他的行、每日活跃与访问删除，事件与提问改为“无主”，删除记录里不写编号；仍在路上的事件两天内也按无主写入）。
+- **一段时间的访客是每天访客的并集，不是相加**：登记册里一位访客一天一行，一周、一月、全部时间的访客数是对这段时间做 `COUNT(DISTINCT)`。
+
+| `ACTIVITY_IDS`（两个 `wrangler.toml` 须一致） | 含义 |
+|---|---|
+| `notice`（默认） | 浏览器打开网页就发编号，除非它要求不被跟踪或访客关掉了；在「设置 → 数据」与「关于」里说明 |
+| `optin` | 访客在「设置 → 数据」里打开之后才发 |
+| `off` | 谁都不发：照样计数，没有访客、访问与留存 |
+
+### 一个问题是一轮，不是一次调用
+
+网页给每一轮起一个名字（`X-Tao-Turn`，就是那条回答的消息编号），这一轮的每次模型调用都带着它；中转把这一轮的**第一次**调用算作提问，
+此后的工具轮、自查要求重写、在输出上限处接着写、失败后重问，都只是这一轮的调用（`relay/src/gate.js`）。**有没有账本都这样计**——此前按
+「以用户消息结尾的调用」算提问，上面几种都被多算了一次，按日计数里的「提问」因此偏多。
+
+- **谁回答的都算**：默认服务的（`basis: relay`，中转亲眼所见，连同每次调用的结局、token、向模型服务请求了几次、多久才开始回复）；
+  访客用自己的模型或网页自己回答的（`basis: client`，网页在这一轮结束时向中转报一组计数：`POST /v1/activity`）；只有对话记录为证的（`basis: record`，旧版网页）。
+- **未存档 = 全部 − 已存档**：中转收下某一轮的对话记录时，把这一轮标为已存档。
+- **账本说不出谁问了什么**：不存对话编号；网页给这一轮起的名字不进任何事件——中转的对象只把它的带密钥摘要记一周（`ledger_turns`，不导出），
+  事件里用的是账本自己编的 `turn_id`；记录到达的那条事件不带访客。涉及访客自己的健康或资料的一轮（饮食与体重、我的资料）只计数、不归到任何访客。
+  归档里的访客按天换名字：数得出一天有多少访客，跟不到第二天。
+
+### 启用
+
+1. 仓库 Secret **`ACTIVITY_KEY`**：`openssl rand -hex 32`（Settings → Secrets and variables → Actions → Secrets）。**设了就不要再改**：
+   换了密钥，每个浏览器都成了新访客，历史从那里断开。
+2. 部署令牌 `CLOUDFLARE_API_TOKEN` 要有 Account · D1 · Edit（用着 D1 备份的话已经有了）。运行 **relay** 与 **site** 两个工作流（或推送到 main）：
+   各自找到或创建 D1 数据库 `taochronos-activity`（`bind-ledger.sh`；仓库变量 `ACTIVITY_DB_NAME` 可改名——但不能以 `taochronos-d1-` 开头：
+   那是 D1 备份的库名，备份换数据时会把它们整批删掉重建，脚本遇到这样的名字会报错并不绑定），绑定为 `ACTIVITY_DB`，再把密钥写进 Worker。
+   表在第一次写入时自己建。
+   **账本是按 Workers Paid 的额度设计的**（[ADR 0023](../docs/adr/0023-workers-paid.md)）。实测的 D1 用量：每条事件写入时约读 15 行、写 5 行；
+   每日合计每小时由每个 Worker 重算一次（读统计接口时也会重算），每次把当天的事件读约七遍。一天 300 位访客（约 5900 条事件）合计约读 200 万行、
+   写 4 万行——Workers Paid 每月含 250 亿行读、5000 万行写，占不到百分之三；免费计划一天只有 500 万行读、10 万行写，还要与 D1 备份的导入共用，
+   会占去一大块：**没有 Workers Paid 就不要开账本**。
+3. 运行 **security** 工作流（`plan`，再 `apply`）：第 3 条规则现在也管 `POST /v1/activity` 的来源。
+4. （可选）仓库变量 `ARCHIVE_BUCKET`：绑定了归档存储桶的 Worker 也把账本的事件存进去（`activity-logs/…`）。注意这是同一个开关——
+   对话记录与哨兵事件也会从此存进桶而不再进仓库（[ADR 0023](../docs/adr/0023-workers-paid.md)）。保留多久由桶的生命周期规则定，没有人替你设；建议 400 天。
+5. **activity** 工作流每天北京时间零点后把汇总取回 `data/activity-analytics/`。手动运行一次并勾选 `backfill`，补上启用之前的日子。
+
+| 变量（两个 `wrangler.toml` 的 `[vars]`，须一致） | 默认 | 含义 |
+|---|---|---|
+| `ACTIVITY` | `on` | `off`：不管别的怎么设，都没有账本 |
+| `ACTIVITY_IDS` | `notice` | 见上表 |
+| `VISITOR_DAYS` | 390 | 编号自签发起的寿命（天） |
+| `ACTIVITY_EVENT_DAYS` | 90 | 逐条事件、模型调用与访问在登记册里留多久；之后只剩每日合计（永久） |
+| `ACTIVITY_VISITOR_DAYS` | 760 | 访客最后一次来访之后其记录留多久（25 个月）；到期删除，但仍计入“有过的访客” |
+| `ACTIVITY_TURN_DAYS` | 7 | 中转记住「这次调用属于哪一轮」多久 |
+| Secret `ACTIVITY_KEY` | — | 32 个字符以上；两个 Worker 同一个 |
+
+### 接口
+
+| 接口 | 谁能用 | 作用 |
+|---|---|---|
+| 网站 `POST /api/activity/hello` | 本站网页（浏览器、同源） | 网页加载后：返回模式、这个浏览器的状态与编号、给中转的通行证；记一次 `page_ready` |
+| 网站 `POST /api/activity/choice` `{ids: "on" \| "off"}`、`POST /api/activity/forget` | 同上 | 访客自己的开关与删除。本站关于一个编号留了什么，不读给任何网页——访客自己的也不读 |
+| 网站 `GET /api/activity/stats?days=N` \| `from=&to=` \| `range=all` | 只有 `LOG_EXPORT_TOKEN` | 账本的计数：activity 工作流读它写日报 |
+| 网站 `GET /api/stats?days=N`、中转 `GET /v1/stats?days=N` | 只有 `LOG_EXPORT_TOKEN` | 两个 Worker 的按日计数（`usage.js`）：比账本早，工作流补启用之前的日子时读它 |
+| 网站 `GET /api/activity/health`、中转 `GET /v1/activity/health` | 只有 `LOG_EXPORT_TOKEN` | 发件箱里等着多少、最老的等了多久、丢弃（`dropped`）、丢失（`lost`）、重复（`duplicates`）、写入失败次数；登记册各表的行数 |
+| 网站 `GET /api/activity/archive?day=YYYY-MM-DD` | 只有 `LOG_EXPORT_TOKEN` | 拿这一天（UTC）的归档对清单：缺了哪个对象、哪个对象变了、多了哪个 |
+| 中转 `POST /v1/activity` | 本站网页的来源 | 一轮的结局（计数），见上 |
+
+要收集令牌的接口都不带 CORS 头、不看 Cookie：没设令牌时谁也读不到，没有账本时也只对令牌的持有人说「这里没有」。
+
+### 日常与出了问题
+
+- **看数（只有站长）**：
+  - **GitHub**：[`data/activity-analytics/SUMMARY.md`](../data/activity-analytics/SUMMARY.md)——昨天、近 7 天、近 30 天与全部并排（访客、新访客、回访的、访问、
+    页面、提问与其中未存档的、模型调用、token、国家/地区、有过的访客），回来的访客，近 30 天的地区、模型、工具、设备与浏览器、来源与请求类别；
+    每天、每周、每月、每年的报表与 `lifetime.json` 在同一目录；activity 工作流每次运行的摘要页（Actions → activity → 那次运行）是同一张表。
+    账本启用之前（或它的第一天还没过完），`SUMMARY.md` 是两个 Worker 的按日计数——页面、按日去重的访客、默认服务的提问与调用、地区——
+    每晚的运行也把这些日子存进 `daily/`。仓库是私有的：能读这个仓库的人才看得到，加协作者之前想到这一点。
+  - **Cloudflare**：控制台里 D1 → `taochronos-activity` → Console，或在本地 `npx wrangler d1 execute taochronos-activity --remote --command "…"`。
+    不同访客只能在一段时间上数，不能把每天的人数相加；逐条的访客与每日活跃留 25 个月，再早的只在仓库的报表里。常用的几句：
+
+```sql
+-- 每天的访客、页面与提问（近 14 天；日子按北京时间）
+SELECT day, SUM(CASE WHEN metric = 'active' THEN value ELSE 0 END) AS visitors, SUM(CASE WHEN metric = 'page_views' THEN value ELSE 0 END) AS page_views,
+  SUM(CASE WHEN metric = 'questions' THEN value ELSE 0 END) AS questions FROM daily_metrics WHERE day >= date('now', '-14 days') GROUP BY day ORDER BY day DESC;
+-- 一段时间里的不同访客
+SELECT COUNT(DISTINCT a.visitor_id) AS visitors FROM visitor_daily_activity a JOIN visitors v ON v.visitor_id = a.visitor_id AND v.confirmed = 1
+  WHERE a.day BETWEEN '2026-11-01' AND '2026-11-30';
+-- 同一段时间里，按国家与省份的不同访客
+SELECT a.country, a.region, COUNT(DISTINCT a.visitor_id) AS visitors FROM visitor_daily_activity a JOIN visitors v ON v.visitor_id = a.visitor_id AND v.confirmed = 1
+  WHERE a.day BETWEEN '2026-11-01' AND '2026-11-30' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30;
+-- 提问与其中未存档的（每日合计永久保留；逐条的提问留 25 个月）
+SELECT SUM(value) AS questions, SUM(CASE WHEN k2 <> 'archived' THEN value ELSE 0 END) AS unarchived FROM daily_metrics
+  WHERE metric = 'questions' AND day BETWEEN '2026-11-01' AND '2026-11-30';
+-- 默认服务的模型调用（按模型）与 token
+SELECT k1 AS model, SUM(value) AS calls FROM daily_metrics WHERE metric = 'model_calls' AND day BETWEEN '2026-11-01' AND '2026-11-30' GROUP BY 1 ORDER BY 2 DESC;
+SELECT SUM(CASE WHEN metric = 'tokens_in' THEN value ELSE 0 END) AS tokens_in, SUM(CASE WHEN metric = 'tokens_out' THEN value ELSE 0 END) AS tokens_out
+  FROM daily_metrics WHERE day BETWEEN '2026-11-01' AND '2026-11-30';
+-- 有过的访客（含已删除的）
+SELECT (SELECT COUNT(*) FROM visitors WHERE confirmed = 1) + COALESCE((SELECT v FROM ledger_state WHERE k = 'visitors_removed'), 0) AS visitors_ever;
+```
+
+  表：`visitors`、`visitor_daily_activity`、`sessions`、`activity_events`、`question_events`、`model_invocations`、`daily_metrics`（`metric` 的名字见
+  `ledger-d1.js` 的 `METRICS`）、`archive_manifest`、`deletion_log`。
+- **activity 工作流失败了**：看「The pipeline」一步。「outbox is not being drained」——Worker 的对象写不进 D1（令牌、数据库被删、配额），事件留在发件箱里等着，修好后自己补上；
+  「dropped / lost」——发件箱满了（20 万条）或 Worker 够不着对象，这些事件没有了，计数缺多少就是报的那个数；「does not match its manifest」——归档里某天的对象与清单不符。
+- **写入是可重复的**：发件箱至少送达一次，同一批写两遍、两个 Worker 的批次先后颠倒，登记册都是同一个结果（`security/test/ledger.test.js` 里就是这样验的）。
+  所以修好故障后不必清理什么。
+- **应访客要求删除**：访客自己在设置里就能删。站长代办：让对方在「设置 → 数据」里读出编号，然后
+  `npx wrangler d1 execute taochronos-activity --remote --command "…"` 按 `ledger-d1.js` 的 `forget()` 那几句执行，并在 `deletion_log` 里记一行（不写编号）。
+- **关掉**：两个 `wrangler.toml` 里 `ACTIVITY = "off"` 合入 main（Cookie 不再发、不再读，浏览器里的那个到期自灭）；只想不发编号：`ACTIVITY_IDS = "off"`。
+
+### 这一层的局限
+
+- 镜像（GitHub Pages）上的访客背后没有网站 Worker：没有编号，他们的提问只计数。
+- 访客中途离开、回复没传完的那次调用没有人报告结局：状态留在 `open`，没有 token。
+- 别的网站带来、被中转拒绝的请求仍只在 Workers Logs 里，不进账本（每个都问一次对象，等于让任何网页都能花掉对象的请求数）；网站这边的会计数。
+- 网页自报的计数（`basis: client`）是网页说的：改过的客户端可以乱报，受每个地址每天 1000 条的限制，报表里与中转亲眼所见的分开列。
+- 13 个月后同一个浏览器算新访客；25 个月没来的访客被删除（仍计入“有过的访客”）。这是不永久保存一个假名的代价。
+- 启用之前的访客数补不出来：只有每天去重的人数，同一个人跨天来了几次已无从得知（`data/activity-analytics/README.md`）。
+
+## 五、已知局限
 
 - 区域的免费计划只有一条 10 秒的速率限制，只能平滑突发：真正的保护是第 2–4 条拦截规则、网站的每日读取上限与哨兵（被拦的请求不进 Worker）。
   账户已是 **Workers Paid**（[ADR 0023](../docs/adr/0023-workers-paid.md)）：Worker、Durable Object、D1、KV 都没有每日上限，超出每月所含额度后按量计费——

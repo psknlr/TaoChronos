@@ -35,10 +35,12 @@ assets:
     - cloud
     - relay
     - security
+    - rust                      # TaoCore's source; its browser module ships (runtime/taocore.wasm), built from it
     - tests
     - docs
     - paper
     - requirements
+    - tools                     # the developers' own: the type checker (tools/typecheck), never in the site
     - pyproject.toml
     - README.md
     - README.en.md

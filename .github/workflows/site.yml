@@ -29,6 +29,8 @@ on:
       - "pyproject.toml"
       - "requirements/build.txt"
       - "requirements/runtime.txt"
+      - "requirements/native.txt"
+      - "rust/**"
       - ".dockerignore"
       - ".github/workflows/site.yml"
   workflow_dispatch:
@@ -64,7 +66,7 @@ jobs:
         with:
           node-version: "22"
       - name: Test the site's Worker, the corpus Worker and the sentinel (security/)
-        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js security/test/sentinel.test.js security/test/archive.test.js
+        run: node --test cloud/test/site.test.js cloud/test/corpus.test.js security/test/sentinel.test.js security/test/archive.test.js security/test/visitor.test.js security/test/ledger.test.js
 
   # the site: chat.impf.ai, bound to what the account has
   site:
@@ -100,8 +102,9 @@ jobs:
           STORE_TOKEN_SHA256: ${{ vars.STORE_TOKEN_SHA256 }}
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
-          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
           ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
+          ACTIVITY_KEY: ${{ secrets.ACTIVITY_KEY }}
+          ACTIVITY_DB_NAME: ${{ vars.ACTIVITY_DB_NAME }}
         run: bash cloud/site/deploy.sh
 
   # the full corpus: built and deployed when what it is made of changed (the code, the home, the store)
@@ -133,9 +136,9 @@ jobs:
         run: |
           # the version: the store and every tracked file the image is built from
           store=$(python3 -c 'import json; print(json.load(open("cloud/store.json"))["sha256"])')
-          tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt README.md src \
-                   architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern agents skills \
-                   cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
+          tree=$(git ls-tree -r HEAD -- pyproject.toml requirements/build.txt requirements/runtime.txt requirements/native.txt \
+                   README.md src rust architecture-policy.yaml profiles domains corpus/catalog corpus/demo corpus/modern \
+                   agents skills cloud/corpus cloud/store.json .dockerignore | sha256sum | cut -c1-12)
           version="${store:0:12}-${tree}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
@@ -249,5 +252,7 @@ jobs:
           LOG_EXPORT_TOKEN: ${{ secrets.LOG_EXPORT_TOKEN }}
           SENTINEL_SALT: ${{ secrets.SENTINEL_SALT }}
           ARCHIVE_BUCKET: ${{ vars.ARCHIVE_BUCKET }}
+          ACTIVITY_KEY: ${{ secrets.ACTIVITY_KEY }}
+          ACTIVITY_DB_NAME: ${{ vars.ACTIVITY_DB_NAME }}
           CORPUS_DEPLOYED: "1"
         run: bash cloud/site/deploy.sh

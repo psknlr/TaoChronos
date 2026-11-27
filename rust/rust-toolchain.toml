@@ -1,0 +1,8 @@
+# The exact compiler: the browser's module is committed and CI rebuilds it byte for byte (rust/wasm.sh), which only the
+# same rustc gives (1.97.0 and 1.97.1 already differ).  Bump together with the image (cloud/corpus/Dockerfile's rust
+# stage and RUSTUP_TOOLCHAIN) and the committed module.
+[toolchain]
+channel = "1.97.1"
+profile = "minimal"
+components = ["clippy", "rustfmt"]
+targets = ["wasm32-unknown-unknown"]

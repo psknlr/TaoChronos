@@ -39,7 +39,7 @@ from typing import Any, Callable, Iterable
 
 from .repairs import repair_rows
 from .sources import JC_SOURCE, load_external_works
-from .store import CorpusStore, grams
+from .store import CorpusStore
 from .study.canon import OPEN_SOURCES
 
 # the sources the site's pack may take, in the order their witnesses are preferred (the terms, for the attribution)
@@ -256,6 +256,8 @@ def index_store(path: Path, normalize: Callable[[str], str], *, progress: Callab
     left, when it is done the index is optimized and ``built``.  ``limit`` stops after about that many passages, so that
     the browser can index in slices between the questions it answers.  Returns the passages indexed by this call (0 when
     there was nothing left to index)."""
+    from ..retrieval.taocore import grams_many  # (here: the retrieval package imports this one's neighbours)
+
     db = sqlite3.connect(path)
     try:
         state = dict(db.execute("SELECT key, value FROM meta WHERE key IN ('index', 'index_rid', 'index_core')").fetchall())
@@ -273,7 +275,8 @@ def index_store(path: Path, normalize: Callable[[str], str], *, progress: Callab
                               [last, *params, chunk]).fetchall()
             if not rows:
                 break
-            db.executemany("INSERT INTO grams(rowid, g) VALUES (?, ?)", [(rid, grams(normalize(text))) for rid, text in rows])
+            tokens = grams_many([normalize(text) for _, text in rows])  # store.grams, by TaoCore where it is present
+            db.executemany("INSERT INTO grams(rowid, g) VALUES (?, ?)", zip([rid for rid, _ in rows], tokens))
             last, done = rows[-1][0], done + len(rows)
             db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('index_rid', ?)", (str(last),))
             db.commit()

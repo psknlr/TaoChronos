@@ -1,8 +1,9 @@
 """What the repository installs and runs, pinned (docs/adr/0026-pinned-supply-chain-and-enforced-policies.md): every
 GitHub Action by its commit, every checkout without the token where its job pushes nothing; every Python package from a
 hashed lockfile that still fits pyproject.toml, whose lower bounds stay above the published advisories; every Worker
-deployed with the wrangler its lockfile names, installed without install scripts; the full corpus's image on a base
-pinned by digest, run by an unprivileged user, its version made of everything it copies."""
+deployed with the wrangler its lockfile names, installed without install scripts, the type checker locked as exactly,
+and every npm lockfile kept current by Dependabot; the full corpus's image on a base pinned by digest, run by an
+unprivileged user, its version made of everything it copies."""
 
 from __future__ import annotations
 
@@ -20,9 +21,10 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
 LOCKS = sorted((ROOT / "requirements").glob("*.txt"))
 WORKERS = ["relay", "cloud/site", "cloud/corpus"]
+TOOLS = ["tools/typecheck"]  # installed only to check the code (CI's typecheck job), and pinned all the same
 PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-# the first release of each from which no published advisory applies (requirements/README.md, 2026-10-28)
-FLOORS = {"setuptools": "84.1.0", "wheel": "0.46.2", "litellm": "1.103.1", "pytest": "9.0.3", "pyarrow": "23.0.1", "pypdf": "6.21.2"}
+# the first release of each from which no published advisory applies (requirements/README.md; pypdf's of 2026-11-27)
+FLOORS = {"setuptools": "84.1.0", "wheel": "0.46.2", "litellm": "1.103.1", "pytest": "9.0.3", "pyarrow": "23.0.1", "pypdf": "6.21.4"}
 
 
 def _runs(workflow: dict) -> list[tuple[str, dict, dict]]:
@@ -70,7 +72,7 @@ def test_python_is_installed_only_from_the_hashed_lockfiles():
 
 
 def test_each_lockfile_pins_every_package_with_its_hashes():
-    assert {p.stem for p in LOCKS} == {"runtime", "build", "dev", "litellm", "ingest", "audit"}
+    assert {p.stem for p in LOCKS} == {"runtime", "build", "dev", "litellm", "ingest", "audit", "native"}
     for path in LOCKS:
         text = path.read_text(encoding="utf-8")
         assert "requirements/lock.sh" in text.splitlines()[1], f"{path.name}: not written by requirements/lock.sh"
@@ -108,6 +110,10 @@ def test_the_lockfiles_fit_pyproject_as_lock_sh_makes_them():
             assert req.specifier.contains(pins[_norm(req.name)]), f"{name}.txt: {req.name} {pins[_norm(req.name)]} does not satisfy {req.specifier}"
     build_in = [l for l in (ROOT / "requirements/build.in").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")]
     assert build_in == PYPROJECT["build-system"]["requires"], "requirements/build.in must say what [build-system] requires"
+    # TaoCore's extension is a distribution of its own (taochronos itself never needs Rust): what builds it, the same way
+    native = tomllib.loads((ROOT / "rust/crates/taocore-py/pyproject.toml").read_text(encoding="utf-8"))
+    native_in = [l for l in (ROOT / "requirements/native.in").read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")]
+    assert native_in == native["build-system"]["requires"], "requirements/native.in must say what the extension's [build-system] requires"
 
 
 def test_no_lower_bound_allows_a_release_with_a_known_advisory():
@@ -170,6 +176,35 @@ def test_wrangler_runs_only_as_installed_from_a_lockfile_without_install_scripts
                 assert any("npm ci --ignore-scripts" in r for r in runs[:first]), f"{path.name} {job_name}: wrangler before its install"
 
 
+@pytest.mark.parametrize("tool", TOOLS)
+def test_each_tool_is_locked_to_exact_versions_with_every_package_checked(tool):
+    package = json.loads((ROOT / tool / "package.json").read_text(encoding="utf-8"))
+    lock = json.loads((ROOT / tool / "package-lock.json").read_text(encoding="utf-8"))
+    wanted = package["devDependencies"]
+    assert wanted and not package.get("dependencies"), f"{tool}: what it installs is a dev dependency"
+    for name, version in wanted.items():
+        assert re.fullmatch(r"\d+\.\d+\.\d+", version), f"{tool}: {name} {version!r} is a range, not a version"
+    assert lock["lockfileVersion"] == 3 and lock["packages"][""]["devDependencies"] == wanted
+    packages = {k: v for k, v in lock["packages"].items() if k and not v.get("link")}
+    for name, version in wanted.items():
+        assert packages[f"node_modules/{name}"]["version"] == version, f"{tool}: {name} is not the version package.json names"
+    for key, entry in packages.items():
+        assert entry.get("integrity", "").startswith("sha512-"), f"{tool}: {key} has no integrity hash"
+        assert entry.get("resolved", "").startswith("https://registry.npmjs.org/"), f"{tool}: {key} comes from elsewhere"
+    for script in package.get("scripts", {}).values():
+        assert "npx" not in script, f"{tool}: {script!r} would fetch what its lockfile does not pin"
+
+
+def test_every_npm_lockfile_is_checked_here_and_kept_current():
+    """A new npm directory is pinned like the others (WORKERS or TOOLS above) and Dependabot proposes its updates."""
+    found = {p.parent.relative_to(ROOT).as_posix() for pattern in ("*/package-lock.json", "*/*/package-lock.json")
+             for p in ROOT.glob(pattern) if "node_modules" not in p.parts}
+    assert found == set(WORKERS) | set(TOOLS)
+    updates = _load(ROOT / ".github" / "dependabot.yml")["updates"]
+    npm = {d.strip("/") for u in updates if u["package-ecosystem"] == "npm" for d in u.get("directories") or [u["directory"]]}
+    assert npm == found, "a directory with an npm lockfile that Dependabot does not keep current, or the reverse"
+
+
 def test_the_image_is_pinned_unprivileged_and_versioned_by_all_it_copies():
     dockerfile = (ROOT / "cloud/corpus/Dockerfile").read_text(encoding="utf-8")
     stages = set()
@@ -191,3 +226,22 @@ def test_the_image_is_pinned_unprivileged_and_versioned_by_all_it_copies():
                 continue  # the store: its sha256 is the version's first half
             assert any(src.rstrip("/") == t or src.startswith(t.rstrip("/") + "/") for t in tree), f"COPY {src}: not in the image's version"
             assert any(line.lstrip("!").rstrip("/") in (src.rstrip("/"), src.split("/")[0]) for line in ignore if line.startswith("!")), f"COPY {src}: .dockerignore keeps it out"
+    # what is copied from elsewhere is copied from a stage of this file, or from an image pinned by digest
+    for m in re.finditer(r"^COPY --from=(\S+)", dockerfile, re.M):
+        assert m.group(1) in stages or re.fullmatch(r"[\w./-]+:[\w.-]+@sha256:[0-9a-f]{64}", m.group(1)), f"COPY --from={m.group(1)}: not a stage nor pinned by digest"
+
+
+def test_the_rust_toolchain_is_one_exact_release_everywhere():
+    """TaoCore (rust/) is compiled by one rustc: the toolchain file's exact release (the committed browser module is
+    rebuilt byte for byte only by it), which the image's Rust stage is, and is told to use."""
+    channel = tomllib.loads((ROOT / "rust/rust-toolchain.toml").read_text(encoding="utf-8"))["toolchain"]["channel"]
+    assert re.fullmatch(r"\d+\.\d+\.\d+", channel), f"rust-toolchain.toml: {channel!r} is not one exact release"
+    dockerfile = (ROOT / "cloud/corpus/Dockerfile").read_text(encoding="utf-8")
+    assert re.search(rf"^FROM rust:{re.escape(channel)}-[\w.-]+@sha256:[0-9a-f]{{64}} AS native$", dockerfile, re.M)
+    assert re.search(rf"^ENV RUSTUP_TOOLCHAIN={re.escape(channel)}\b", dockerfile, re.M)
+    # every cargo and maturin build reads Cargo.lock as it is
+    for where, run in [(p.name, str(step.get("run", ""))) for p in WORKFLOWS for _, step, _ in _runs(_load(p))] + \
+            [("Dockerfile", line) for line in dockerfile.splitlines() if line.startswith("RUN")]:
+        for cmd in re.findall(r"\b(?:cargo (?:build|test|clippy|install|deny)|maturin build)\b[^\n&|;]*", run):
+            assert "--locked" in cmd, f"{where}: {cmd!r} may change Cargo.lock"
+    assert "--locked" in (ROOT / "rust/wasm.sh").read_text(encoding="utf-8")

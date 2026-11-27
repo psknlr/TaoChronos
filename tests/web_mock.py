@@ -410,14 +410,18 @@ class MockRelay(ThreadingHTTPServer):
     on answers.  Records what the browser sent — the page never sends a key.  With ``refuse_feedback`` (a status), the
     next feedback is refused so.  With ``spent``, the day's free calls are used up: each model
     call is refused as the relay refuses it (429, ``daily_limit``, and ``Retry-After``: the seconds to its midnight,
-    here ``SPENT_FOR``)."""
+    here ``SPENT_FOR``).  With ``activity``, it is a relay with the site's activity ledger (security/ledger.js): its
+    health says the page may name its turns, send its visitor's pass and tell a turn's end, and it takes those ends
+    (``beacons``: what the page sent to /v1/activity)."""
 
     daemon_threads = True
     SECRET = "relay-held-secret"
 
     def __init__(self, upstream: str, port: int = 0, logs: bool = True, feedback: bool = True, second: str = "",
-                 sponsor: bool = False, default: str = "") -> None:
+                 sponsor: bool = False, default: str = "", activity: bool = False) -> None:
         super().__init__(("127.0.0.1", port), _RelayHandler)
+        self.activity = activity       # it has the activity ledger
+        self.beacons: list[dict] = []  # the turns' ends the page told it
         self.default = default or PUBLIC_MODEL  # the model a visitor who has chosen none asks (health's `default`)
         self.second = second           # a second model it offers (GPT-6 Luna), counted in questions: its public name
         self.takes_sponsors = sponsor  # it takes visitors' own keys (赞助)
@@ -451,7 +455,7 @@ class _RelayHandler(BaseHTTPRequestHandler):
 
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin") or "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept, X-Tao-Turn")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept, X-Tao-Turn" + (", X-Tao-Visitor" if self.server.activity else ""))
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Expose-Headers", "Retry-After")  # as relay.js: the page reads it
         self.send_header("Vary", "Origin")
@@ -481,7 +485,8 @@ class _RelayHandler(BaseHTTPRequestHandler):
                              "default": self.server.default,
                              "logs": self.server.logs, "feedback": self.server.takes_feedback, "sponsor": self.server.takes_sponsors,
                              "max_output_tokens": 32768,
-                             "limits": {"per_minute": 30, "per_day": 600, **({"questions": {second: 3}} if second else {})}})
+                             "limits": {"per_minute": 30, "per_day": 600, **({"questions": {second: 3}} if second else {})},
+                             **({"activity": {"turn": True, "beacon": True, "ids": "notice"}} if self.server.activity else {})})
         else:
             self._json(404, {"error": {"message": "not found"}})
 
@@ -501,6 +506,13 @@ class _RelayHandler(BaseHTTPRequestHandler):
                 self._json(status, {"error": {"message": "反馈太频繁，请稍后再试", "type": "rate_limited"}}, {"Retry-After": "10"})
                 return
             self.server.feedback.append({"type": self.headers.get("Content-Type", ""), **json.loads(raw or b"{}")})
+            self.send_response(204)
+            self._cors()
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if self.path == "/v1/activity" and self.server.activity:
+            self.server.beacons.append({"type": self.headers.get("Content-Type", ""), "body": json.loads(raw or b"{}")})
             self.send_response(204)
             self._cors()
             self.send_header("Content-Length", "0")

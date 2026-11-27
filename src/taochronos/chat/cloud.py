@@ -236,6 +236,10 @@ def serve(port: int = 8080) -> None:
     threading.Thread(target=_preload, args=(runtime,), name="case-records", daemon=True).start()
     _log(f"TaoChronos {info['version']} · {info['profile']} · {info['corpus']['books']} 部书 · "
          f"{info['corpus']['passages']} 段 · {info['tools']['offered']} 个工具 · :{port}")
+    from ..plugins.retrieval import taocore
+
+    found = taocore.status()  # the kernel checked now, not at the first search
+    _log(f"searches on TaoCore's {found['kernel']} kernel" if found["kernel"] else f"searches in Python: {found['reason']}")
     try:
         server.serve_forever(poll_interval=0.5)
     finally:

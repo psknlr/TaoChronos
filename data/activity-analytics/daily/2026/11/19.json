@@ -1,0 +1,47 @@
+{
+ "backfill": {
+  "records": {
+   "by_model": {
+    "MiniMax-M3": 4
+   },
+   "by_provider": {
+    "impf": 4
+   },
+   "by_status": {
+    "done": 3,
+    "stopped": 1
+   },
+   "model_calls": 44,
+   "questions": 4,
+   "tokens_in": 2113956,
+   "tokens_out": 55390,
+   "tool_calls": 111,
+   "tools": {
+    "classics.get_passage": 45,
+    "classics.list_books": 1,
+    "classics.search": 40,
+    "kg.term": 2,
+    "modern.safety": 2,
+    "study.case": 3,
+    "study.casefind": 6,
+    "study.compare": 1,
+    "study.family": 1,
+    "study.formula": 3,
+    "study.herb": 2,
+    "study.term": 1,
+    "study.usage": 1,
+    "taochronos_catalog": 2,
+    "validation.verify_quote": 1
+   }
+  }
+ },
+ "complete": true,
+ "kind": "daily",
+ "ledger": null,
+ "period": {
+  "from": "2026-11-19",
+  "label": "2026-11-19",
+  "to": "2026-11-19"
+ },
+ "v": 1
+}

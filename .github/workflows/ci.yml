@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "22"
       - name: The relay (道乃久默认服务) and the sentinel both Workers share (security/)
-        run: node --test relay/test/relay.test.js security/test/sentinel.test.js security/test/usage.test.js security/test/archive.test.js
+        run: node --test relay/test/relay.test.js security/test/sentinel.test.js security/test/usage.test.js security/test/archive.test.js security/test/visitor.test.js security/test/ledger.test.js
 
   cloud:
     runs-on: ubuntu-latest
@@ -62,3 +62,90 @@ jobs:
           python -m taochronos.chat.d1 fixture cloud/.d1-fixture
       - name: The site's Worker (and its D1 backup) and the corpus Worker (cloud/)
         run: REQUIRE_D1_FIXTURE=1 node --test cloud/test/site.test.js cloud/test/corpus.test.js cloud/test/backup.test.js
+
+  # TaoCore (rust/, docs/adr/0036-taocore.md): the kernel's own checks, under the compiler rust/rust-toolchain.toml pins
+  # (rustup reads it in rust/ and below only); and the browser's module, committed, is what its source builds
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The pinned toolchain
+        run: rustup toolchain install --no-self-update
+      - name: Format, lints (natively and for the browser's target), tests
+        run: |
+          cargo fmt --all --check
+          cargo clippy --locked --workspace --all-targets -- -D warnings
+          cargo clippy --locked --target wasm32-unknown-unknown -p taocore-wasm -- -D warnings
+          cargo test --locked --workspace
+      - name: The committed browser module is what the source builds, byte for byte
+        run: ./wasm.sh --check
+
+  # TaoCore's CPython extension, built and then required (TAOCHRONOS_TAOCORE=require): the parity tests compare it with
+  # the definitions, and a search that goes to the kernel — a large store's — fails rather than falls back to Python,
+  # which a build that failed cannot pass for; the demonstration corpus's searches run in Python as everywhere.  Python
+  # 3.11's plain float sum and 3.12's compensated one both
+  native:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: The pinned toolchain
+        working-directory: rust
+        run: rustup toolchain install --no-self-update
+      - name: Install, the extension too (maturin from the hashed requirements/native.txt)
+        run: |
+          pip install --require-hashes -r requirements/build.txt -r requirements/dev.txt -r requirements/native.txt
+          pip install --no-deps --no-build-isolation -e .
+          pip install --no-deps --no-build-isolation ./rust/crates/taocore-py
+      - name: Tests, the kernel required where a search goes to it
+        env:
+          REQUIRE_TAOCORE: "1"
+          TAOCHRONOS_TAOCORE: require
+        run: pytest
+
+  # the full corpus's image up to its server's code (cloud/corpus/Dockerfile): the extension's stages build as they will
+  # when the site is deployed (the store, fetched by the deployment, is not needed for these)
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the image's base stage, the kernel in it
+        run: |
+          docker build --target base -f cloud/corpus/Dockerfile -t taochronos-base .
+          docker run --rm taochronos-base python -c "import _taocore; from taochronos.plugins.retrieval import taocore; s = taocore.status(); print(s); assert s['kernel'] == 'native', s"
+
+  # tsc over the JavaScript as it is, typed in JSDoc: the files whose first line is `// @ts-check`, under strict;
+  # nothing is built or written (tools/typecheck/README.md).  One program for each place the code runs.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      # typescript and the Workers' types exactly as tools/typecheck/package-lock.json has them, without install scripts
+      - name: Install the type checker from its lockfile
+        working-directory: tools/typecheck
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: The page (web/js, with a browser page's globals)
+        run: tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.web.json
+      - name: The page's module workers (worker.js and unpack-worker.js with what they import, with a worker's globals)
+        run: tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.worker.json
+      - name: The Workers (relay/src, cloud/site/src and security/, with workerd's globals)
+        run: tools/typecheck/node_modules/.bin/tsc -p tools/typecheck/tsconfig.workers.json

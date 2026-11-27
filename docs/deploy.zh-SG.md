@@ -119,9 +119,9 @@ D1 · Edit；`r2/buckets`：缺 R2 权限（只有归档需要）。这些正是
 | `MINIMAX_API_KEY` | MiniMax 密钥 | 默认服务需要 |
 | `OPENAI_API_KEY` | 第二个模型 GPT-6 Luna 用的 OpenAI 密钥（每人每天 3 个问题；relay/SETUP.md） | 可选 |
 | `SPONSOR_SECRET` | 32 位以上随机串：`openssl rand -hex 32`——加密访客赞助的密钥，也是你读取它们的凭据 | 可选（「设置 → 赞助」） |
-| `LOG_EXPORT_TOKEN` | 16 位以上随机串：`openssl rand -hex 32` | 需要 |
+| `LOG_EXPORT_TOKEN` | 16 位以上随机串：`openssl rand -hex 32`——收集令牌：工作流用它取回对话记录、哨兵的事件与使用统计。统计只给站长看，网站上没有哪一页显示：看 `data/activity-analytics/SUMMARY.md` 与 D1 控制台（[web.md](web.md)「使用统计」） | 需要 |
 | `SENTINEL_SALT` | `openssl rand -hex 32` | 建议 |
-| `STATS_TOKEN` | 16 位以上随机串 | 可选（「设置 → 统计」） |
+| `ACTIVITY_KEY` | 32 位以上随机串：`openssl rand -hex 32`——**设了就不要再改**。启用活动账本：不同的访客、访问、每一个提问、模型用量（[security/README.md](../security/README.md)「活动账本」；[ADR 0035](adr/0035-the-activity-ledger.md)）。部署令牌要能用 D1 | 可选 |
 | `CLOUDFLARE_SECURITY_TOKEN` | Zone WAF、Zone Settings、Bot Management：Edit；Zone：Read；Account Filter Lists：Edit（区域 `impf.ai`） | 边缘规则需要 |
 | `CLOUDFLARE_ANALYTICS_TOKEN` | Zone Analytics：Read（区域 `impf.ai`） | 每天取回边缘事件需要 |
 

@@ -107,16 +107,19 @@ class ChatServer(ThreadingHTTPServer):
     def runtime_file(self, name: str) -> bytes | None:
         """The in-browser runtime's files when the client is served from here and was not built (``taochronos web
         build``): made from this checkout on first use."""
-        if name not in ("taochronos.zip", "home.zip", "manifest.json") or self.home is None:
+        if name not in ("taochronos.zip", "home.zip", "taocore.wasm", "manifest.json") or self.home is None:
             return None
         with self._lock:
             if name not in self._runtime_files:
-                from .build import home_zip, manifest, package_zip
+                from .build import home_zip, manifest, package_zip, taocore_module
 
                 pkg, home = package_zip(home=self.home), home_zip(self.home)  # what the policy lets a site carry
+                kernel = taocore_module(self.home)
                 self._runtime_files.update({"taochronos.zip": pkg, "home.zip": home,
-                                            "manifest.json": json.dumps(manifest(pkg, home), ensure_ascii=False).encode()})
-            return self._runtime_files[name]
+                                            "manifest.json": json.dumps(manifest(pkg, home, kernel), ensure_ascii=False).encode()})
+                if kernel is not None:
+                    self._runtime_files["taocore.wasm"] = kernel
+            return self._runtime_files.get(name)
 
 
 class Handler(BaseHTTPRequestHandler):
