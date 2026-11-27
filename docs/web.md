@@ -110,8 +110,11 @@ excerpts.  Two steps choose them:
   visit downloads and indexes nothing: Pyodide, then the kept store, then the tools, in about 4 seconds.  The package's
   bytecode is kept too (compiled once after the first visit's indexing, from the package the manifest names and only
   from it), the YAML the runtime reads comes parsed with the site (`home.zip`, `.cache/yaml`), and the store's counts
-  come with the store.  An archive is kept only once its SHA-256 is the manifest's: on an http:// page of another
-  machine, where the browser computes none, the archives are downloaded each visit, and TaoCore's module is not used.
+  come with the store.  What is kept and can no longer be read (its file gone from the browser's profile) is forgotten
+  and fetched, or made, again, where it ended every later start; and a call that comes while the store is being kept
+  waits for it, a fraction of a second, so that neither its lock nor its open transaction is held for as long as Python
+  runs the call.  An archive is kept only once its SHA-256 is the manifest's: on an http:// page of another machine,
+  where the browser computes none, the archives are downloaded each visit, and TaoCore's module is not used.
 * **Searches on a compiled kernel** — TaoCore ([ADR 0036](adr/0036-taocore.md), [`rust/`](../rust/README.md)): what a
   search computes over its candidates, BM25 of the query's tokens and the hashed n-gram cosines, runs in a WebAssembly
   module of no imports (`runtime/taocore.wasm`, 50 KB) that the worker fetches beside the archives, instantiates (in the

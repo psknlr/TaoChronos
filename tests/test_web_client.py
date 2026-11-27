@@ -2316,6 +2316,70 @@ def test_a_lock_the_browser_refuses_is_never_why_the_runtime_does_not_start_unde
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+# worker.js's archive(), as its source has it, over a store of kept copies and a site that serves `served`
+NODE_ARCHIVE = r"""
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+const source = readFileSync("js/worker.js", "utf8");
+const body = /\nasync function archive\(base, name, sha, exact = false\) \{\n[\s\S]*?\n\}\n/.exec(source)[0];
+const hex = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const enc = new TextEncoder();
+const good = enc.encode("the package the manifest names"), other = enc.encode("another build's");
+const SHA = hex(good);
+
+function world({ keptCopy, served = good, hashes = true }) {
+  const log = [];
+  const store = new Map(keptCopy ? [["zip:a.zip", keptCopy]] : []);
+  const kept = { get: async (k) => store.get(k), put: async (k, v) => { log.push(`put ${k}`); store.set(k, v); return true; }, drop: async (k) => { log.push(`drop ${k}`); store.delete(k); return true; } };
+  const sha256 = async (bytes) => (hashes ? hex(bytes) : null);
+  const fetch = async (url) => { log.push(`fetch ${new URL(url).pathname}`); return { ok: true, status: 200, arrayBuffer: async () => served.slice().buffer }; };
+  const T = (strings, ...values) => String.raw({ raw: strings }, ...values);
+  const archive = new Function("kept", "sha256", "fetch", "T", `${body}; return archive;`)(kept, sha256, fetch, T);
+  return { archive: (exact) => archive("https://site.test/", "a.zip", SHA, exact), log, store };
+}
+const text = (r) => [new TextDecoder().decode(r.bytes), r.checked];
+const blob = (bytes) => new Blob([bytes]);
+const unreadable = { size: 30, arrayBuffer: async () => { throw new DOMException("A requested file or directory could not be found", "NotFoundError"); } };
+Object.setPrototypeOf(unreadable, Blob.prototype); // a Blob whose file the browser no longer has
+
+// a kept copy that is what the manifest names: used, nothing fetched
+let w = world({ keptCopy: { sha: SHA, blob: blob(good) } });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", true], []]);
+// one whose bytes can no longer be read: dropped, fetched anew, kept again — not the end of this start and every later one
+w = world({ keptCopy: { sha: SHA, blob: unreadable } });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", true], ["drop zip:a.zip", "fetch /runtime/a.zip", "put zip:a.zip"]]);
+assert.equal(await w.store.get("zip:a.zip").blob.text(), "the package the manifest names");
+// one that is no longer what its name says: the same
+w = world({ keptCopy: { sha: SHA, blob: blob(other) } });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", true], ["drop zip:a.zip", "fetch /runtime/a.zip", "put zip:a.zip"]]);
+// what is fetched and is not the manifest's: used this once, never kept; refused where only the right file will do
+w = world({ served: other });
+assert.deepEqual([text(await w.archive()), w.log], [["another build's", false], ["fetch /runtime/a.zip"]]);
+await assert.rejects(w.archive(true), /is not the file the manifest names/);
+// a browser that computes no hash: nothing can be checked, so nothing is kept, and a kept copy is not trusted
+w = world({ keptCopy: { sha: SHA, blob: blob(other) }, hashes: false });
+assert.deepEqual([text(await w.archive()), w.log], [["the package the manifest names", false], ["drop zip:a.zip", "fetch /runtime/a.zip"]]);
+await assert.rejects(w.archive(true), /cannot be checked here/);
+console.log("ok");
+"""
+
+
+def test_a_kept_archive_is_used_only_checked_and_one_that_cannot_be_read_is_fetched_anew_under_node(tmp_path):
+    """The runtime's worker keeps its archives by content.  A kept copy is used only when its bytes are what the
+    manifest names; one the browser can no longer read (its file gone from the profile) is dropped and fetched anew —
+    it used to end that start and every start after it, until the site's data was cleared; what is fetched and is not
+    the manifest's is used once and never kept; and where the browser computes no hash, nothing is kept or trusted."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_ARCHIVE, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2500:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""

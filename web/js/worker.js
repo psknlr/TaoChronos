@@ -84,6 +84,9 @@ let rpc = /** @type {any} */ (null);
 let ready = null;
 /** @type {Int32Array<SharedArrayBuffer> | null} */
 let interrupt = null; // the flag the page sets to interrupt Python (SIGINT, 2), where it can share it
+/** @type {Promise<unknown> | null} */
+let keepingNow = null; // the store being kept for the next visit (indexRest): a call waits for it, a moment
+const KEEP_WAIT_MS = 5000; // at the most
 
 /** @param {number} p @param {string} message */
 const progress = (p, message) => self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "progress", progress: Math.round(p), message }));
@@ -159,7 +162,8 @@ async function sha256(bytes) {
 /** A runtime archive: kept by content (the manifest's sha256), so that a new build is always fetched.  Bytes are kept,
  * and a kept copy read, only when they are what the manifest names (`checked`) — a download cut short, or a file older
  * than the manifest (a cache between here and the site), is used this once and fetched anew the next time, where it was
- * once kept for good.  Where the browser computes no hash (crypto.subtle: a page served over plain http from another
+ * once kept for good; a kept copy the browser can no longer read is dropped and fetched anew, where it ended every
+ * later start.  Where the browser computes no hash (crypto.subtle: a page served over plain http from another
  * machine), nothing can be checked, so nothing is kept.  `exact` refuses bytes not checked (an optional file: better
  * none than another).
  * @param {string} base @param {string} name @param {string | undefined} sha @param {boolean} [exact]
@@ -167,9 +171,11 @@ async function sha256(bytes) {
 async function archive(base, name, sha, exact = false) {
   const hit = sha ? await kept.get(`zip:${name}`) : undefined;
   if (sha && hit?.sha === sha && hit.blob instanceof Blob) {
-    const bytes = new Uint8Array(await hit.blob.arrayBuffer());
-    if ((await sha256(bytes)) === sha) return { bytes, checked: true };
-    kept.drop(`zip:${name}`); // no longer what its name says
+    try {
+      const bytes = new Uint8Array(await hit.blob.arrayBuffer());
+      if ((await sha256(bytes)) === sha) return { bytes, checked: true };
+    } catch { /* its bytes can no longer be read (the browser's file of it is gone or damaged) */ }
+    kept.drop(`zip:${name}`); // no longer what its name says, or not readable: fetched anew
   }
   const url = new URL(`runtime/${name}`, base).href;
   const r = await fetch(url, { cache: "no-cache" });
@@ -434,7 +440,12 @@ async function indexRest(sha, then) {
       if (st.state === "built") break;
       if (!st.indexed_now) return; // nothing moved: leave it (the next visit starts over)
     }
-    const keptNow = await keepCorpus(sha);
+    // a call that began while the store is kept would hold its lock, and its open transaction, for as long as Python
+    // ran it — up to a research run's half hour, during which another tab's start waited: calls wait for the keep
+    // instead (the handler below), which takes a fraction of a second
+    const saved = keepCorpus(sha);
+    keepingNow = saved.catch(() => {}).finally(() => { keepingNow = null; });
+    const keptNow = await saved;
     self.postMessage(/** @satisfies {WorkerEvent} */ ({ type: "index", done: true, kept: keptNow }));
   } catch (err) {
     // an interrupt meant for a call that ended as this slice began: the slice, not committed, is indexed again
@@ -509,7 +520,15 @@ async function init({ base }) {
   };
   const corpusSource = meta ? (async () => {
     const hit = await keptCorpus(meta.sha256);
-    if (hit) return { kept: true, whole: new Blob(hit.parts).arrayBuffer().then((b) => new Uint8Array(b)) };
+    if (hit) {
+      // read here, not later: a kept store whose bytes the browser can no longer read (a part's file gone from its
+      // profile) is forgotten and downloaded again, where it ended this start and every one after it
+      try {
+        return { kept: true, whole: Promise.resolve(new Uint8Array(await new Blob(hit.parts).arrayBuffer())) };
+      } catch {
+        kept.drop("corpus");
+      }
+    }
     const url = new URL("runtime/corpus.sqlite.xz", base).href;
     view.downloading = true;
     const showSoon = every(200, show);
@@ -547,8 +566,12 @@ async function init({ base }) {
   // the bytecode kept is that of the package the manifest names: laid over that package alone, and made only from it
   // (made from another — an older file a cache gave — it would be that one's, kept under this one's name)
   const pycKey = `pyc:${files["taochronos.zip"]?.sha256 || ""}`;
-  const pyc = pkg.checked ? await kept.get(pycKey) : undefined;
-  if (pyc?.blob instanceof Blob) py.unpackArchive(new Uint8Array(await pyc.blob.arrayBuffer()), "zip", { extractDir: site });
+  let pyc = pkg.checked ? await kept.get(pycKey) : undefined;
+  try {
+    if (pyc?.blob instanceof Blob) py.unpackArchive(new Uint8Array(await pyc.blob.arrayBuffer()), "zip", { extractDir: site });
+  } catch {
+    pyc = undefined; // not readable any more: Python compiles from the sources, and the bytecode is kept again below
+  }
   py.FS.mkdirTree("/home/pyodide/taochronos");
   py.FS.mkdirTree("/home/pyodide/data");
   py.unpackArchive(home.bytes, "zip", { extractDir: "/home/pyodide/taochronos" });
@@ -617,6 +640,8 @@ listen(async (/** @type {MessageEvent<WorkerRequest>} */ e) => {
     } else {
       if (!ready) throw new Error(T("运行环境尚未启动"));
       await ready;
+      // the store is being kept: after it — or after KEEP_WAIT_MS, should the browser's storage be that slow
+      if (keepingNow) await Promise.race([keepingNow, new Promise((r) => setTimeout(r, KEEP_WAIT_MS))]);
       if (interrupt) Atomics.store(interrupt, 0, 0); // one set for the call before this one is not for this one
       const local = /** @type {Record<string, ((params: any) => Promise<unknown>) | undefined>} */ ({ data_add: addData, data_remove: removeData, data_clear: clearData })[method];
       result = local ? await local(params || {}) : JSON.parse(rpc(method, JSON.stringify(params || {})));
