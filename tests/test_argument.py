@@ -54,3 +54,26 @@ def test_log_odds_marks_what_sets_a_work_apart():
     rows = {r["item"]: r["z"] for r in log_odds(a, b)}
     assert rows["treatment"] > 0 > rows["analogy"]
     assert compare({"relations": a, "triples": Counter()}, {"relations": a, "triples": Counter()})["relations_jsd"] == 0.0
+
+
+def test_a_graphs_triples_are_listed_the_same_at_every_start():
+    """The categories an edge joins were gone through in a set's own order, the interpreter's of the day: triples as
+    frequent as one another were listed otherwise at each start (study.argument)."""
+    import json
+    import os
+    import subprocess
+    import sys
+
+    code = ("import json; from taochronos.science.argumentation import triples; "
+            "cats = ['disease', 'formula', 'herb', 'pulse', 'symptom', 'treatment_method', 'pattern']; "
+            "clauses = [{'concepts': [(c, c) for c in cats]}, {'concepts': [(c, c) for c in cats[::-1]]}]; "
+            "edges = [{'source': 0, 'target': 1, 'relation': 'therefore'}]; "
+            "print(json.dumps([list(k) for k, _ in triples(clauses, edges).most_common()]))")
+    seen = []
+    for seed in ("1", "2", "3"):
+        run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120,
+                             env={**os.environ, "PYTHONHASHSEED": seed})
+        assert run.returncode == 0, run.stderr[-600:]
+        seen.append(json.loads(run.stdout))
+    assert seen[0] == seen[1] == seen[2] and len(seen[0]) == 49
+    assert seen[0][0] == ["disease", "therefore", "disease"] and seen[0][-1] == ["treatment_method", "therefore", "treatment_method"]

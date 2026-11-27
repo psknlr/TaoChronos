@@ -335,3 +335,30 @@ def test_the_case_commands(capsys, tmp_path):
     assert main(data + ["casefind", "咳嗽", "--dataset", str(tmp_path / "ds")]) == 0
     assert json.loads(capsys.readouterr().out)["resources"] == {"cases": 0, "case_visits": 0, "case_items": 0}
     assert (tmp_path / "ds" / "datapackage.json").exists()
+
+
+def test_what_the_case_tools_count_is_listed_the_same_at_every_start():
+    """What is counted once a case is counted from a set, and items as frequent as one another came out in the set's own
+    order — the interpreter's of the day: the same search listed its formulas, principles and drugs otherwise, and cut
+    the lists elsewhere, at each start of the server (study.casefind, study.casecompare, study.modifications)."""
+    import os
+    import subprocess
+    import sys
+
+    code = (
+        "import json, sys; from pathlib import Path; "
+        "from taochronos.plugins.classics import Corpus, DomainPack; "
+        "from taochronos.plugins.classics.study import StudyService; "
+        f"home = Path({str(HOME)!r}); pack = DomainPack(home / 'domains' / 'classics'); "
+        "corpus = Corpus.load(home / 'tests' / 'fixtures' / 'cases'); corpus.normalize = pack.variants.normalize_text; "
+        "study = StudyService(pack, corpus); "
+        "out = [study.casefind()['facets'], study.casefind(disease='咳嗽')['facets'], study.casecompare(by='period', min_cases=1), "
+        "study.casecompare(by='book', min_cases=1), study.modifications(), study.treatments('咳嗽', min_cases=1)]; "
+        "print(json.dumps(out, ensure_ascii=False, default=str))")
+    seen = []
+    for seed in ("1", "2", "3"):
+        run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=300,
+                             env={**os.environ, "PYTHONHASHSEED": seed, "PYTHONPATH": str(HOME / "src")})
+        assert run.returncode == 0, run.stderr[-800:]
+        seen.append(run.stdout)
+    assert seen[0] == seen[1] == seen[2] and len(seen[0]) > 2000

@@ -41,6 +41,13 @@ from .cases import RESPONSES, CaseStudy
 from .metrology import cn_number
 
 TONGUE = set("白黄灰黑红绛紫淡胖瘦腻滑燥干剥光厚薄润糙裂焦")
+
+
+def _once(items: Iterable[str]) -> list[str]:
+    """Each of ``items`` once, in one order.  What is counted once a case is counted from a set, and a set's own order
+    is the interpreter's of the day: items as frequent as one another came out in it — the same question listed them
+    otherwise, and cut the list elsewhere, at each start of the server."""
+    return sorted(set(items))
 OUTCOME_WORDS = {"improved": "improved", "愈": "improved", "痊愈": "improved", "好转": "improved", "效": "improved",
                  "unchanged": "unchanged", "未效": "unchanged", "无效": "unchanged", "不效": "unchanged",
                  "worse": "worse", "加重": "worse", "恶化": "worse", "died": "died", "死": "died", "死亡": "died",
@@ -182,7 +189,7 @@ class CaseExplorer:
         def top(fn: Callable[[CaseRecord], Iterable[str]], n: int) -> list[list[Any]]:
             c: Counter = Counter()
             for case in cases:
-                c.update(set(fn(case)))
+                c.update(_once(fn(case)))
             return [[k, v] for k, v in c.most_common(n)]
 
         books = Counter(c.book_id for c in cases)
@@ -488,7 +495,7 @@ class CaseExplorer:
                                "groups": profiles, "left_out": {g: len(cs) for g, cs in grouped.items() if g not in kept},
                                "tests": tests}
         if 2 <= len(order) <= 8:
-            dists = {g: Counter(x for c in kept[g] for x in self._treatment(c) if not x.startswith("药:")) for g in order}
+            dists = {g: Counter(x for c in kept[g] for x in _once(self._treatment(c)) if not x.startswith("药:")) for g in order}
             out["distances"] = [{"a": a, "b": b, "jsd": round(jensen_shannon(dict(dists[a]), dict(dists[b])), 4)}
                                 for i, a in enumerate(order) for b in order[i + 1:]]
         if by == "period" and len(order) >= 3:
@@ -512,7 +519,7 @@ class CaseExplorer:
         def share(fn: Callable[[CaseRecord], Iterable[str]]) -> list[dict[str, Any]]:
             cnt: Counter = Counter()
             for c in cases:
-                cnt.update(set(fn(c)))
+                cnt.update(_once(fn(c)))
             return [{"name": k, "cases": v, "share": round(v / n, 3)} for k, v in cnt.most_common(top)]
 
         years = [c.year for c in cases if c.year is not None]
@@ -536,7 +543,7 @@ class CaseExplorer:
     def _trends(self, kept: dict[str, list[CaseRecord]], order: list[str], *, top: int) -> list[dict[str, Any]]:
         """The most used principles and formulas: their share of each period's cases, and a Cochran–Armitage trend test."""
         per: dict[str, list[set[str]]] = {g: [self._treatment(c) for c in kept[g]] for g in order}
-        overall: Counter = Counter(x for g in order for s in per[g] for x in s if not x.startswith("药:"))
+        overall: Counter = Counter(x for g in order for s in per[g] for x in _once(s) if not x.startswith("药:"))
         rows = []
         for item, _ in overall.most_common(top):
             counts = [(sum(1 for s in per[g] if item in s), len(per[g])) for g in order]
@@ -574,8 +581,8 @@ class CaseExplorer:
                     remove_units.append((feats, set(v.removed)))
                     if base:
                         bases[base]["visits"] += 1
-                        bases[base]["added"].update(set(v.added))
-                        bases[base]["removed"].update(set(v.removed))
+                        bases[base]["added"].update(_once(v.added))
+                        bases[base]["removed"].update(_once(v.removed))
                     if len(examples) < 8:
                         examples.append({"case": c.id, "title": self.b.book_title(c.book_id), "period": self._period(c),
                                          "visit": _ordinal(v.index), "base": base, "added": v.added, "removed": v.removed,
@@ -585,8 +592,8 @@ class CaseExplorer:
                     last_formula = self.fname(v.formulas[0])
                 last_pres = pres or last_pres
             cases_with += changed
-        added: Counter = Counter(x for _, a in add_units for x in a)
-        removed: Counter = Counter(x for _, r in remove_units for x in r)
+        added: Counter = Counter(x for _, a in add_units for x in _once(a))
+        removed: Counter = Counter(x for _, r in remove_units for x in _once(r))
         base_rows = [{"formula": f, "visits": b["visits"], "added": b["added"].most_common(8), "removed": b["removed"].most_common(8)}
                      for f, b in sorted(bases.items(), key=lambda kv: (-kv[1]["visits"], kv[0]))[:15]]
         return {"disease": disease, "formula": formula, "findings": findings, "scanned": len(pool), "cases": cases_with,

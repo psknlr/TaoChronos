@@ -107,8 +107,10 @@ def triples(clauses: list[dict[str, Any]], edges: list[dict[str, Any]]) -> Count
     for e in edges:
         src = {cat for _, cat in clauses[e["source"]]["concepts"]} or {"—"}
         tgt = {cat for _, cat in clauses[e["target"]]["concepts"]} or {"—"}
-        for a in src:
-            for b in tgt:
+        # (in one order: a set's own is the interpreter's of the day, and triples as frequent as one another came out
+        # in it — the same passage's graph listed them otherwise at each start)
+        for a in sorted(src):
+            for b in sorted(tgt):
                 out[(a, e["relation"], b)] += 1
     return out
 
