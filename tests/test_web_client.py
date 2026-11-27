@@ -2267,6 +2267,55 @@ def test_a_module_worker_holds_what_comes_before_it_listens_under_node(tmp_path)
     assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
 
 
+# worker.js's keeping(), as its source has it, with the locks a browser may give, withhold or refuse
+NODE_KEEPING = r"""
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const source = readFileSync("js/worker.js", "utf8");
+const body = /\nfunction keeping\(mode, fn\) \{\n[\s\S]*?\n\}\n/.exec(source)[0];
+const keeping = (locks) => new Function("self", "navigator", `${body}; return keeping;`)({ navigator: locks && { locks } }, { locks });
+const calls = [];
+const work = async () => { calls.push("ran"); return "done"; };
+const failing = async () => { calls.push("ran"); throw new Error("the work's own"); };
+
+// a browser with locks: the work runs under the lock asked for
+const asked = [];
+const given = { request: async (name, options, fn) => { asked.push([name, options.mode]); return fn(); } };
+assert.equal(await keeping(given)("shared", work), "done");
+assert.deepEqual(asked, [["taochronos-keep", "shared"]]);
+// none (not a secure context): at once
+assert.equal(await keeping(undefined)("exclusive", work), "done");
+// refused (a browser that keeps no site data): the work runs all the same, once
+calls.length = 0;
+const refused = { request: async () => { throw new DOMException("Access to the Locks API is denied in this context.", "SecurityError"); } };
+assert.equal(await keeping(refused)("shared", work), "done");
+const throwing = { request: () => { throw new TypeError("not here"); } };
+assert.equal(await keeping(throwing)("exclusive", work), "done");
+assert.deepEqual(calls, ["ran", "ran"]);
+// the work's own failure is the work's: not taken for a refusal, not run again
+calls.length = 0;
+await assert.rejects(keeping(given)("exclusive", failing), /the work's own/);
+await assert.rejects(keeping(refused)("exclusive", failing), /the work's own/);
+assert.deepEqual(calls, ["ran", "ran"]);
+console.log("ok");
+"""
+
+
+def test_a_lock_the_browser_refuses_is_never_why_the_runtime_does_not_start_under_node(tmp_path):
+    """The runtime's worker keeps and reads its store under a Web Lock, so that two tabs do not mix theirs.  A browser
+    set to keep no site data refuses its locks as it refuses IndexedDB (a SecurityError): the store is then read and
+    kept — that is, not found and not kept — as before the lock, and the runtime starts.  The work's own failure is
+    not taken for a refusal."""
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    shutil.copytree(ROOT / "web" / "js", tmp_path / "js")
+    (tmp_path / "package.json").write_text('{"type": "module"}')
+    (tmp_path / "t.mjs").write_text(NODE_KEEPING, encoding="utf-8")
+    run = subprocess.run([node, "t.mjs"], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "ok", run.stderr[-2000:]
+
+
 def test_every_tool_the_model_can_call_has_plain_words_on_the_page():
     """The tool steps and the answers name a tool in plain words, never by its inside name (web/js/redact.js): there are
     words for every tool the model can be offered, and none of them is an identifier."""

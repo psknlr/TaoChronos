@@ -184,10 +184,21 @@ async function archive(base, name, sha, exact = false) {
 
 /** `fn`, while no other tab of this browser keeps a store ("shared"), or while none keeps or reads one ("exclusive"):
  * two tabs keeping theirs at once would leave parts of each under one head.  Where the browser has no locks (they are a
- * secure context's: an http:// page of another machine), at once, as before.
+ * secure context's: an http:// page of another machine), or refuses them (a browser set to keep no site data refuses
+ * its locks as it refuses IndexedDB), at once, as before: a lock not had is never why the runtime does not start.
  * @template T @param {"shared" | "exclusive"} mode @param {() => Promise<T>} fn @returns {Promise<T>} */
 function keeping(mode, fn) {
-  return self.navigator?.locks ? navigator.locks.request("taochronos-keep", { mode }, fn) : fn();
+  const locks = self.navigator?.locks;
+  if (!locks) return fn();
+  let began = false;
+  /** @type {Promise<T>} */
+  let asked;
+  try {
+    asked = locks.request("taochronos-keep", { mode }, () => { began = true; return fn(); });
+  } catch {
+    return fn();
+  }
+  return asked.catch((err) => { if (began) throw err; return fn(); }); // refused before fn began: without the lock
 }
 
 /** The indexed store kept from an earlier visit: {parts: Blob[], bytes}, or null when there is none for this build, or
