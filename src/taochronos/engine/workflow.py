@@ -19,6 +19,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import secrets
+import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -445,7 +447,8 @@ def _clean_quote(text: str, width: int = 30) -> str:
 
 def render_report(run: dict[str, Any]) -> str:
     plan = run["plan"]
-    lines = [f"# {plan['question']}", "", f"运行：{run['run']}（计划 {plan['by']}；工作区 {run['workspace']}）", "", "## 工作流", ""]
+    kept = f"；工作区 {run['workspace']}" if run.get("workspace") else ""  # (a run that keeps none names none)
+    lines = [f"# {plan['question']}", "", f"运行：{run['run']}（计划 {plan['by']}{kept}）", "", "## 工作流", ""]
     for sid in plan["skills"]:
         step = next(s for s in run["steps"] if s["skill"] == sid)
         lines.append(f"- {sid} {step['name']}（{step['agent']}）：{step['status']}，{step['calls']} 次调用"
@@ -489,7 +492,11 @@ def render_report(run: dict[str, Any]) -> str:
 
 
 def ask(harness: Any, question: str, *, page: str | None = None, judge: Any = None, run_id: str | None = None,
-        resume: bool = True, plan_only: bool = False) -> dict[str, Any]:
+        resume: bool = True, plan_only: bool = False, keep: bool = True) -> dict[str, Any]:
+    """``keep=False``: the run's workspace — its plan and each step's result, written so that a run asked for again
+    finds the steps it has taken — is this call's own and is removed when the call ends; the report then names none.
+    For a caller that never takes a run up again (a conversation): every question otherwise leaves its workspace for
+    good, and a server's report told its visitors where on its disk."""
     home = Path(getattr(harness, "home", "."))
     skills = load_manifests(home / "skills" / "manifests")
     agents = load_core_agents(home / "agents" / "core")
@@ -497,10 +504,20 @@ def ask(harness: Any, question: str, *, page: str | None = None, judge: Any = No
     if plan_only:
         return {"plan": plan.to_dict()}
     # a page is a file the caller named: only then may the run read a file, and only the command line passes one
-    run = Executor(harness, skills, agents, Path(harness.data_dir) / "workspaces",
-                   grants={"files:read"} if page else ()).run(plan, run_id=run_id, resume=resume)
-    report = render_report(run)
-    Path(run["workspace"], "report.md").write_text(report, encoding="utf-8")
+    root = Path(harness.data_dir) / "workspaces"
+    if not keep:
+        root = root / f"once-{secrets.token_hex(8)}"
+    try:
+        run = Executor(harness, skills, agents, root, grants={"files:read"} if page else ()).run(
+            plan, run_id=run_id, resume=resume and keep)
+        if not keep:
+            run["workspace"] = None
+        report = render_report(run)
+        if keep:
+            Path(run["workspace"], "report.md").write_text(report, encoding="utf-8")
+    finally:
+        if not keep:
+            shutil.rmtree(root, ignore_errors=True)
     run["report"] = report
     return run
 

@@ -155,6 +155,25 @@ def test_dataset_is_a_frictionless_package_with_provenance(study, tmp_path):
     assert gz["dose"] == "三两" and float(gz["grams_low"]) == 41.4
     assert all(len(r["quote"]) <= 120 for r in d["tables"]["formula_witnesses"])  # short quotes, never the texts
 
+def test_a_taboo_survey_reads_each_book_once(study, monkeypatch):
+    """The survey reads every book of the corpus through (minutes, on the full corpus), and read them all again each
+    time it was asked for: a book's row is kept once read, whatever ``min_chars`` is asked next."""
+    taboo = study._taboo
+    taboo._rows.clear()
+    read: list[str] = []
+    real = taboo.profile
+    monkeypatch.setattr(taboo, "profile", lambda book_id: (read.append(book_id), real(book_id))[1])
+    first = study.taboo(min_chars=10)
+    assert sorted(read) == sorted(study.corpus.books) and first["books"]
+    again = study.taboo(min_chars=10)
+    fewer = study.taboo(min_chars=10 ** 6)
+    assert again == first and len(read) == len(study.corpus.books)  # nothing read again
+    assert fewer["books"] == [] and fewer["rules"] == first["rules"]
+    again["books"][0]["avoided"].append("x")  # what is handed out is the caller's own
+    assert study.taboo(min_chars=10) == first
+    assert study.taboo("qjy")["rules"]  # one book's profile: as it was
+
+
 
 def test_markdown_pages_carry_sources_and_notices(study):
     page = markdown("formula", study.formula("桂枝汤"), study.signature(), "剂量说明")

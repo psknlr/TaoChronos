@@ -5,7 +5,6 @@ fixture corpus."""
 from __future__ import annotations
 
 import random
-import re
 from pathlib import Path
 
 import pytest
@@ -96,6 +95,8 @@ def test_chapter_filters_read_either_script(study):
     names = list("之其者也而")
     simple = study._strata._profile_of(["shl"], names, "辨太阳病脉证并治上")[1]
     assert simple > 0 and study._strata._profile_of(["shl"], names, "辨太陽病脈證并治上")[1] == simple
-    norm = study._stemma.b.normalize  # collate compiles the normalised pattern and matches normalised locators
-    rows = study._stemma._rows("shl", re.compile(norm("辨太阳病脉证并治上")))
-    assert rows and study._stemma._rows("shl", re.compile(norm("辨太陽病脈證并治上"))) == rows
+    heading = study._stemma._headings  # collate looks for the normalised parts of a heading in the normalised locators
+    rows = study._stemma._rows("shl", heading("辨太阳病脉证并治上"))
+    assert rows and study._stemma._rows("shl", heading("辨太陽病脈證并治上")) == rows
+    assert study._stemma._rows("shl", heading("没有这一篇|辨太陽病脈證并治上")) == rows  # several, apart by |
+    assert study._stemma._rows("shl", heading("辨太阳病.*上")) == []  # text, found as it is written: no pattern

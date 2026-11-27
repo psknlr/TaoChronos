@@ -359,6 +359,17 @@ def test_a_server_on_this_machine_takes_the_data_one_elsewhere_refuses_it(runtim
         with urllib.request.urlopen(f"{base}/api/data", timeout=30) as r:  # noqa: S310
             assert [d["id"] for d in json.loads(r.read())["datasets"]] == [out["dataset"]["id"]]
         assert _post(f"{base}/api/data", {"name": "a.csv", "data": "%%%"})[0] == 400
+        # a .json file a program cut inside an emoji spells half a character ("\\ud83d"): the dataset was kept, its
+        # answer could not be written, and from then on neither could the list of datasets
+        cut = b'[{"\xe7\x97\x85\xe4\xba\xba": "\xe4\xb9\x99", "\xe5\xa4\x87\xe6\xb3\xa8": "\xe5\xa5\xbd\xe8\xbd\xac \\ud83d"}]'
+        assert b"\\ud83d" in cut and "\ud83d" in json.loads(cut)[0]["备注"]
+        status, kept = _post(f"{base}/api/data", {"name": "notes.json", "data": base64.b64encode(cut).decode()})
+        assert status == 200 and kept["ok"] and kept["dataset"]["rows"] == 1
+        with urllib.request.urlopen(f"{base}/api/data", timeout=30) as r:  # noqa: S310
+            assert [d["id"] for d in json.loads(r.read())["datasets"]] == [out["dataset"]["id"], kept["dataset"]["id"]]
+        read = runtime.call("mydata.read", {"dataset": kept["dataset"]["id"]})
+        assert read["ok"] and "好转 \ufffd" in json.dumps(read["result"], ensure_ascii=False)
+        assert _post(f"{base}/api/data/remove", {"id": kept["dataset"]["id"]})[1]["ok"]
         assert _post(f"{base}/api/data/remove", {"id": out["dataset"]["id"]})[1]["ok"]
         assert _post(f"{base}/api/data/clear", {})[1] == {"ok": True, "removed": 0}
     finally:

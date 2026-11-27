@@ -57,6 +57,9 @@ class EvidenceGraph:
         self.edges: list[Edge] = []
         self._out: dict[str, list[Edge]] = defaultdict(list)
         self._in: dict[str, list[Edge]] = defaultdict(list)
+        # one edge of a type between two nodes: found by its ends, not by reading what leaves its source (a passage
+        # holds as many quotes as a caller's text has findings, and each new one read all the others)
+        self._edge: dict[tuple[str, str, str], Edge] = {}
 
     # ------------------------------------------------------------ building
     def node(self, id_: str, layer: GraphLayer, type_: str, label: str, **props: Any) -> str:
@@ -65,10 +68,11 @@ class EvidenceGraph:
         return id_
 
     def edge(self, source: str, target: str, type_: str, assertion: AssertionType, evidence: Iterable[str] = (), **props: Any) -> Edge:
-        for e in self._out[source]:
-            if e.target == target and e.type == type_:
-                return e
+        known = self._edge.get((source, target, type_))
+        if known is not None:
+            return known
         e = Edge(source, target, type_, assertion, list(evidence), {k: v for k, v in props.items() if v not in (None, "", [], {})})
+        self._edge[(source, target, type_)] = e
         self.edges.append(e)
         self._out[source].append(e)
         self._in[target].append(e)

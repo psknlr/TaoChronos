@@ -437,6 +437,8 @@ git add data/chat-logs && git commit -m "chat-logs: through #$LAST" && git push 
 | 全体的模型费用 | 中转的 `TOTAL_TOKENS_PER_DAY`、`TOTAL_PER_DAY` | 最坏一天的上限：按 MiniMax 预算设定 |
 | 每次回复的长度 | 中转的 `MAX_OUTPUT_TOKENS` | 每次回复 32,768 token（含思考）；在此处截断的回答由网页接着续写（至多两次），记录里截断的回答多了再调高；回复的花费由上面两项每日 token 额度约束 |
 | 网站的每日上限 | 网站的 `API_READS_PER_DAY`、`API_CALLS_PER_DAY`、`API_RESEARCH_PER_DAY` | 每个地址每天 6,000 / 3,000 次，有意放宽；每个地址每天发起 100 次研究（全量语料一次只跑一项，最多 20 项排队） |
+| 一次调用能要多少 | `src/taochronos/kernel/tools.py`、`src/taochronos/tools/limits.py`（全量语料容器） | 每个工具的每个参数都有上限——一段文字 20,000 字，一个列表 60 项，每个数字各有范围（`k` 至 100，`permutations` 至 999……）——超出的调用在工具运行之前即被拒绝；研究只经 `POST /api/research` 发起（[ADR 0037](adr/0037-what-a-call-may-cost.md)）。不是配置项：要改，改代码，并照 ADR 里的办法重新测量 |
+| 容器保留多少次研究 | `RUNS_KEPT`（`src/taochronos/chat/cloud.py`） | 最近 60 次已结束的研究——记录、日志与产物（要籍语料上每次约 23 MB）；更早的一并删除，磁盘（8 GB，语料库占 2.3）不会被它们写满。内存里保留 4 个会话（`SESSIONS_KEPT`），其余用到时从日志重读 |
 | 待取走的记录 | 中转的 `LOG_KEEP` | 50,000 条；超出后拒收新记录（并写 `logs full`），已收下的不丢 |
 | 一天的记录有多重 | 中转的 `LOG_BYTES_PER_DAY`、`LOG_BYTES_TOTAL_PER_DAY`；`FEEDBACK_BYTES_PER_DAY`、`FEEDBACK_BYTES_TOTAL_PER_DAY` | 记录：每位访客 8 MiB、全体 64 MiB；反馈：2 MiB 与 16 MiB——按发来的字节数计，与每位访客的条数上限（每天 500 与 100）并用：不论谁发，一天能进仓库的量有上限。网站自己的访问量接近全体上限时再调高（0 为不限） |
 | 容器 | `cloud/corpus/wrangler.toml` 的 `SLEEP_AFTER`、`instance_type`、`LOCATION_HINT` | `15m`、`standard-1`、`apac`（适合新加坡与东亚；第一次建立时即固定） |

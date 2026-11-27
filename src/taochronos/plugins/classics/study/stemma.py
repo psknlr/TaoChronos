@@ -38,24 +38,25 @@ from ..collation import (
     root,
 )
 from ..collation.impact import SCORES, review_queue, unit_impact
+from ..notes import NOTE_OR_SQUARE, blank_notes
 from .base import StudyBase, dated
 
 SIGLA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SOURCE_NAMES = {"kanripo": "四库", "jicheng": "笈成", "wikisource": "维基文库", "mcgill": "McGill", "tcm-ancient-books": "TCM-AB",
                 "tcmoc": "tcmoc", "hf-tcm-canon": "HF", "cmeta": "CMETA", "aeam": "东亚医学协会", "demo": "演示"}
-_NOTE = re.compile(r"（[^（）]*）|\([^()]*\)|〔[^〔〕]*〕|【[^【】]*】|\[[^\[\]]*\]")
 _VOLUME = re.compile(r"[（(](?:[上中下]|[一二三四五六七八九十]+)[）)]$")
 _FRONT_LAYER = re.compile(r"^(?:卷首|序跋)")
 _EXCLUDED_KINDS = {"toc", "preface", "commentary"}
 
 
+def _named(label: str, parts: tuple[str, ...]) -> bool:
+    """Does a heading (normalised) hold one of the parts asked for?"""
+    return any(part in label for part in parts)
+
+
 def mask_notes(text: str) -> str:
     """Bracketed notes blanked out (same length, so offsets into the passage stay valid)."""
-    prev = None
-    while prev != text:
-        prev = text
-        text = _NOTE.sub(lambda m: " " * len(m.group(0)), text)
-    return text
+    return blank_notes(text, NOTE_OR_SQUARE)
 
 
 def _shingles(s: str, k: int = 12, keep: int = 4) -> set[str]:
@@ -115,7 +116,20 @@ class StemmaStudy:
             return sets[next(iter(texts))]
         return sets[_choose_base(texts)]
 
-    def _rows(self, book_id: str, chapter: re.Pattern[str] | None = None) -> list[tuple[str, str, str, str]]:
+    def _headings(self, chapter: str | None) -> tuple[str, ...] | None:
+        """What ``chapter`` asks for: the parts of a heading to find, in either script (辨太阳病 finds 辨太陽病), several
+        apart by ``|``.  Plain text, found as it is written: it was read as a regular expression once, and a pattern
+        that backtracks (``(.+)+!``, some twenty bytes of a request) kept the interpreter — every thread of the
+        server, so every visitor — for longer than the process lives; and a heading with a bracket in its name
+        (卷一[上]) was no pattern at all."""
+        if not chapter:
+            return None
+        parts = tuple(n for n in (self.b.normalize(part.strip()) for part in chapter.split("|")) if n)
+        if not parts:
+            raise ValueError("the chapter to collate is empty: give part of a heading (辨太阳病), several apart by |")
+        return parts
+
+    def _rows(self, book_id: str, chapter: tuple[str, ...] | None = None) -> list[tuple[str, str, str, str]]:
         store = getattr(self.b.corpus, "store", None)
         out: list[tuple[str, str, str, str]] = []
         if store is not None:
@@ -127,7 +141,7 @@ class StemmaStudy:
                     continue
                 d = json.loads(loc)
                 label = "·".join(x for x in (d.get("volume"), d.get("chapter"), d.get("section")) if x)
-                if chapter is not None and not chapter.search(self.b.normalize(label)):
+                if chapter is not None and not _named(self.b.normalize(label), chapter):
                     continue
                 out.append((pid, label, layer or "", mask_notes(text)))
         else:
@@ -135,12 +149,12 @@ class StemmaStudy:
                 if p.kind in _EXCLUDED_KINDS:
                     continue
                 label = self.b.locator(p)
-                if chapter is not None and not chapter.search(self.b.normalize(label)):
+                if chapter is not None and not _named(self.b.normalize(label), chapter):
                     continue
                 out.append((p.id, label, "", mask_notes(p.text)))
         return out
 
-    def _witness_text(self, siglum: str, ids: list[str], chapter: re.Pattern[str] | None = None) -> WitnessText:
+    def _witness_text(self, siglum: str, ids: list[str], chapter: tuple[str, ...] | None = None) -> WitnessText:
         rows = [r for bid in ids for r in self._rows(bid, chapter)]
         return WitnessText.build(siglum, "+".join(ids), rows, self.b.normalize)
 
@@ -160,7 +174,7 @@ class StemmaStudy:
     def collate(self, work: str | None = None, *, books: list[str] | None = None, base: str | None = None,
                 chapter: str | None = None, max_chars: int = 60000, min_coverage: float = 0.2) -> dict[str, Any]:
         sets = self.witness_sets(work, books)
-        pattern = re.compile(self.b.normalize(chapter)) if chapter else None  # either script: 辨太阳病 finds 辨太陽病
+        pattern = self._headings(chapter)
         texts: dict[str, WitnessText] = {}
         ids_of: dict[str, list[str]] = {}
         for k, ids in enumerate(sets[: len(SIGLA)]):
@@ -182,7 +196,8 @@ class StemmaStudy:
         if len(base_text.text) > max_chars:
             base_text = _truncate(base_text, max_chars)
         if len(base_text.text) < 20:
-            raise ValueError("the base has no text in the chosen range")
+            raise ValueError("the base has no text in the chosen range" + (
+                f": no heading of it holds {chapter!r} (plain text, part of a heading: 辨太阳病; several apart by |)" if pattern else ""))
         base_sh = _shingles(base_text.text)
         projections = {}
         witnesses = [self._describe(base_sig, ids_of[base_sig], base_text)]

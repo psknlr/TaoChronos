@@ -97,7 +97,7 @@ taochronos study acupuncture-reason 假设肝经实 --method nanjing69   # knowl
 taochronos study acupuncture-audit 太冲属土，补太冲就是补脾 --plan LR3:tonify --plan SJ5   # or --arguments args.json
 
 # 深层发现 2.0
-taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病
+taochronos study stemma 伤寒论                                     # --books <id> --books <id>+<id> · --chapter 辨太阳病 (part of a heading, as text; several: 辨太阳病|辨阳明病)
 taochronos study variants 伤寒论 --chapter 辨太阳病 --json
 taochronos study variants "太陽之為病，脈浮，頭項強痛而惡寒" --text-mode   # a passage's copies and quotations
 taochronos study tei 伤寒论 -o shanghan.tei.xml

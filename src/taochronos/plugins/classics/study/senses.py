@@ -36,7 +36,7 @@ class SenseStudy:
     def occurrences(self, term: str, *, per_period: int = 300, window: int = 12) -> list[dict[str, Any]]:
         """Up to ``per_period`` dated occurrences per analysis period, each with its context window and tokens."""
         _, forms = self.b.surfaces(term)
-        surfaces = sorted({self.b.normalize(f) for f, _ in forms if f}, key=len, reverse=True)
+        surfaces = sorted({self.b.normalize(f) for f, _ in forms if f}, key=lambda f: (-len(f), f))  # the longest first, in one order
         ids: set[str] = set()
         for f in surfaces[:8]:
             ids.update(self.b.find(f, limit=20000))

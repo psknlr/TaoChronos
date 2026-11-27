@@ -323,6 +323,36 @@ def test_schools_through_tools_and_cli(harness, school_study, capsys, tmp_path):
     assert capsys.readouterr().out.startswith("# 学派：温病学派")
 
 
+def test_a_school_asked_with_probes_leaves_no_file(school_study, tmp_path):
+    """A school's study is kept beside the store under what it was asked with — and the probes are a caller's words:
+    every new list of them left a file there for good."""
+    sc = school_study._schools
+    plain = sc.run("温病", cache=tmp_path)
+    assert [p.name for p in tmp_path.iterdir()] == [f"schools-{sc._key(['温病', 30000, 60, 40, []])}.json"]
+    assert sc.run("温病", cache=tmp_path) == plain  # read from it
+    for probes in (["营分"], ["卫分"], ["营分", "卫分"]):
+        probed = sc.run("温病", probes=probes, cache=tmp_path)
+        assert {row["item"] for row in probed["probes"]} == set(probes) and sc.run("温病", probes=probes, cache=tmp_path) == probed
+    assert len(list(tmp_path.iterdir())) == 1
+    # the same study asked again is not read again: the last few are kept in memory
+    from taochronos.plugins.classics.study import schools
+
+    read: list[list[str]] = []
+    real = sc._one
+    sc._one = lambda group, **kw: (read.append(kw["probes"]), real(group, **kw))[1]
+    try:
+        first = sc.run("温病", probes=["卫分", "营分"], cache=tmp_path)  # asked above, in another order: the same study
+        assert read == [] and first == sc.run("温病", probes=["营分", "卫分"], cache=tmp_path)
+        for i in range(schools.PROBED_KEPT):
+            sc.run("温病", probes=[f"营分{i}"], cache=tmp_path)
+        assert len(read) == schools.PROBED_KEPT == len(sc._probed)
+        sc.run("温病", probes=["卫分", "营分"], cache=tmp_path)  # let go of meanwhile: read again
+        assert len(read) == schools.PROBED_KEPT + 1 and len(sc._probed) == schools.PROBED_KEPT
+    finally:
+        sc._one = real
+    assert len(list(tmp_path.iterdir())) == 1
+
+
 # ------------------------------------------------------------------ 名称 (T9, T24), 传播链 (T15)
 def _write_corpus(root: Path, books: list[tuple[str, str, str, int, str, list[str]]]) -> Path:
     """books: (id, title, author, year, category, passages) → a corpus directory."""

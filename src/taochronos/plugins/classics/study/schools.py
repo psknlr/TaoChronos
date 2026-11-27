@@ -37,6 +37,7 @@ import hashlib
 import json
 import math
 import re
+import threading
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -45,6 +46,7 @@ from ....science.stats import benjamini_hochberg
 from .base import StudyBase, cache_tmp, dated, normal_sf, row_filter
 
 VERSION = "schools@2"
+PROBED_KEPT = 8  # the studies asked with probes that are kept, in memory (SchoolStudy.run)
 ATTRIBUTIONS = ("traditional", "compiled")
 FORMS = {"医案": "医案", "方书": "方书", "本草": "本草", "歌赋": "歌赋"}  # every other category: 论著
 _HAN = re.compile(r"[㐀-鿿]+")
@@ -93,6 +95,8 @@ class SchoolStudy:
         self.b = base
         self.net = network
         self.harvest = harvest
+        self._probed: dict[str, str] = {}  # the studies last asked with probes (run), as JSON text
+        self._probing = threading.Lock()
         self.schools: dict[str, dict[str, Any]] = dict(base.data("schools.yaml").get("schools") or {})
         self.persons: dict[str, dict[str, Any]] = network.persons
         self.members: dict[str, list[str]] = {}  # 伤寒, 伤寒·错简重订 → person ids
@@ -436,9 +440,17 @@ class SchoolStudy:
         probes = [self.b.normalize(p) for p in probes if p and len(p.strip()) >= 2]
         group = self.resolve(school) if school else None
         key = self._key([group, cap, window, top, sorted(probes)])
-        path = Path(cache) / f"schools-{key}.json" if cache is not None else None
+        # kept beside the store: the survey and each school's own, which are so many files at the most.  With probes —
+        # a caller's words, of which there is no end — no file is kept (every new list of them left one for good): the
+        # last PROBED_KEPT such studies are kept in memory, so that the same one asked again is not read again
+        path = Path(cache) / f"schools-{key}.json" if cache is not None and not probes else None
         if path is not None and path.exists() and not refresh:
             return json.loads(path.read_text(encoding="utf-8"))
+        if probes and not refresh:
+            with self._probing:
+                kept = self._probed.get(key)
+            if kept is not None:
+                return json.loads(kept)
         out = self._one(group, cap=cap, window=window, top=top, probes=probes) if group else \
             self._survey(cap=cap, window=window, top=top, probes=probes)
         if path is not None:
@@ -446,6 +458,12 @@ class SchoolStudy:
             tmp = cache_tmp(path)
             tmp.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
             tmp.replace(path)
+        elif probes:
+            with self._probing:
+                self._probed.pop(key, None)
+                self._probed[key] = json.dumps(out, ensure_ascii=False)
+                for old in list(self._probed)[: max(0, len(self._probed) - PROBED_KEPT)]:
+                    del self._probed[old]
         return out
 
     def _key(self, params: list[Any]) -> str:

@@ -40,6 +40,61 @@ from .hooks import HookContext, HookPoint, HookRegistry
 from .policy import Actor, PolicyEngine
 
 
+# What an argument may be at the most where its tool sets no limit of its own.  A tool runs in the server's process for
+# whoever asks, and its cost follows its arguments: a count is a loop, a text is read through, a list is gone over.
+# The limits are far above what a tool is asked with (a passage is some hundreds of characters, a count some tens) and
+# far below what a request can carry (a number of any size; 256 KB of text on the site).
+TEXT_CHARS = 20_000  # characters of a text
+LIST_ITEMS = 60  # entries of a list
+COUNT = {"minimum": 0, "maximum": 10_000}  # a whole number: how many of something
+NUMBER = {"minimum": -1e9, "maximum": 1e9}
+_LIMIT_WORDS = ("minimum", "maximum", "maxLength", "maxItems")
+
+
+def default_limits(schema: dict[str, Any], declared: dict[str, dict[str, Any]] | None = None) -> dict[str, dict[str, Any]]:
+    """The limits of an object schema's properties: those ``declared``, and for every other property the default of
+    its type — none for one that takes its values from a list (``enum``), a boolean, an object, or one whose schema
+    already says how large it may be."""
+    out = dict(declared or {})
+    props = schema.get("properties") if isinstance(schema, dict) else None
+    for name, prop in (props.items() if isinstance(props, dict) else ()):
+        if name in out or not isinstance(prop, dict) or "enum" in prop or any(w in prop for w in _LIMIT_WORDS):
+            continue
+        kinds = prop.get("type")
+        kinds = kinds if isinstance(kinds, list) else [kinds]
+        limit: dict[str, Any] = {}
+        if "integer" in kinds:
+            limit.update(COUNT)
+        elif "number" in kinds:
+            limit.update(NUMBER)
+        if "string" in kinds:
+            limit["maxLength"] = TEXT_CHARS
+        if "array" in kinds:
+            limit["maxItems"] = LIST_ITEMS
+            items = prop.get("items")
+            if isinstance(items, dict) and items.get("type") == "string" and "enum" not in items and "maxLength" not in items:
+                limit["items"] = {"maxLength": TEXT_CHARS}
+        if limit:
+            out[name] = limit
+    return out
+
+
+def limited(schema: dict[str, Any], limits: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """``schema`` (of an object) with ``limits`` added to the properties they name: the same schema when there are
+    none.  A limit on a list's strings is written ``{"maxItems": …, "items": {"maxLength": …}}``."""
+    props = schema.get("properties") if isinstance(schema, dict) else None
+    if not limits or not isinstance(props, dict):
+        return schema
+    out = dict(props)
+    for name, limit in limits.items():
+        if isinstance(out.get(name), dict):
+            merged = {**out[name], **{k: v for k, v in limit.items() if k != "items"}}
+            if isinstance(limit.get("items"), dict) and isinstance(merged.get("items"), dict):
+                merged["items"] = {**merged["items"], **limit["items"]}
+            out[name] = merged
+    return {**schema, "properties": out}
+
+
 @dataclass
 class ToolSpec:
     name: str
@@ -59,6 +114,18 @@ class ToolSpec:
     # arguments that need a further permission of the caller, {argument: permission}: what the tool's own permission
     # does not cover — a path on the machine the harness runs on, which a model's arguments must never name
     guarded: dict[str, str] = field(default_factory=dict)
+    # how large each argument may be, {argument: {"minimum": …, "maximum": …} | {"maxLength": …} | {"maxItems": …}}:
+    # what a call is checked against beside the schema (``checked``), and no part of what a model is shown — the schema
+    # goes to model providers as it is, and not every one of them takes these words
+    limits: dict[str, dict[str, Any]] = field(default_factory=dict)
+    _checked: dict[str, Any] | None = field(default=None, init=False, repr=False, compare=False)
+
+    @property
+    def checked(self) -> dict[str, Any]:
+        """The schema a call's arguments are validated against: ``input_schema`` with the limits of each argument."""
+        if self._checked is None:
+            self._checked = limited(self.input_schema, self.limits)
+        return self._checked
 
     @property
     def llm_name(self) -> str:
@@ -151,6 +218,9 @@ class ToolRegistry:
     def register(self, spec: ToolSpec) -> ToolSpec:
         if spec.name in self._tools:
             raise ValueError(f"tool {spec.name} already registered")
+        # every argument has a limit: its tool's own, else the default of its type (default_limits)
+        spec.limits = default_limits(spec.input_schema, spec.limits)
+        spec._checked = None
         self._tools[spec.name] = spec
         return spec
 
@@ -318,7 +388,10 @@ class ToolScheduler:
                 reason = f"{actor.id} lacks permission '{permission}' for the argument '{argument}' of tool {spec.name}"
                 emit(EventType.TOOL_DENIED, {"tool": spec.name, "reason": reason})
                 return ToolOutcome(call_id, spec.name, False, error=reason)
-        errors = validate(arguments, spec.input_schema)
+        # how large an argument may be is asked of every caller but the kernel's own identity — the person at the
+        # command line (taochronos search -k 500), whose machine and whose time it is, and which no agent, tool or
+        # plugin can take (governance: privileged_identity)
+        errors = validate(arguments, spec.input_schema if actor.principal == "kernel" else spec.checked)
         if errors:
             return ToolOutcome(call_id, spec.name, False, error="invalid arguments: " + "; ".join(errors[:5]))
 

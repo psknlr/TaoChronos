@@ -19,9 +19,9 @@ from ...protocol.yamlio import load_yaml
 from ...science.semantic_reuse import ReuseFeatures, SparseEncoder, classify, order_concordance, weighted_coverage
 from .domain import DomainPack
 from .kept import TextMemo
+from .notes import NOTE, note_mask  # interlinear notes (夹注)
 
 HAN = re.compile(r"[㐀-鿿\U00020000-\U0002ffff〓□]")
-NOTE = re.compile(r"（[^（）]*）|\([^()]*\)|〔[^〔〕]*〕|【[^【】]*】")  # interlinear notes (夹注)
 FUNCTION_CHARS = set("之乎者也矣焉哉而其以于於所则乃且亦又即若如故夫盖此是斯兮耳尔曰云为")
 _WEAK_CATEGORIES = {"herb", "formula"}  # single-character drug and formula names match everywhere (发, 阴)
 # texts whose Prepared form prepare keeps (kept.TextMemo): a research run's 1,130 compared texts (some 115,000
@@ -88,7 +88,7 @@ class IntertextAnalyzer:
         if kept is not None:
             return kept
         norm = self.normalize(text)
-        noted = _note_mask(norm)
+        noted = note_mask(norm)
         index = [i for i, ch in enumerate(norm) if HAN.match(ch) and not noted[i]]
         han = "".join(norm[i] for i in index)
         concepts = []
@@ -296,7 +296,7 @@ class IntertextAnalyzer:
         stock = sum(sum(mask[bl.a: bl.a + bl.size]) for bl in blocks)
         ra, rb = t.raw_span(a, b)
         source_text = s.text
-        noted = _note_mask(t.text)  # interlinear notes inside the span: commentary on the quotation, counted apart
+        noted = note_mask(t.text)  # interlinear notes inside the span: commentary on the quotation, counted apart
         notes = sum(1 for i in range(ra, rb) if noted[i] and HAN.match(t.text[i]))
         f = ReuseFeatures(
             source_chars=n, target_chars=b - a, notes=notes,
@@ -320,20 +320,6 @@ class IntertextAnalyzer:
         """Features, span and the reuse type of ``source`` reused in ``target``."""
         f, where = self.features(source, target)
         return {"features": f.to_dict(), "where": where, **classify(f, thresholds)}
-
-
-def _note_mask(text: str) -> bytearray:
-    """1 for every character inside an interlinear note (nested brackets included)."""
-    mask = bytearray(len(text))
-    for m in NOTE.finditer(text):
-        mask[m.start():m.end()] = b"\x01" * (m.end() - m.start())
-    prev = None
-    while prev != bytes(mask):  # notes inside notes: widen to the outer brackets
-        prev = bytes(mask)
-        blanked = "".join(" " if mask[i] else ch for i, ch in enumerate(text))
-        for m in NOTE.finditer(blanked):
-            mask[m.start():m.end()] = b"\x01" * (m.end() - m.start())
-    return mask
 
 
 def _split(bigram: str, piece: str, width: int = 4) -> int:

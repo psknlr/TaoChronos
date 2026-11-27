@@ -1207,7 +1207,10 @@ export function normalizeRecord(r) {
     requests: list(r.requests, 48, (q) => ({
       round: num(q.round, 1000), attempt: num(q.attempt, 1000), sent: num(q.sent), open: num(q.open), first: num(q.first), text: num(q.text),
       last: num(q.last), end: num(q.end), finish: str(q.finish, 40), failed: str(q.failed, 40), expired: str(q.expired, 20),
-      status: num(q.status, 999), input: num(q.input, 1e9), output: num(q.output, 1e9), hidden: num(q.hidden), asleep: num(q.asleep),
+      // (an HTTP status — or the code of a failure a provider reports inside a 200, which the page sends in its
+      // place: MiniMax's base_resp.status_code, 1002, 1013, 2013 …; whoever reads the records takes 500 and above for
+      // a request that broke off, chat/records.py)
+      status: num(q.status, 99999), input: num(q.input, 1e9), output: num(q.output, 1e9), hidden: num(q.hidden), asleep: num(q.asleep),
       asks: num(q.asks, 1000), via: typeof q.via === "string" && PLACE.test(q.via) ? q.via : undefined, // how many times the service asked the model service, and from where the reply came
     })),
     events: list(r.events, 40, (e) => ({ at: num(e.at), what: str(e.what, 40) })),

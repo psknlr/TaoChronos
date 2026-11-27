@@ -21,6 +21,8 @@ from pathlib import PurePosixPath
 from typing import Any
 from xml.etree import ElementTree as ET
 
+from ...protocol.schema import whole
+
 MAX_BYTES = 10 * 1024 * 1024
 MAX_ROWS = 50_000
 MAX_COLUMNS = 200
@@ -138,9 +140,13 @@ def _csv(text: str, delimiter: str | None) -> Parsed:
 
 def _json(text: str) -> Parsed:
     try:
-        data = json.loads(text)
+        # (with no half character: a file a program cut inside an emoji spells one — "\ud83d" — and a dataset holding it
+        # could be kept but never listed again, the list being what cannot be written then)
+        data = whole(json.loads(text))[0]
     except json.JSONDecodeError as exc:
         raise Unreadable(f"JSON 格式不对（第 {exc.lineno} 行）") from None
+    except RecursionError:
+        raise Unreadable("JSON 嵌套过深") from None
     if isinstance(data, dict) and isinstance(data.get("rows"), list):  # {columns, rows}
         cols = [str(c.get("label") or c.get("key") if isinstance(c, dict) else c) for c in data.get("columns") or []]
         rows = data["rows"]

@@ -66,6 +66,9 @@ TYPES = {".mjs": "text/javascript; charset=utf-8", ".js": "text/javascript; char
          ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
 
 
+SWITCH_INTERVAL = 0.0001  # seconds a thread of the server keeps the interpreter while another waits (serve_forever)
+
+
 class ChatServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -85,6 +88,15 @@ class ChatServer(ThreadingHTTPServer):
         self.quiet = quiet
         self._runtime_files: dict[str, bytes] = {}
         self._lock = threading.Lock()
+
+    def serve_forever(self, poll_interval: float = 0.5) -> None:
+        # Every request is a thread of one interpreter.  A thread that computes keeps the interpreter for a switch
+        # interval at a time, and a call that reads the store gives it up at every read and waits a whole interval to
+        # have it back: at the default 5 ms, beside ONE call that computed for 15 s, a search of 0.15 s took 44 s and
+        # study.formula 9.5 s (0.14 s alone).  At 0.1 ms they take 1.4 s and 0.5 s — a tenth of a call's time is then
+        # the most a neighbour's computing costs each read, and a thread alone gives the interpreter up to no one.
+        sys.setswitchinterval(min(sys.getswitchinterval(), SWITCH_INTERVAL))
+        super().serve_forever(poll_interval)
 
     def origin_allowed(self, origin: str | None, host: str | None = None) -> bool:
         if not origin:
@@ -241,8 +253,11 @@ class Handler(BaseHTTPRequestHandler):
         rt = self.server.runtime
         try:
             if path == "/api/call":
+                # (a research run asked for here would be made inside this request, beside the queue of POST
+                # /api/research and uncounted as a run by whoever counts them — the site's Worker: only on a server
+                # this machine alone reaches)
                 return self._json(rt.call(str(data.get("name", "")), data.get("arguments") or {},
-                                          max_chars=int(data.get("max_chars") or 16000)))
+                                          max_chars=int(data.get("max_chars") or 16000), inline_research=self.server.private))
             if path.startswith("/api/data"):
                 return self._data(path, data)
             if path.startswith("/api/research/") and path.endswith(("/cancel", "/resume")):

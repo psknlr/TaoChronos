@@ -406,7 +406,7 @@ class AgentRuntime:
                         results.append(ToolResultBlock(use.id, f"ERROR: tool {use.name} is not available to {spec.name}; closest: {near}",
                                                        True))
                         continue
-                    arguments, _, problem = fit_arguments(use.input if use.input is not None else {}, spec_.input_schema,
+                    arguments, _, problem = fit_arguments(use.input if use.input is not None else {}, spec_.checked,
                                                           tool=spec_.llm_name)
                     if problem:
                         results.append(ToolResultBlock(use.id, f"ERROR: {problem}", True))

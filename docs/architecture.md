@@ -162,7 +162,10 @@ gauntlet — permission → argument schema → budget → `BeforeToolCall` hook
 `AfterToolCall` hooks — whether a model or a deterministic procedure makes it. An argument that reaches beyond what
 the tool's own permission covers needs one of its own (`ToolSpec.guarded`): a path on the machine the harness runs on
 is `files:read`, which no agent's manifest holds — a conversation's model is not even offered the argument, and
-`taochronos ask --page FILE` grants it to that run alone ([ADR 0034](adr/0034-what-the-site-ships.md)). An `AfterToolCall` denial withholds the
+`taochronos ask --page FILE` grants it to that run alone ([ADR 0034](adr/0034-what-the-site-ships.md)). Every argument has a limit as
+well as a type (`ToolSpec.limits`: a number's range, a text's and a list's length — the tool's own, `tools/limits.py`,
+or the default of its type): a call outside one is refused before the tool runs, with the limit it passed, and the
+schema a model is shown says nothing of them ([ADR 0037](adr/0037-what-a-call-may-cost.md)). An `AfterToolCall` denial withholds the
 result (only its hash is kept, the call is marked quarantined), and every call leaves a **receipt** (tool, version,
 actor, principal, hashes of arguments and result, outcome, duration) whose hash chain the run manifest records.
 Capabilities reach tools through views scoped to the caller's reading scope. Consecutive `parallel_safe` calls run

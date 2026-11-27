@@ -886,12 +886,17 @@ test("a record's numbers and short words are within what a turn can be; a day's 
   const odd = normalizeRecord({ ...turn, rounds: -1e308, ms: 1e308, turn: 2.5e9, usage: { input: 1e308, output: -1.5e300 }, status: "<b>x</b>|y",
     model: "any words a sender likes: 张三 13800138000", runtime: "Browser!", corpus: "c d", images: 1e9, redacted: -1,
     tools: [{ name: "classics.search", ms: -5, round: 1e9, status: "OK ok", at: 1e13 }],
-    requests: [{ round: 1, attempt: 1, status: 99999, input: 1e10, output: 7, sent: 12.5 }], citations: { total: 1e6, ok: 2 } });
+    requests: [{ round: 1, attempt: 1, status: 1e6, input: 1e10, output: 7, sent: 12.5 }], citations: { total: 1e6, ok: 2 } });
   assert.deepEqual([odd.rounds, odd.ms, odd.turn, odd.usage, odd.status, odd.runtime, odd.corpus, odd.images, odd.redacted],
     [undefined, undefined, undefined, {}, undefined, undefined, undefined, undefined, undefined]);
   assert.equal(odd.model, "any words a sender likes: 张三 13800138000"); // a model's name is the visitor's own setting: text, and whoever sums it names none but a name
   assert.deepEqual([odd.tools[0], odd.requests[0], odd.citations], [{ name: "classics.search", ok: false }, { round: 1, attempt: 1, output: 7, sent: 12.5 }, { ok: 2 }]);
   const honest = normalizeRecord({ ...turn, rounds: 3, model: "meta-llama/Llama-3.1:8b v2", status: "stopped" });
+  // a request's status is HTTP's, or the code of a failure a provider reports inside a 200 (MiniMax: 1002, 1013,
+  // 2013 …), which the page sends in its place and `taochronos records` counts among the requests that broke off
+  const inBand = normalizeRecord({ ...turn, requests: [{ round: 1, attempt: 1, failed: "http 1013", status: 1013 },
+    { round: 1, attempt: 2, failed: "http 503", status: 503 }, { round: 1, attempt: 3, failed: "http 2013", status: 2013.5 }] });
+  assert.deepEqual(inBand.requests.map((q) => q.status), [1013, 503, 2013.5]);
   assert.deepEqual([honest.rounds, honest.ms, honest.turn, honest.usage, honest.status, honest.model, honest.runtime, honest.corpus],
     [3, 12345, 1, { input: 1200, output: 180 }, "stopped", "meta-llama/Llama-3.1:8b v2", "browser", "canon"]);
   const said = normalizeFeedback({ ...rated, turn: -3, runtime: "R T", corpus: "c|d" });
