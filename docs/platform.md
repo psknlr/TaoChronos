@@ -9,7 +9,9 @@ what to type, what you should see, and what to do when you see something else.
 * The rest of the deployment (the site, the full corpus, the default service) and the deploy token this guide reuses:
   [deploy.md](deploy.md).
 
-Cloudflare's labels are quoted as its documentation gave them on 28 November 2026, GitHub's as they appear on screen.
+The platform serves developers in Singapore and the other international regions first; where a choice depends on the
+region, this guide makes it for them.  Cloudflare's labels are quoted as its documentation gave them on 28 November
+2026, GitHub's as they appear on screen.
 Daily counters reset at 00:00 UTC — 08:00 in Beijing and Singapore.  Commands are for a terminal on macOS, Linux or
 Windows' WSL; each block is one command.
 
@@ -364,7 +366,8 @@ With registration off, signing in still works — and an address that has no acc
 code in it.  That makes a test of delivery that creates nothing:
 
 1. At https://console.impf.ai, sign in by email with an address of yours that has no account.  Do it for each kind of
-   address your developers will use: QQ, 163, Gmail, Outlook, an institution's.
+   address your developers will use: Gmail, Outlook (Hotmail), Yahoo, iCloud, and an institution's — a university's,
+   a hospital's — whose filters are often the strictest.
 2. Each should receive, within a minute, *TaoChronos: no account uses this address* (in Chinese if the page was in
    Chinese) from **道乃久 TaoChronos** `<noreply@impf.ai>`.  Look in the spam folder too; if it is there, mark it as
    not spam.
@@ -390,10 +393,9 @@ a script cannot spend the day's mail for everyone.  Registration is opened only 
 
 1. Dashboard → **Turnstile → Add widget**.
 2. **Widget name:** `console.impf.ai`.
-3. **Region:** *Rest of World* or *China*.  It cannot be changed later.  If most developers will come from mainland
-   China, read Cloudflare's note on the China region before you choose — and either way try the console from a mainland
-   network before opening registration.  (The console's page loads Turnstile from `challenges.cloudflare.com`, the one
-   host its content-security policy allows for it.)
+3. **Region:** *Rest of World* — the console serves Singapore and the other international regions, and the page
+   loads Turnstile from `challenges.cloudflare.com`, the one host its content-security policy allows for it.  The
+   region cannot be changed later.
 4. **Hostname management:** `console.impf.ai` — the console refuses a token solved on any other host.
 5. **Widget mode:** *Managed* — most people see a checkbox at most.
 6. **Pre-clearance support:** no.

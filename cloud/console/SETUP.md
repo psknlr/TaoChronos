@@ -16,7 +16,8 @@ once `API_ADMIN_TOKEN_SHA256` is set and the console once `ACCOUNT_SECRET` is, w
    `AUTH_MAILS_PER_DAY` below it (Part 4).
 3. **The console:** the secret `ACCOUNT_SECRET`, 32 characters or more; then the mail test, which creates nothing
    (Part 5).
-4. **Turnstile:** the variable `TURNSTILE_SITE_KEY` and the secret `TURNSTILE_SECRET` (Part 6).
+4. **Turnstile:** a widget for `console.impf.ai`, region *Rest of World*; the variable `TURNSTILE_SITE_KEY` and the
+   secret `TURNSTILE_SECRET` (Part 6).
 5. **Registration:** `CONSOLE_REGISTRATION` = `open` — kept closed without Turnstile — and `CONSOLE_TRIAL_CREDITS` if a
    new organisation is given a trial (Part 7).
 
