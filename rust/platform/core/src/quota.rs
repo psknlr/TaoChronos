@@ -5,10 +5,12 @@
 //!
 //! A request is **admitted** before it runs: the person not suspended, an `Idempotency-Key` seen before answered from
 //! what it was, fewer than `concurrency` of theirs in flight, fewer than `daily_limit` admitted this UTC day.  Admitted,
-//! it counts — whatever then happens to it, unless the caller knows for certain that nothing was asked of the service
-//! (`release`: the gateway not configured, the provider refusing the request outright, the corpus starting).  A request
-//! that never reports its end stays admitted until its lease passes, and is then of unknown outcome: counted, never run
-//! again by a repeat of its key.  Its day is the day it was admitted, and does not change.
+//! it counts — whatever then happens to it, unless the service it was sent to says that it ran nothing (`release`: the
+//! gateway's or the provider's refusal before anything ran, a corpus tool refusing its arguments before it ran, a
+//! corpus never sent the call), and says so while the request's lease runs.  A request that never reports its end
+//! stays admitted until its lease passes, and is then of unknown outcome: counted, never taken back by a late release,
+//! never run again by a repeat of its key while keys name their requests.  Its day is the day it was admitted, and does
+//! not change.
 //!
 //! Every method reads, decides and writes with no `await` in between, as the accounts' do: in a Durable Object that is
 //! the transaction.  workers-rs has no `transactionSync`, so each step writes at most one row that matters — the
@@ -42,11 +44,14 @@ impl QuotaConfig {
         let num = |k: &str, default: i64, least: i64, most: i64| {
             get(k).and_then(|v| v.trim().parse::<i64>().ok()).filter(|v| (least..=most).contains(v)).unwrap_or(default)
         };
+        let replay_ms = num("IDEMPOTENCY_HOURS", 24, 1, 720) * 3_600_000;
         QuotaConfig {
             daily_limit: num("DAILY_REQUEST_LIMIT", 5, 0, 100_000),
             concurrency: num("USER_EXECUTION_CONCURRENCY", 1, 1, 100),
-            replay_ms: num("IDEMPOTENCY_HOURS", 24, 1, 720) * 3_600_000,
-            keep_ms: num("REQUEST_RECORD_DAYS", 7, 2, 90) * DAY,
+            replay_ms,
+            // a record outlives the time its Idempotency-Key names it, by a day at least: a key that outlived its record
+            // would run its request again
+            keep_ms: (num("REQUEST_RECORD_DAYS", 7, 2, 90) * DAY).max(replay_ms + DAY),
         }
     }
 }
@@ -305,17 +310,19 @@ impl<'a> QuotaCore<'a> {
     }
 
     /// An admitted request known never to have been asked of anyone: not counted, and its key free to be used again.
-    /// Ok(false) when it was not in flight (ended before, or not this object's).
+    /// Ok(false) when it was not in flight — ended before, not this object's, or its lease passed: a request reported
+    /// of unknown outcome was counted, and a late word does not take that back.
     pub fn release(&self, request_id: &str, now: i64) -> Result<bool, SqlError> {
-        let Some(op) = self.sql.row("SELECT state FROM ops WHERE request_id = ?", args![request_id])? else {
+        let Some(op) = self.sql.row("SELECT state, lease_until FROM ops WHERE request_id = ?", args![request_id])?
+        else {
             return Ok(false);
         };
-        if op.text("state") != ADMITTED {
+        if op.text("state") != ADMITTED || op.int("lease_until") <= now {
             return Ok(false);
         }
         self.sql.run(
-            "UPDATE ops SET state = 'released', idem = NULL, finished = ? WHERE request_id = ? AND state = 'admitted'",
-            args![now, request_id],
+            "UPDATE ops SET state = 'released', idem = NULL, finished = ? WHERE request_id = ? AND state = 'admitted' AND lease_until > ?",
+            args![now, request_id, now],
         )?;
         Ok(true)
     }
@@ -405,19 +412,22 @@ impl<'a> QuotaCore<'a> {
     }
 
     /// What has outlived its use: kept responses past their time, keys past the time they name a request, records past
-    /// theirs.  Bounded: the object holds a person's few requests a day.
+    /// theirs — a request whose end was never told among them, once its lease has passed (it stays counted on its day,
+    /// and its key names it, as `request_outcome_unknown`, for as long as any key names its request).  Bounded: the
+    /// object holds a person's few requests a day.
     pub fn prune(&self, now: i64) -> Result<(), SqlError> {
         self.sql.run(
             "UPDATE ops SET response = NULL, response_status = NULL WHERE response_until IS NOT NULL AND response_until <= ?",
             args![now],
         )?;
         self.sql.run(
-            "UPDATE ops SET idem = NULL WHERE idem IS NOT NULL AND state <> 'admitted' AND created <= ?",
-            args![now - self.cfg.replay_ms],
+            "UPDATE ops SET idem = NULL WHERE idem IS NOT NULL AND (state <> 'admitted' OR lease_until <= ?) AND created <= ?",
+            args![now, now - self.cfg.replay_ms],
         )?;
         self.sql.run(
-            "DELETE FROM ops WHERE request_id IN (SELECT request_id FROM ops WHERE state <> 'admitted' AND created < ? LIMIT 200)",
-            args![now - self.cfg.keep_ms],
+            "DELETE FROM ops WHERE request_id IN (SELECT request_id FROM ops WHERE (state <> 'admitted' OR lease_until <= ?)
+               AND created < ? LIMIT 200)",
+            args![now, now - self.cfg.keep_ms],
         )
     }
 }
@@ -576,6 +586,41 @@ mod tests {
     }
 
     #[test]
+    fn a_late_release_takes_back_nothing_and_an_unknown_requests_key_is_freed_in_its_time() {
+        let db = Memory::default();
+        let c = cfg();
+        let q = QuotaCore::new(&db, &c);
+        assert!(matches!(q.admit(&ask("req_a", Some("k1"), "h1"), T0).unwrap(), Admission::Admitted(_)));
+        // its lease passed: of unknown outcome, and counted — a release told after that changes nothing
+        let lapsed = T0 + 240_001;
+        assert!(!q.release("req_a", lapsed).unwrap());
+        assert_eq!(q.state(lapsed).unwrap().used, 1);
+        assert_eq!(q.status("req_a", "org_a", lapsed).unwrap().unwrap()["state"], "unknown");
+        // released within its lease, a request is not counted
+        assert!(matches!(q.admit(&ask("req_b", None, "h"), lapsed).unwrap(), Admission::Admitted(_)));
+        assert!(q.release("req_b", lapsed + 1).unwrap());
+        assert_eq!(q.state(lapsed + 1).unwrap().used, 1);
+        // the unknown request's key names it as long as a key names its request, then is free to run again
+        let replay_end = T0 + c.replay_ms;
+        assert_eq!(
+            code(q.admit(&ask("req_c", Some("k1"), "h1"), replay_end - 1).unwrap_err()),
+            "request_outcome_unknown"
+        );
+        assert!(matches!(q.admit(&ask("req_d", Some("k1"), "h1"), replay_end + 1).unwrap(), Admission::Admitted(_)));
+        // and its record goes with the others'
+        q.prune(T0 + c.keep_ms + 1).unwrap();
+        assert!(q.status("req_a", "org_a", T0 + c.keep_ms + 1).unwrap().is_none());
+        // a record is kept a day longer than its key may name it, however the two are set
+        let short = QuotaConfig::from_vars(|k| match k {
+            "IDEMPOTENCY_HOURS" => Some("720".into()),
+            "REQUEST_RECORD_DAYS" => Some("2".into()),
+            _ => None,
+        });
+        assert_eq!(short.keep_ms, 720 * 3_600_000 + DAY);
+        assert_eq!(cfg().keep_ms, 7 * DAY);
+    }
+
+    #[test]
     fn a_suspended_person_runs_nothing_and_old_records_go() {
         let db = Memory::default();
         let c = cfg();
@@ -587,10 +632,17 @@ mod tests {
         assert_eq!(q.limits(T0 + 3).unwrap()["suspended"], true);
         q.set_suspended(false, "owner", T0 + 4).unwrap();
         assert!(matches!(q.admit(&ask("req_c", None, "h"), T0 + 5).unwrap(), Admission::Admitted(_)));
-        // a week on, the records are gone
-        q.prune(T0 + c.keep_ms + DAY).unwrap();
-        assert!(q.status("req_a", "org_a", T0 + c.keep_ms + DAY).unwrap().is_none());
-        assert_eq!(q.recent(10, T0).unwrap().len(), 1, "the one still in flight stays");
+        // a week on, the records are gone — req_c's among them, whose end was never told and whose lease passed long
+        // ago — and one in flight stays
+        let week = T0 + c.keep_ms + DAY;
+        assert!(matches!(q.admit(&ask("req_live", None, "h"), week).unwrap(), Admission::Admitted(_)));
+        q.prune(week + 1).unwrap();
+        assert!(q.status("req_a", "org_a", week).unwrap().is_none());
+        assert!(q.status("req_c", "org_a", week).unwrap().is_none());
+        assert_eq!(
+            q.recent(10, week).unwrap().iter().map(|r| r["id"].clone()).collect::<Vec<_>>(),
+            vec![json!("req_live")]
+        );
         // the limits' shape, and a limit of none
         let l = q.limits(T0).unwrap();
         assert_eq!(

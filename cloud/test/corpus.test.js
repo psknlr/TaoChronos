@@ -101,10 +101,12 @@ test("a Durable Object without its container, or failing, is answered as the pag
   });
   assert.equal(bare.status, 503);
   assert.equal(bare.headers.get("X-TC-Corpus"), "none");
+  assert.equal(bare.headers.get("X-TC-Call"), "unsent"); // no container: nothing ran
   assert.equal((await bare.json()).corpus, "none");
   const broken = await reach(async () => { throw new Error("Durable Object reset because its code was updated."); });
   assert.equal(broken.status, 503);
   assert.equal(broken.headers.get("Retry-After"), "10");
+  assert.equal(broken.headers.get("X-TC-Call"), null, "a call that failed under way may have run: not said to be unsent");
   assert.equal((await broken.json()).starting, true);
 });
 
@@ -144,6 +146,7 @@ test("a container that cannot start, or that does not answer as the runtime does
   const res = await quiet(() => forwarded(cold.box));
   assert.equal(res.status, 503);
   assert.equal(res.headers.get("X-TC-Corpus"), "unavailable");
+  assert.equal(res.headers.get("X-TC-Call"), "unsent", "a container that never started was sent nothing");
   assert.deepEqual(cold.did, ["start"]);
   fail = false;
   assert.equal((await forwarded(cold.box)).status, 200);
@@ -155,6 +158,7 @@ test("a container that cannot start, or that does not answer as the runtime does
   odd = true;
   const bad = await forwarded(ill.box);
   assert.equal(bad.status, 503);
+  assert.equal(bad.headers.get("X-TC-Call"), null, "the call was sent: it may have run");
   assert.equal(ill.known, false);
   odd = false;
   assert.equal((await forwarded(ill.box)).status, 200);

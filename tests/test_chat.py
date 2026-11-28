@@ -87,6 +87,20 @@ def test_tools_are_called_by_either_name_and_failures_are_results_not_crashes(rt
         assert not out["ok"] and needle in out["error"] and out["text"].startswith("ERROR:")
 
 
+def test_a_failure_says_whether_its_tool_ran(rt):
+    """A call refused before its tool ran — its name, its arguments, a permission — says so (``ran: false``); one whose
+    tool began and failed says that (``ran: true``): the developer API counts a call against its owner's daily
+    allowance only when the tool ran (docs/adr/0039-model-relay-and-daily-allowance.md)."""
+    for name, args in [("no.such_tool", {}), ("classics.search", {}), ("classics.search", {"query": "桂枝汤", "k": 999}),
+                       ("research.run_code", {"code": "1"}), ("kg.propose_change", {})]:
+        out = rt.call(name, args)
+        assert not out["ok"] and out["ran"] is False, (name, out["error"])
+    raised = rt.call("classics.get_passage", {"passage_id": "no.such.passage"})
+    assert not raised["ok"] and raised["ran"] is True and "PassageNotFound" in raised["error"]
+    assert rt.call("taochronos_session", {"session_id": ""})["ran"] is True  # an engine tool that began, then refused
+    assert "ran" not in rt.call("classics.search", {"query": "桂枝汤", "k": 1}), "an answer is a tool that ran"
+
+
 def test_half_a_character_in_what_a_model_wrote_is_no_reason_for_a_call_to_fail(rt):
     """A lone surrogate — half of a character written as two units, which JSON carries and which a model, or a text cut
     in the middle of a rare character, can leave — ended a call where its id is made (a hash of its arguments), with an

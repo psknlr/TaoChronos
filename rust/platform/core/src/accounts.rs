@@ -488,10 +488,14 @@ impl<'a> AccountCore<'a> {
         Ok(())
     }
 
-    /// The owner's: a member's status (active, suspended) and, given, their role.  A person not yet a member is added.
-    pub fn set_member(&self, user: &str, status: &str, role: Option<&str>, by: &str, now: i64) -> Outcome<()> {
-        if !matches!(status, "active" | "suspended") {
+    /// The owner's: a member's status (active, suspended) and their role, each changed only when it is given — a role
+    /// changed leaves a suspension as it was.  A person not yet a member is added (active, unless said otherwise).
+    pub fn set_member(&self, user: &str, status: Option<&str>, role: Option<&str>, by: &str, now: i64) -> Outcome<()> {
+        if status.is_some_and(|s| !matches!(s, "active" | "suspended")) {
             return Err(refused(400, "invalid_request", "status", "a member is active or suspended"));
+        }
+        if status.is_none() && role.is_none() {
+            return Err(refused(400, "invalid_request", "field", "a member's status, or role, or both"));
         }
         if role.is_some_and(|r| !ROLES.contains(&r)) {
             return Err(refused(400, "invalid_request", "role", "a role is owner, admin, developer or viewer"));
@@ -504,7 +508,9 @@ impl<'a> AccountCore<'a> {
             }
             None => self.vouch(user, role.unwrap_or("developer"), by, now)?,
         }
-        self.sql.run("UPDATE members SET status = ? WHERE user_id = ?", args![status, user])?;
+        if let Some(status) = status {
+            self.sql.run("UPDATE members SET status = ? WHERE user_id = ?", args![status, user])?;
+        }
         Ok(())
     }
 
@@ -521,9 +527,11 @@ impl<'a> AccountCore<'a> {
             .collect())
     }
 
-    /// The person a new key belongs to: the one named, if an active member; or, none named, the organisation's one
-    /// active owner — and if there is not exactly one, the key must name one.
-    fn key_owner(&self, owner: Option<&str>) -> Outcome<String> {
+    /// The person a new key belongs to: the one named, if an active member; none named, the person who makes it, when
+    /// a person does (a console's call — never anyone else of the organisation); or, made by the owner of the service,
+    /// the organisation's one active owner — and if there is not exactly one, the key must name one.
+    fn key_owner(&self, owner: Option<&str>, by: &str) -> Outcome<String> {
+        let owner = owner.or_else(|| is_user_id(by).then_some(by));
         match owner {
             Some(user) => match self.member(user)? {
                 Some(m) if m.text("status") == "active" => Ok(user.to_string()),
@@ -559,7 +567,7 @@ impl<'a> AccountCore<'a> {
         if k.opt_int("revoked").is_some() {
             return Err(refused(409, "conflict", "key", "the key was revoked"));
         }
-        let owner = self.key_owner(Some(user))?;
+        let owner = self.key_owner(Some(user), "owner")?;
         self.sql.run(
             "UPDATE keys SET owner_user_id = ?, owner_bound_at = ?, owner_bound_by = ? WHERE key_id = ?",
             args![owner, now, by, key_id],
@@ -689,7 +697,7 @@ impl<'a> AccountCore<'a> {
         if expires.is_some_and(|t| t <= now) {
             return Err(refused(400, "invalid_request", "expires", "a key's expiry is in the future"));
         }
-        let owner = self.key_owner(owner)?;
+        let owner = self.key_owner(owner, by)?;
         if self.sql.scalar("SELECT COUNT(*) FROM keys WHERE revoked IS NULL", &[])? >= self.cfg.max_keys {
             return Err(refused(
                 409,
@@ -1002,6 +1010,7 @@ impl<'a> AccountCore<'a> {
             "refusal": match executes { Err(Error::Refused(r)) => json!({ "code": r.code, "message": r.message }), _ => Json::Null },
             "model_access": model_access && Self::has_scope(&k, "chat:completions"),
             "models_listed": Self::has_scope(&k, "models:read"),
+            "records_read": Self::has_scope(&k, "usage:read"),
         }))
     }
 
@@ -1362,16 +1371,16 @@ mod tests {
             w.core().create_key(None, KeyEnv::Test, "t", None, None, OTHER, Some(OTHER), true, &w.e, T0).unwrap();
         assert_eq!(w.call(&theirs.key, Product::Search, "req_2", T0).unwrap().owner, OTHER);
         // suspended: their keys execute nothing; seen again by the console, they are not let back by it
-        w.core().set_member(OTHER, "suspended", None, "owner", T0).unwrap();
+        w.core().set_member(OTHER, Some("suspended"), None, "owner", T0).unwrap();
         assert_eq!(code(w.call(&theirs.key, Product::Search, "req_3", T0 + 1)), "member_suspended");
         w.core().vouch(OTHER, "developer", "console", T0 + 2).unwrap();
         assert_eq!(code(w.call(&theirs.key, Product::Search, "req_4", T0 + 3)), "member_suspended");
         let members = w.core().members().unwrap();
         assert!(members.iter().any(|m| m["user"] == OTHER && m["role"] == "developer" && m["status"] == "suspended"));
-        w.core().set_member(OTHER, "active", None, "owner", T0 + 4).unwrap();
+        w.core().set_member(OTHER, Some("active"), None, "owner", T0 + 4).unwrap();
         go(w.call(&theirs.key, Product::Search, "req_5", T0 + 5));
         // two owners: a key must name one
-        w.core().set_member(OTHER, "active", Some("owner"), "owner", T0 + 6).unwrap();
+        w.core().set_member(OTHER, Some("active"), Some("owner"), "owner", T0 + 6).unwrap();
         assert_eq!(
             code(w.core().create_key(None, KeyEnv::Test, "x", None, None, "owner", None, true, &w.e, T0)),
             "owner_required"
@@ -1381,6 +1390,45 @@ mod tests {
         assert_eq!(w.call(&theirs.key, Product::Search, "req_6", T0 + MINUTE).unwrap().owner, OWNER);
         assert_eq!(code(w.core().bind_key(&theirs_id, "usr_cccccccccccccccccccccccccc", "owner", T0)), "owner");
         assert_eq!(code(w.core().vouch("someone", "owner", "console", T0)), "user");
+    }
+
+    #[test]
+    fn a_role_changed_keeps_a_suspension_and_a_key_a_person_makes_is_theirs() {
+        let w = World::new(&[("ORG_CONCURRENCY", "20"), ("KEY_CONCURRENCY", "20")]);
+        w.core().vouch(OTHER, "developer", "console", T0).unwrap();
+        // a key a person makes without naming its owner is theirs — never the organisation's owner's — as a console
+        // that names no owner (one older than owners) makes it
+        let (_, made) = w.core().create_key(None, KeyEnv::Test, "b", None, None, OTHER, None, true, &w.e, T0).unwrap();
+        assert_eq!(w.call(&made.key, Product::Search, "req_1", T0).unwrap().owner, OTHER);
+        assert_eq!(
+            code(w.core().create_key(
+                None,
+                KeyEnv::Test,
+                "c",
+                None,
+                None,
+                "usr_cccccccccccccccccccccccccc",
+                None,
+                true,
+                &w.e,
+                T0
+            )),
+            "owner",
+            "a maker who is no member owns nothing here"
+        );
+        // suspended, then given another role without a word of their status: still suspended
+        w.core().set_member(OTHER, Some("suspended"), None, "owner", T0 + 1).unwrap();
+        w.core().set_member(OTHER, None, Some("admin"), "owner", T0 + 2).unwrap();
+        assert_eq!(code(w.call(&made.key, Product::Search, "req_2", T0 + 3)), "member_suspended");
+        let members = w.core().members().unwrap();
+        assert!(members.iter().any(|m| m["user"] == OTHER && m["role"] == "admin" && m["status"] == "suspended"));
+        // a person added with a role alone is active; a call that says nothing is refused
+        w.core().set_member("usr_cccccccccccccccccccccccccc", None, Some("viewer"), "owner", T0 + 4).unwrap();
+        assert!(w.core().members().unwrap().iter().any(|m| m["role"] == "viewer" && m["status"] == "active"));
+        assert_eq!(code(w.core().set_member(OTHER, None, None, "owner", T0 + 5)), "field");
+        // whoami says whether a key may read its requests' records
+        let me = w.core().whoami(&parse(&made.key).unwrap().digest, ModelGate::On, T0 + 6).unwrap();
+        assert_eq!(me["records_read"], true);
     }
 
     #[test]

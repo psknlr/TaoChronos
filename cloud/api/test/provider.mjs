@@ -1,8 +1,10 @@
 // A stand-in for a model provider (MiniMax's OpenAI-compatible chat completions), for cloud/api/test/run.sh: the
 // private model gateway (cloud/models) is pointed at it, and the scenario asks it, through the API, for what each word
 // of the last message names — an answer whole or streamed, a stream cut in pieces of any size, a tool call, reasoning,
-// a refusal, a busy moment, a failure inside a 200, a provider slow to begin or silent half-way.  It also says what it
-// was asked (GET /seen): the last request, and whether anything of a developer's (an API key, a cookie) ever reached it.
+// a refusal (one long, in Chinese), a busy moment, a failure inside a 200, a provider slow to begin or silent
+// half-way, one that drops the connection, trickles its refusal, sends its headers late, begins its stream with a byte
+// order mark or writes on after its end.  It also says what it was asked (GET /seen): the last request, and whether
+// anything of a developer's (an API key, a cookie) ever reached it.
 //   node cloud/api/test/provider.mjs 8795
 import http from "node:http";
 
@@ -54,6 +56,25 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ base_resp: { status_code: 1008, status_msg: "insufficient balance" } }));
   }
+  if (q.includes("zh-refusal")) {
+    // a refusal of 11 kB, its 4000th byte inside a character
+    res.writeHead(400, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: { type: "invalid_request_error", code: "context_length_exceeded", message: "上下文过长，".repeat(600) } }));
+  }
+  if (q.includes("drop-connection")) {
+    // the request read, a moment's work, then the connection dropped without an answer
+    await sleep(500);
+    return req.socket.destroy();
+  }
+  if (q.includes("trickle-error")) {
+    // a failure whose body comes a byte at a time, for twenty seconds
+    res.writeHead(500, { "Content-Type": "application/json" });
+    for (let i = 0; i < 40 && !res.destroyed; i++) {
+      res.write(" ");
+      await sleep(500);
+    }
+    return res.end();
+  }
   if (q.includes("slow-start")) await sleep(8000);
   if (!body.stream) {
     const message = { role: "assistant", content: `Tao answers: ${q}`, reasoning_details: [{ type: "reasoning.text", text: "…", format: "MiniMax-response-v1" }] };
@@ -61,7 +82,12 @@ http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ id, object: "chat.completion", created: 1, model: "MiniMax-M3", choices: [{ index: 0, message, finish_reason: "stop" }],
       usage, input_sensitive: false, output_sensitive: false, base_resp: { status_code: 0, status_msg: "" } }));
   }
+  if (q.includes("late-headers")) await sleep(3000); // its headers after 3 s, its first event 4 s later
   res.writeHead(200, { "Content-Type": "text/event-stream" });
+  if (q.includes("late-headers")) {
+    res.flushHeaders();
+    await sleep(4000);
+  }
   const events = [];
   if (q.includes("tool")) {
     // the arguments name the upstream's model: what the model wrote is passed on as it wrote it
@@ -77,7 +103,9 @@ http.createServer(async (req, res) => {
     events.push(chunk(id, {}, "stop"));
   }
   events.push({ id, object: "chat.completion.chunk", created: 1, model: "MiniMax-M3", choices: [], usage });
-  const wire = events.map((e) => `data: ${JSON.stringify(e)}\r\n\r\n`).join("") + ": keep-alive\n\n" + "data: [DONE]\n\n";
+  let wire = events.map((e) => `data: ${JSON.stringify(e)}\r\n\r\n`).join("") + ": keep-alive\n\n" + "data: [DONE]\n\n";
+  if (q.includes("bom")) wire = "\ufeff" + wire; // the protocol lets a stream begin with a byte order mark
+  if (q.includes("after-done")) wire += `data: ${JSON.stringify(chunk(id, { content: "AFTER-DONE" }))}\n\n`;
   if (q.includes("drip")) {
     // an event every 200 ms for six seconds: a caller who leaves is noticed at the next write
     for (let i = 0; i < 30 && !res.destroyed; i++) {

@@ -9,20 +9,24 @@
 //! puts it in the provider's terms, asks the provider once — no retry, no second place: a second ask after an
 //! ambiguous first one is a second answer paid for — and answers in the API's terms:
 //!
-//!   * a refusal before the provider took the request: the API's error object, and `X-Tao-Executed: 0` — the request
-//!     ran nothing, and spends nobody's allowance;
+//!   * a refusal known to have run nothing — this side's own before the provider was asked, or the provider's refusal
+//!     of it (its key, its limits, the request's terms): the API's error object, and `X-Tao-Executed: 0`, the only
+//!     answer that spends nobody's allowance;
+//!   * any other failure — a connection that failed, a provider's failure, a deadline passed: `X-Tao-Executed: 1`;
 //!   * a whole answer: the completion, its usage in `X-Tao-Usage`, `X-Tao-Executed: 1`;
 //!   * a stream: its events in the API's terms as they come, its usage and its end told in comments the API reads and
 //!     drops (`: tao {…}`), within its deadlines — the first event, the silence between two, the whole — and its size.
 //!
-//! The caller leaving (the API's request aborted) aborts the provider's (`request_signal_passthrough`).
+//! What the provider sends is read through, never whole and then measured: an answer, or a refusal's body, past its
+//! size or its time is cut there.  The caller leaving (the API's request aborted) aborts the provider's
+//! (`request_signal_passthrough`).
 
 use std::pin::Pin;
 use std::task::{Context as TaskContext, Poll};
 use std::time::Duration;
 
-use futures_util::Stream;
 use futures_util::future::{Either, select};
+use futures_util::{Stream, StreamExt};
 use serde_json::{Value as Json, json};
 use std::future::Future;
 use tao_edge::{json as answer, secret, var};
@@ -37,6 +41,43 @@ use worker::{
 const MOST_EVENT: usize = 64 * 1024;
 /// An answer, whole or streamed, at the most.
 const MOST_RESPONSE: usize = 1_048_576;
+/// Of a provider's refusal, what is read for its code: its first bytes, within a few seconds.
+const MOST_REFUSAL: usize = 16 * 1024;
+const REFUSAL_MS: i64 = 5_000;
+
+/// A body read through, within a size and a time.
+enum Read {
+    Whole(Vec<u8>),
+    /// past the size: what was read up to it
+    Over(Vec<u8>),
+    Late,
+    Broken,
+}
+
+/// A response's body, read chunk by chunk: never more than `most` bytes held, never past `until` (ms since the epoch).
+/// What is left unread is cancelled when the stream is dropped.
+async fn read_through(res: &mut Response, most: usize, until: i64) -> Read {
+    let Ok(mut body) = res.stream() else { return Read::Broken };
+    let mut out: Vec<u8> = Vec::new();
+    loop {
+        let left = until - tao_edge::now();
+        if left <= 0 {
+            return Read::Late;
+        }
+        match select(body.next(), Box::pin(Delay::from(Duration::from_millis(left as u64)))).await {
+            Either::Left((Some(Ok(chunk)), _)) => {
+                if out.len() + chunk.len() > most {
+                    out.extend_from_slice(&chunk[..most - out.len()]);
+                    return Read::Over(out);
+                }
+                out.extend_from_slice(&chunk);
+            }
+            Either::Left((Some(Err(_)), _)) => return Read::Broken,
+            Either::Left((None, _)) => return Read::Whole(out),
+            Either::Right(_) => return Read::Late,
+        }
+    }
+}
 
 fn refused(rid: &str, f: &Failure) -> Result<Response> {
     let mut headers = vec![("X-Tao-Executed", if f.executed { "1" } else { "0" }.to_string())];
@@ -136,9 +177,9 @@ async fn fetch(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let mut res = match select(sent, Box::pin(Delay::from(Duration::from_secs(waiting)))).await {
         Either::Left((Ok(res), _)) => res,
         Either::Left((Err(e), _)) => {
-            // not reached: the provider took nothing
+            // the connection failed: before the provider took the request, or after it ran — not known, so counted
             worker::console_error!("models {rid}: {} unreachable: {e}", spec.provider.name());
-            return refused(&rid, &models::UNAVAILABLE);
+            return refused(&rid, &models::LOST);
         }
         Either::Right(_) => {
             worker::console_error!("models {rid}: {} silent for {waiting} s", spec.provider.name());
@@ -151,34 +192,29 @@ async fn fetch(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
         return refused(&rid, &models::UNAVAILABLE);
     }
     if !(200..300).contains(&status) {
-        let text = res.text().await.unwrap_or_default();
-        let code = provider_code(&text[..text.len().min(4000)]);
+        // its first bytes, for its code: a refusal's body is no answer, and is not waited for long
+        let until = (started + total as i64 * 1000).min(tao_edge::now() + REFUSAL_MS);
+        let head = match read_through(&mut res, MOST_REFUSAL, until).await {
+            Read::Whole(b) | Read::Over(b) => b,
+            Read::Late | Read::Broken => Vec::new(),
+        };
+        let code = provider_code(&String::from_utf8_lossy(&head));
         worker::console_error!("models {rid}: {} {status} {code}", spec.provider.name());
         return refused(&rid, &models::failure_of(status, &code));
     }
     let content_type = res.headers().get("Content-Type")?.unwrap_or_default();
     if !chat.stream || !content_type.contains("event-stream") {
         // a whole answer (or a stream asked and refused in a JSON reply: MiniMax's base_resp), within the time left
-        let left = (total * 1000).saturating_sub((tao_edge::now() - started).max(0) as u64).max(1000);
-        let text = match select(Box::pin(res.text()), Box::pin(Delay::from(Duration::from_millis(left)))).await {
-            Either::Left((Ok(t), _)) => t,
-            Either::Left((Err(e), _)) => {
-                worker::console_error!("models {rid}: body {e}");
+        let text = match read_through(&mut res, MOST_RESPONSE, started + total as i64 * 1000).await {
+            Read::Whole(b) => b,
+            Read::Over(_) => return refused(&rid, &models::TOO_LARGE),
+            Read::Late => return refused(&rid, &models::TIMEOUT),
+            Read::Broken => {
+                worker::console_error!("models {rid}: {} body broken", spec.provider.name());
                 return refused(&rid, &models::FAILED);
             }
-            Either::Right(_) => return refused(&rid, &models::TIMEOUT),
         };
-        if text.len() > MOST_RESPONSE {
-            return refused(
-                &rid,
-                &Failure {
-                    code: "response_too_large",
-                    message: "the answer was larger than the API passes on",
-                    ..models::FAILED
-                },
-            );
-        }
-        let mut v: Json = match serde_json::from_str(&text) {
+        let mut v: Json = match serde_json::from_slice(&text) {
             Ok(v) => v,
             Err(_) => return refused(&rid, &models::FAILED),
         };
@@ -211,10 +247,10 @@ struct Watched {
     spec: &'static ModelSpec,
     rid: String,
     include_usage: bool,
-    first: u64,
-    idle: u64,
-    total_ms: i64,
-    started: i64,
+    /// the first event's deadline and the whole's (ms since the epoch, from when the provider was asked)
+    first_until: i64,
+    total_until: i64,
+    idle_ms: i64,
     events: usize,
     sent: usize,
     input_tokens: Option<i64>,
@@ -242,10 +278,9 @@ impl Watched {
             spec,
             rid,
             include_usage,
-            first,
-            idle,
-            total_ms: (total * 1000) as i64,
-            started,
+            first_until: started + first as i64 * 1000,
+            total_until: started + total as i64 * 1000,
+            idle_ms: idle as i64 * 1000,
             events: 0,
             sent: 0,
             input_tokens: None,
@@ -257,11 +292,12 @@ impl Watched {
         w
     }
 
-    /// The next deadline: the first event's, or the silence between two — never past the whole's.
+    /// The next deadline: the first event's (counted from when the provider was asked, not again from its headers),
+    /// or the silence between two — never past the whole's.
     fn arm(&mut self) {
-        let wait = if self.events == 0 { self.first } else { self.idle } as i64 * 1000;
-        let left = self.total_ms - (tao_edge::now() - self.started);
-        self.timer = Box::pin(Delay::from(Duration::from_millis(wait.min(left).max(1) as u64)));
+        let now = tao_edge::now();
+        let until = if self.events == 0 { self.first_until } else { now + self.idle_ms }.min(self.total_until);
+        self.timer = Box::pin(Delay::from(Duration::from_millis((until - now).max(1) as u64)));
     }
 
     fn meta(&self, end: &str, code: Option<&str>) -> String {
@@ -311,17 +347,14 @@ impl Watched {
                     out.push_str(&self.meta("ok", None));
                     out.push_str("data: [DONE]\n\n");
                     self.done = true;
+                    break; // the answer's end: whatever follows it is not the answer's
                 }
                 SseItem::Comment(_) => {} // a provider's keep-alive: not passed on
             }
         }
         self.sent += out.len();
         if self.sent > MOST_RESPONSE {
-            return Err(Failure {
-                code: "response_too_large",
-                message: "the answer was larger than the API passes on",
-                ..models::FAILED
-            });
+            return Err(models::TOO_LARGE);
         }
         Ok(out.into_bytes())
     }
@@ -340,14 +373,7 @@ impl Stream for Watched {
                 Poll::Ready(Some(Ok(chunk))) => {
                     let items = match this.parser.push(&chunk) {
                         Ok(items) => items,
-                        Err(_) => {
-                            let f = Failure {
-                                code: "response_too_large",
-                                message: "an event of the answer was larger than the API passes on",
-                                ..models::FAILED
-                            };
-                            return Poll::Ready(Some(Ok(this.fail(&f))));
-                        }
+                        Err(_) => return Poll::Ready(Some(Ok(this.fail(&models::TOO_LARGE)))),
                     };
                     let had = this.events;
                     match this.render(items) {

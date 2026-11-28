@@ -4,9 +4,17 @@
 //! request, hands it on, and passes the answer back — whole, or as the stream the gateway writes, which this Worker
 //! watches as it passes: the gateway's own words inside it (comments: the usage, how the answer ended) are read and
 //! never passed on.  The stream's end is told to the allowance and the organisation from `waitUntil`, so that a caller
-//! who leaves mid-answer is counted as cancelled, and the gateway's call — and the provider's — is aborted.
+//! who leaves mid-answer is counted as cancelled, and the gateway's call — and the provider's — is aborted; and a
+//! stream still open past the model's whole time (a caller who reads it too slowly for the gateway's own deadlines to
+//! be reached) is ended there, before its lease could lapse.
+//!
+//! A request admitted is counted unless the gateway says, in so many words (`X-Tao-Executed: 0`), that it ran
+//! nothing: a gateway that could not be reached, that failed, or that answered without saying, may have asked the
+//! provider.
 
+use std::cell::RefCell;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::task::{Context as Poll_, Poll};
 use std::time::Duration;
 
@@ -129,6 +137,23 @@ pub async fn completions(req: &mut Request, env: &Env, ctx: &Context, rid: &str)
         Ok(i) => i,
         Err(r) => return r,
     };
+    // the gateway's request made before anything is admitted — nothing that could fail is left between counting the
+    // request and asking — with a signal: aborted when the caller leaves or this Worker's own deadline passes
+    let stop = AbortController::default();
+    let signal = stop.signal();
+    let payload = json!({
+        "request_id": rid, "model": chat.model.id, "request": chat.body, "stream": chat.stream, "include_usage": chat.include_usage,
+        "timeouts": { "first_event": m.first_event, "idle": m.idle, "total": m.total },
+    });
+    let sys = worker::web_sys::RequestInit::new();
+    sys.set_method("POST");
+    let h = worker::web_sys::Headers::new()?;
+    h.set("Content-Type", "application/json")?;
+    sys.set_headers(&h);
+    sys.set_body(&worker::wasm_bindgen::JsValue::from_str(&payload.to_string()));
+    sys.set_signal(Some(&*signal));
+    let asked: Request =
+        worker::web_sys::Request::new_with_str_and_init("https://models.internal/v1/chat", &sys)?.into();
     let ex = Exec {
         rid,
         org: &key.org,
@@ -146,31 +171,18 @@ pub async fn completions(req: &mut Request, env: &Env, ctx: &Context, rid: &str)
     };
     let quota = exec::quota_headers(&a.quota, false);
     let given_back = exec::quota_headers(&a.quota, true);
-    // the gateway asked, with a signal: aborted when the caller leaves or this Worker's own deadline passes
-    let stop = AbortController::default();
-    let signal = stop.signal();
-    let payload = json!({
-        "request_id": rid, "model": chat.model.id, "request": chat.body, "stream": chat.stream, "include_usage": chat.include_usage,
-        "timeouts": { "first_event": m.first_event, "idle": m.idle, "total": m.total },
-    });
-    let sys = worker::web_sys::RequestInit::new();
-    sys.set_method("POST");
-    let h = worker::web_sys::Headers::new()?;
-    h.set("Content-Type", "application/json")?;
-    sys.set_headers(&h);
-    sys.set_body(&worker::wasm_bindgen::JsValue::from_str(&payload.to_string()));
-    sys.set_signal(Some(&*signal));
-    let asked: Request =
-        worker::web_sys::Request::new_with_str_and_init("https://models.internal/v1/chat", &sys)?.into();
-    // the gateway answers its headers within the model's whole time (or sooner): a backstop, should it not
-    let backstop = Delay::from(Duration::from_secs((m.total + 20) as u64));
-    let mut res = match select(Box::pin(gateway.fetch_request(asked)), Box::pin(backstop)).await {
+    // the gateway answers within the model's whole time (or sooner): a backstop, should it not — for its headers, and
+    // for a whole answer's body or a stream, from when it was asked
+    let until = tao_edge::now() + (m.total + 20) * 1000;
+    let left = move || Duration::from_millis((until - tao_edge::now()).max(1) as u64);
+    let mut res = match select(Box::pin(gateway.fetch_request(asked)), Box::pin(Delay::from(left()))).await {
         Either::Left((Ok(res), _)) => res,
         Either::Left((Err(e), _)) => {
-            // the gateway could not be reached: nothing was asked of the provider
+            // the gateway failed under the call, or could not be reached: whether it asked the provider is not known
             worker::console_error!("api {rid}: gateway {e}");
-            exec::end(env, &a, &End::released(503, "model_unavailable")).await;
-            return refuse_with(rid, &models::UNAVAILABLE.refusal(), &given_back);
+            let r = models::LOST.refusal();
+            exec::end(env, &a, &End::failed(r.status, r.code, None)).await;
+            return refuse_with(rid, &r, &quota);
         }
         Either::Right(_) => {
             stop.abort();
@@ -179,48 +191,93 @@ pub async fn completions(req: &mut Request, env: &Env, ctx: &Context, rid: &str)
             return refuse_with(rid, &r, &quota);
         }
     };
-    let executed = res.headers().get("X-Tao-Executed").ok().flatten().as_deref() == Some("1");
+    // released only on the gateway's word that nothing ran; anything else may have asked the provider
+    let released = res.headers().get("X-Tao-Executed").ok().flatten().as_deref() == Some("0");
     let status = res.status_code();
     let mut headers = vec![("X-Request-Id", rid.to_string())];
     if status != 200 {
         // the gateway's refusal, in the API's words already: passed on, the end told as it was
-        let text = res.text().await.unwrap_or_default();
+        let text = match select(Box::pin(res.text()), Box::pin(Delay::from(left()))).await {
+            Either::Left((Ok(t), _)) => t,
+            _ => String::new(),
+        };
         let v: Json = serde_json::from_str(&text).unwrap_or(Json::Null);
-        let code = v["error"]["code"].as_str().unwrap_or("model_error").to_string();
-        let end = if executed {
-            End::failed(status, &code, Some((status, text.clone())))
-        } else {
+        let (status, code, text) = match v["error"]["code"].as_str() {
+            Some(code) => (status, code.to_string(), text),
+            // not the gateway's own words: told as the API tells a failure
+            None => {
+                let r = if released { models::UNAVAILABLE.refusal() } else { models::FAILED.refusal() };
+                (r.status, r.code.to_string(), tao_platform::api::error(rid, &r).to_string())
+            }
+        };
+        let end = if released {
             End::released(status, &code)
+        } else {
+            End::failed(status, &code, Some((status, text.clone())))
         };
         exec::end(env, &a, &end).await;
-        headers.extend(if executed { quota } else { given_back });
+        headers.extend(if released { given_back } else { quota });
         if let Some(r) = res.headers().get("Retry-After").ok().flatten() {
             headers.push(("Retry-After", r));
         }
         return text_answer(status, text, "application/json", &headers);
     }
-    headers.extend(quota);
+    headers.extend(quota.clone());
+    let broken = |r: tao_platform::accounts::Refusal| (End::failed(r.status, r.code, None), r);
     if !chat.stream {
-        let text = res.text().await?;
         let usage = header_json(&res, "X-Tao-Usage");
-        let end = End {
-            input_tokens: usage["input_tokens"].as_i64(),
-            output_tokens: usage["output_tokens"].as_i64(),
-            ..End::succeeded(Some((200, text.clone())))
+        let (end, failure) = match select(Box::pin(res.text()), Box::pin(Delay::from(left()))).await {
+            Either::Left((Ok(text), _)) => {
+                let end = End {
+                    input_tokens: usage["input_tokens"].as_i64(),
+                    output_tokens: usage["output_tokens"].as_i64(),
+                    ..End::succeeded(Some((200, text.clone())))
+                };
+                exec::end(env, &a, &end).await;
+                return text_answer(200, text, "application/json", &headers);
+            }
+            Either::Left((Err(e), _)) => {
+                worker::console_error!("api {rid}: gateway body {e}");
+                broken(models::FAILED.refusal())
+            }
+            Either::Right(_) => {
+                stop.abort();
+                broken(models::TIMEOUT.refusal())
+            }
         };
         exec::end(env, &a, &end).await;
-        return text_answer(200, text, "application/json", &headers);
+        return refuse_with(rid, &failure, &quota);
     }
-    // a stream: watched as it passes, its end told from waitUntil
+    // a stream: watched as it passes, its end told from waitUntil — or, past the model's whole time, ended there
+    let body = match res.stream() {
+        Ok(b) => b,
+        Err(e) => {
+            worker::console_error!("api {rid}: gateway stream {e}");
+            let (end, failure) = broken(models::FAILED.refusal());
+            exec::end(env, &a, &end).await;
+            return refuse_with(rid, &failure, &quota);
+        }
+    };
     let (tx, rx) = oneshot::channel::<End>();
-    let observer = Observer::new(res.stream()?, tx, stop);
+    let stop = Rc::new(RefCell::new(Some(stop)));
+    let observer = Observer::new(body, tx, stop.clone());
     let (env2, a2): (Env, Admitted) = (env.clone(), a);
     let task = async move {
-        let end = rx.await.unwrap_or_else(|_| End {
-            streamed: true,
-            outcome: "cancelled",
-            ..End::failed(499, "client_disconnected", None)
-        });
+        let end = match select(rx, Box::pin(Delay::from(left()))).await {
+            Either::Left((told, _)) => told.unwrap_or_else(|_| End {
+                streamed: true,
+                outcome: "cancelled",
+                ..End::failed(499, "client_disconnected", None)
+            }),
+            // still open past the model's whole time: the gateway's call aborted (the caller's stream breaks at its
+            // next read), the end told now — counted, as an answer begun is
+            Either::Right(_) => {
+                if let Some(s) = stop.borrow_mut().take() {
+                    s.abort();
+                }
+                End { streamed: true, ..End::failed(504, models::TIMEOUT.code, None) }
+            }
+        };
         exec::end(&env2, &a2, &end).await;
         Ok::<_, worker::wasm_bindgen::JsValue>(worker::wasm_bindgen::JsValue::UNDEFINED)
     };
@@ -246,7 +303,8 @@ struct Observer {
     inner: Pin<Box<ByteStream>>,
     parser: SseParser,
     tx: Option<oneshot::Sender<End>>,
-    stop: Option<AbortController>,
+    /// the gateway's call, while it may be aborted: shared with the task that ends a stream past its time
+    stop: Rc<RefCell<Option<AbortController>>>,
     input_tokens: Option<i64>,
     output_tokens: Option<i64>,
     /// what the gateway said of the end: its outcome and code
@@ -264,13 +322,13 @@ fn broken_event() -> Vec<u8> {
 }
 
 impl Observer {
-    fn new(inner: ByteStream, tx: oneshot::Sender<End>, stop: AbortController) -> Self {
+    fn new(inner: ByteStream, tx: oneshot::Sender<End>, stop: Rc<RefCell<Option<AbortController>>>) -> Self {
         Observer {
             inner: Box::pin(inner),
             // the gateway bounds an event at 64 KiB; this side reads what it wrote, with room
             parser: SseParser::new(256 * 1024),
             tx: Some(tx),
-            stop: Some(stop),
+            stop,
             input_tokens: None,
             output_tokens: None,
             told: None,
@@ -303,7 +361,7 @@ impl Observer {
     /// The stream's end, told once.
     fn close(&mut self, broke: bool) {
         self.done = true;
-        self.stop = None; // ended: nothing to abort
+        self.stop.borrow_mut().take(); // ended: nothing to abort
         let (ok, code) = match (&self.told, broke) {
             (Some((ok, code)), false) => (*ok, code.clone()),
             _ => (false, Some("stream_cut".to_string())),
@@ -369,7 +427,7 @@ impl Drop for Observer {
     /// The caller left before the end: the gateway's call aborted (and with it the provider's), the end told as
     /// cancelled — counted, as every admitted request whose answer began is.
     fn drop(&mut self) {
-        if let Some(stop) = self.stop.take() {
+        if let Some(stop) = self.stop.borrow_mut().take() {
             stop.abort();
         }
         if let Some(tx) = self.tx.take() {

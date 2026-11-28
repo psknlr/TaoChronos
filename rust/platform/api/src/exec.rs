@@ -5,15 +5,15 @@
 //!      rate, what it and the organisation have in flight — a lease taken;
 //!   2. the owner's daily allowance (`UserQuota`): a repeat of an `Idempotency-Key` answered from before, the person's
 //!      own call in flight, the day's count — the request admitted, and counted;
-//!   3. the call made; its end told to both: the allowance's record (or the request released, when nothing was asked of
-//!      any service), then the organisation's usage.
+//!   3. the call made; its end told to both: the allowance's record (or the request released, when the service it was
+//!      sent to said it ran nothing — anything else may have run, and counts), then the organisation's usage.
 //!
 //! A refusal at 2 gives the lease of 1 back.  The allowance is asked second because only the organisation knows whose
 //! the key is; nothing is asked of a service before both have let the request through.
 
 use serde_json::{Value as Json, json};
 use tao_edge::{call, json as answer};
-use tao_platform::accounts::{Product, Refusal};
+use tao_platform::accounts::{Product, Refusal, is_user_id};
 use tao_platform::models::ModelSpec;
 use worker::{Env, Response, Result, Stub};
 
@@ -177,6 +177,19 @@ pub async fn admit(env: &Env, ex: &Exec<'_>) -> Result<Gate> {
             }
         }
     };
+    // a lease, and a registered person's allowance to count it in: an answer without both lets nothing through (an
+    // empty owner would name one object for everyone)
+    if a.lease.is_empty() || !is_user_id(&a.owner) {
+        worker::console_error!("api {}: accounts admitted without a lease or an owner", ex.rid);
+        if !a.lease.is_empty() {
+            give_back(false).await;
+        }
+        return Ok(Gate::Done(unavailable(
+            ex.rid,
+            "accounts",
+            "the accounts could not be asked; nothing was counted — try again",
+        )?));
+    }
     let q = match user_quota(env, &a.owner) {
         Ok(q) => q,
         Err(e) => {
@@ -223,7 +236,19 @@ pub async fn admit(env: &Env, ex: &Exec<'_>) -> Result<Gate> {
         headers.extend(quota_headers(&out["quota"], false));
         return Ok(Gate::Done(answer(status, &body, &headers)?));
     }
-    a.quota = out.get("admitted").cloned().unwrap_or(Json::Null);
+    let Some(admitted) = out.get("admitted").filter(|v| v.is_object()) else {
+        // neither admitted, nor refused, nor a repeat: not a request let through — and, should it have been counted,
+        // released again
+        worker::console_error!("api {}: user quota answered without an admission", ex.rid);
+        let _ = call(&q, "release", &json!({ "request_id": ex.rid })).await;
+        give_back(false).await;
+        return Ok(Gate::Done(unavailable(
+            ex.rid,
+            "quota",
+            "the daily allowance could not be asked; nothing was counted — try again",
+        )?));
+    };
+    a.quota = admitted.clone();
     Ok(Gate::Go(a))
 }
 

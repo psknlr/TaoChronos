@@ -29,10 +29,12 @@ evidence search and citation verification together, whichever of your keys, proj
 environments they come through.  Another key does not add to it.
 
 * **Counted**: a request admitted and asked of the service — whether it answers, fails, runs out of time, or you leave
-  before its end.
+  before its end — and any request that may have run: a connection that failed under it, a tool that failed while it
+  ran, a service that went away mid-call.
 * **Not counted**: a request refused before it runs (its body, its scope, a limit), a repeat answered from before
-  (`Idempotency-Key`), and a request the service refused outright without running it (a model's provider refusing it,
-  busy or unavailable; the corpus starting; a tool refusing its arguments) — the answer then says so.
+  (`Idempotency-Key`), and a request the service says it refused without running it (the model's provider refusing
+  it, busy or unavailable; the corpus not started; a tool refusing its arguments before it ran) — the answer then says
+  `nothing was counted`, and its `X-Tao-Quota-Remaining` is as before.
 * One of your requests runs at a time (`429 user_concurrency` while another does).
 
 Every answer to an execution carries what is left:
@@ -64,16 +66,17 @@ refused (400 `unsupported_field`), never ignored.
 | Field | | |
 |---|---|---|
 | `model` | `Tao-R1` | `GET /v1/models` lists those this key may call |
-| `messages` | 1–64 | `system`, `user`, `assistant`, `tool`; content is text or text parts (`{"type":"text","text":…}`, no images); an assistant's `tool_calls` and a tool's `tool_call_id`; an assistant's `reasoning_details` given back as the answer gave them |
+| `messages` | 1–64 | `system`, `user`, `assistant`, `tool`; content is text or text parts (`{"type":"text","text":…}`, no images); an assistant's `tool_calls` and a tool's `tool_call_id`; an assistant's `reasoning_details` given back as the answer gave them — and an answer's message given back as an SDK writes it (`refusal`, `annotations`, `audio`, `function_call` empty) |
 | `stream`, `stream_options.include_usage` | | server-sent events, as Chat Completions streams them; the usage in the last event when asked |
 | `max_tokens` or `max_completion_tokens` | 1–8,192 | one of them; 4,096 when neither — Tao-R1's reasoning counts against it |
-| `temperature` 0–2, `top_p` (0, 1], `stop` (1–4 texts) | | |
+| `temperature` 0–1, `top_p` (0, 1], `stop` (1–4 texts) | | Tao-R1's range: 0 is its least randomness |
 | `tools` (1–32 functions), `tool_choice` | | the model's tool calls come back to you: your program runs the tool and sends its answer |
 | `n` | 1 | one answer a request |
 
 The answer is a `chat.completion` (or `chat.completion.chunk` events) with `"model": "Tao-R1"` and `"id"` your request's
-id (`X-Request-Id`).  Tao-R1 reasons: its reasoning comes in `reasoning_details` (format `Tao-…`); give them back with
-the assistant's message in the next turn of a tool loop.  A stream that fails after it began ends with an event
+id (`X-Request-Id`), and the protocol's fields only — role, content, tool calls, reasoning, finish reason, usage — so
+that its message may be given back as it came.  Tao-R1 reasons: its reasoning comes in `reasoning_details` (format
+`Tao-…`); give them back with the assistant's message in the next turn of a tool loop.  A stream that fails after it began ends with an event
 `{"error": {…}}`.  Each request counts once: a tool loop of a question, a search and the answer is three.
 
 ### `GET /v1/models` (scope `models:read`)
@@ -148,8 +151,9 @@ whichever of your keys sends it.
   (`limit`, `used`, `in_flight`, `remaining`, `reset_at`).
 * `GET /v1/usage?from=YYYY-MM-DD&to=YYYY-MM-DD` (scope `usage:read`): the key's project's calls, counted calls,
   failures, refusals and tokens by day, product and environment.
-* `GET /v1/requests/{id}`: a request's record — its product, model, outcome (`succeeded`, `failed`, `cancelled`,
-  `unknown`, `released`), whether it was counted, its tokens — for seven days, to its owner's keys of its organisation.
+* `GET /v1/requests/{id}` (scope `usage:read`): a request's record — its product, model, outcome (`succeeded`,
+  `failed`, `cancelled`, `unknown`, `released`), whether it was counted, its tokens — for seven days, to its owner's
+  keys of its organisation.
 
 ## Errors
 
@@ -168,7 +172,9 @@ whichever of your keys sends it.
 | 413 | `invalid_request` | `too_large` (a body is at most 64 KiB) |
 | 422 | `invalid_request` | `tool_refused` (the corpus's own words), `idempotency_conflict` |
 | 429 | `rate_limit` | `daily_quota_exceeded`, `user_concurrency`, `rate`, `concurrency`, `address`, `model_busy` — with `Retry-After` |
-| 502, 503, 504 | `unavailable` | `model_error`, `model_unavailable`, `model_api_disabled`, `model_timeout`, `corpus`, `corpus_timeout`, `accounts`, `quota` |
+| 502, 503, 504 | `unavailable` | `model_error`, `response_too_large`, `model_unavailable`, `model_api_disabled`, `model_timeout`, `model_stalled`, `tool_failed`, `corpus`, `corpus_timeout`, `accounts`, `quota` |
+
+Whether a failure was counted is in its message (`nothing was counted`, or `counted`) and in `X-Tao-Quota-Remaining`.
 
 Every answer carries `X-Request-Id`; quote it when you write to us.
 

@@ -201,7 +201,7 @@ impl Account {
             "keys" => Ok(json!({ "keys": core.keys()? })),
             // the owner's
             "set_member" => {
-                core.set_member(s(b, "user"), opt_s(b, "status").unwrap_or("active"), opt_s(b, "role"), "owner", t)?;
+                core.set_member(s(b, "user"), opt_s(b, "status"), opt_s(b, "role"), "owner", t)?;
                 Ok(json!({ "members": core.members()? }))
             }
             "bind_key" => {

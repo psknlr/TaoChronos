@@ -38,11 +38,14 @@ Read against the code and the deployment as they stood:
 1. **Every executable key has an owner** — `keys.owner_user_id`, with when and by whom it was bound — the registered
    person whose allowance it spends.  The console writes the person whose session asks; the owner's endpoints name a
    member (or, none named, the organisation's one active owner, and refuse `owner_required` when there is not exactly
-   one).  Nothing in a request to the API names or changes an owner.  `created_by` stays as written, for the record.
+   one); a key a person makes without naming its owner — a console older than owners, during a deployment — is that
+   person's, never the organisation's owner's.  Nothing in a request to the API names or changes an owner.
+   `created_by` stays as written, for the record.
 2. **The organisation's object knows its members by being told**, not by asking.  It keeps `members` (role, status):
    the console says, in the body of each call it makes for a person, `member` and `role` — what the identity object has
    just verified of the session — and provisions a new organisation with its registrant as owner; the owner's endpoints
-   add, suspend and restore members.  A member seen again is not let back by being seen: their status is the owner's.
+   add, suspend and restore members, a member's role and status each changed only when it is named (a new role leaves
+   a suspension as it was).  A member seen again is not let back by being seen: their status is the owner's.
    So the API needs no call to the identity object on each execution, and no binding to the console's class: the
    proposal's `Identity.api_principal` would have made the one global identity object part of every call's path, and
    the two Workers each other's prerequisite.
@@ -66,24 +69,34 @@ Read against the code and the deployment as they stood:
    active member, its project, the model gate, the key's rate and what it and the organisation have in flight — which
    takes a **lease**; then the person's allowance, which **admits and counts in one step** (one SQL write: a repeat of an
    `Idempotency-Key` answered from before, their own call in flight, the day's count).  A refusal at the second gives the
-   lease back.  The proposal's sequence reserved the person's slot first and fenced its dispatch; asked in this order
-   there is no reservation to fence — only the organisation can say whose a key is, so it is asked first, and once the
-   person's object has admitted a request there is no step left that could fail between counting and asking.
-7. **What counts**: a request admitted counts unless it is **known to have asked nothing of any service** — then it is
-   *released*, uncounted: the gateway or the corpus not bound or not reached, the provider refusing the request outright
-   (a 4xx, its rate or quota spent, its key or the call's region refused, a failure inside a 200's `base_resp`), the
-   corpus starting or busy, a corpus tool refusing its arguments.  Everything else counts: an answer, a failure after
-   the provider took the request, a timeout, a caller who left, a Worker that died (its request of **unknown** outcome
-   once its lease passes — counted, and never run again by a repeat of its key).  The proposal counted every dispatch;
-   a refusal the provider made before running anything is no use of the service, and five a day are too few to spend
-   on it.  The day of a request is the day it was admitted, and does not change.
+   lease back; an answer of either object that does not say what it should (a lease, a registered owner, an
+   admission) lets nothing through.  The proposal's sequence reserved the person's slot first and fenced its dispatch;
+   asked in this order there is no reservation to fence — only the organisation can say whose a key is, so it is asked
+   first; the request to the gateway or the corpus is made before either is asked, so once the person's object has
+   admitted a request there is no step left that could fail between counting and asking.
+7. **What counts**: a request admitted counts unless the service it was sent to **says that it ran nothing** — then
+   it is *released*, uncounted: the gateway's `X-Tao-Executed: 0` (its own refusal before the provider was asked, or
+   the provider's refusal of the request outright: a 4xx, its rate or quota spent, its key or the call's region
+   refused, a failure inside a 200's `base_resp`); the corpus's refusal before its tool ran (`ran: false`, or the
+   runtime's 400), its 429, or a 503 marked `X-TC-Call: unsent` (a container that could not be started was sent
+   nothing).  A gateway or corpus not bound is refused before anything is admitted.  Everything else counts, because
+   it may have run: an answer; a failure, a timeout, a caller who left; a connection to the provider, the gateway or
+   the corpus that failed (before the request was taken or after — not known); a gateway that answered without saying;
+   a tool that failed while it ran, or a failure that does not say whether it ran; a corpus that went away under the
+   call; a Worker that died (its request of **unknown** outcome once its lease passes — counted, never taken back by a
+   late word, and never run again by a repeat of its key while keys name their requests).  So no unforeseen failure
+   is a way to run without counting.  The proposal counted every dispatch; a refusal the provider or the corpus made
+   before running anything is no use of the service, and five a day are too few to spend on it.  The day of a request
+   is the day it was admitted, and does not change.
 8. **Idempotency** belongs to the person's object, in its context — organisation, project, environment and the
    client's key (not the API key: a rotated key repeats the same request).  The request's digest is its method, its
    path, the request as read (keys ordered, messages as they came), the model and its configuration's version.  The
    same digest gets the first answer (`Idempotent-Replayed`, uncounted) while it is kept — a day; another digest is
    refused (422 `idempotency_conflict`); a request still running is 409 `request_in_progress`, one of unknown outcome
    409 `request_outcome_unknown`; a stream is never replayed (409 `stream_replay_unavailable`), nor run again.  Only
-   an idempotent request's answer is kept, and only for its day.  A released request frees its key at once.
+   an idempotent request's answer is kept, for `IDEMPOTENCY_HOURS` (24) from its end; a key names its request as long
+   from its admission, and a request's record is kept at least a day longer than that, whatever the two settings say.
+   A released request frees its key at once.
 9. **Funding**: `FUNDING_POLICY = daily_allowance` (the default) spends no credit; `credits` charges a live key's price
    as well — the allowance applies either way, so no setting reverts admission to what it was.  The organisation's own
    test allowance is gone: a test key's real calls are the person's, as a live key's are.  Balances and the ledger stay.
@@ -105,46 +118,74 @@ Read against the code and the deployment as they stood:
 12. **A documented subset of Chat Completions, read strictly** (`core/src/models.rs`): `model`, `messages` (system,
     user, assistant, tool; text or text parts; tool calls and their answers; a reasoning model's `reasoning_details`
     given back), `stream` and `stream_options.include_usage`, one output limit (`max_tokens` or
-    `max_completion_tokens`), `temperature`, `top_p`, `stop`, `tools`, `tool_choice`, `n` of 1.  Anything else is
-    refused, not ignored: 64 messages, 32 tools, a 64 KiB body.  Output tokens: 4,096 unless asked, 8,192 at the most —
-    not the proposal's 2,048 and 4,096, because Tao-R1's reasoning counts against the limit and would leave little of
-    an answer.
-13. **Answers changed by their known fields only**, on each parsed event: the top-level `model` (the public id) and
-    `id` (the API's request id), the provider's own keys (`base_resp`, the `*_sensitive` ones, `system_fingerprint`…),
-    the reasoning's format names (`MiniMax-` → `Tao-`, and back in what a caller gives back).  A tool call's arguments,
-    and everything a model wrote, pass byte for byte — the relay's text-wide regular expressions are not used.
-14. **Streams**, read by a bounded incremental parser (CRLF, LF and CR; a character's bytes split between chunks; an
-    event's lines joined; 64 KiB an event, 1 MiB an answer): the gateway enforces the deadlines — the first event (30
-    s), the silence between two (30 s), the whole (180 s) — and writes its usage and its end as SSE comments (`: tao
-    {…}`) which the API reads and never passes on; a usage event a caller did not ask for is read and dropped.  The API
-    watches the stream as it passes and tells its end — once — from the runtime's own `waitUntil`, given a promise of
-    the task (workers-rs's wrapper cannot outlive the handler: Context).  A caller who leaves while the answer arrives
-    is noticed at the next write: the gateway's call is aborted, and with it the provider's
-    (`request_signal_passthrough`), and the request is recorded as cancelled — counted.
+    `max_completion_tokens`), `temperature` in the model's own range (Tao-R1: 0 to 1, 0 asked of MiniMax as the least
+    it takes; a reasoning model that takes none refuses it), `top_p`, `stop`, `tools`, `tool_choice`, `n` of 1.
+    Anything else is refused, not ignored: 64 messages, 32 tools, a 64 KiB body — except the protocol's fields an SDK
+    writes empty into an answer's message it gives back (`refusal`, `annotations`, `audio`, `function_call`), which
+    are taken empty and not sent on.  Output tokens: 4,096 unless asked, 8,192 at the most — not the proposal's 2,048
+    and 4,096, because Tao-R1's reasoning counts against the limit and would leave little of an answer.
+13. **Answers passed on by the protocol's fields alone**, on each parsed event: the top-level `model` (the public id)
+    and `id` (the API's request id); of an answer, its choices, of a choice its message or delta, of those their role,
+    text, tool calls (their id, type, function's name and arguments) and reasoning, of the usage its three counts —
+    what a developer's next request may give back, and nothing else: a provider's own keys, at any depth (`base_resp`,
+    the `*_sensitive` ones, `system_fingerprint`, a message's `name`, `reasoning_content`, `audio_content`, its usage's
+    details…), would name it, and be refused when given back.  The reasoning's format names are renamed (`MiniMax-` →
+    `Tao-`, and back in what a caller gives back).  A tool call's arguments, and everything a model wrote, pass byte for
+    byte — the relay's text-wide regular expressions are not used.
+14. **Streams**, read by a bounded incremental parser (CRLF, LF and CR, a CR's LF in the next chunk however many empty
+    chunks come between; a byte order mark the stream begins with; a character's bytes split between chunks; an
+    event's lines joined; 64 KiB an event, 1 MiB an answer; nothing after `[DONE]`): the gateway enforces the deadlines
+    — the first event (30 s from when the provider was asked, headers or no headers), the silence between two (30 s),
+    the whole (180 s) — and writes its usage and its end as SSE comments (`: tao {…}`) which the API reads and never
+    passes on; a usage event a caller did not ask for is read and dropped.  What the provider sends is read through,
+    never whole and then measured: a whole answer past 1 MiB, or past the whole's deadline, is cut there, and of a
+    refusal its first 16 KiB within five seconds are read for its code — a long one, or one in Chinese, cannot hold the
+    gateway, nor stop it (a byte offset in the middle of a character once did).  The API watches the stream as it
+    passes and tells its end — once — from the runtime's own `waitUntil`, given a promise of the task (workers-rs's
+    wrapper cannot outlive the handler: Context).  A caller who leaves while the answer arrives is noticed at the next
+    write: the gateway's call is aborted, and with it the provider's (`request_signal_passthrough`), and the request is
+    recorded as cancelled — counted.  A caller who reads too slowly for the gateway's own deadlines to be reached is
+    ended by the API's: past the whole's time and twenty seconds, the gateway's call is aborted and the end told then,
+    before the request's lease could lapse.
 15. **What a person and the owner see**: `GET /v1/limits` adds `user_quota` (limit, used, in flight, remaining, UTC,
     reset) and `funding`; every execution's answer carries `X-Tao-Quota-Limit`, `-Remaining`, `-Reset`; a spent
     allowance is 429 `daily_quota_exceeded` with `Retry-After` to midnight, apart from the key's own `rate` and
     `concurrency` and the person's `user_concurrency`.  `GET /v1/requests/{id}` gives a request's record to its owner's
-    keys of its organisation (seven days: `REQUEST_RECORD_DAYS`).  The console shows the allowance, the person's latest
+    keys of its organisation that may read usage (`usage:read`; seven days: `REQUEST_RECORD_DAYS`).  The console shows the allowance, the person's latest
     requests (outcome, counted, tokens or *unknown*), each key's owner, and the account's id.
 
 ### Tests
 
-16. 61 core tests natively (the allowance: five then none until midnight, a new day, concurrency, unknown after the
-    lease, replay and conflict, streams not replayed, release, suspension, pruning; the accounts: owners, members,
-    scopes, the model gate, funding, a schema-1 object migrated three times, the second cut short; the models: the
-    subset, the hash, the providers' terms, normalisation by known fields, a stream cut at every byte).  The API and
-    the gateway as built, in local workerd beside a stand-in corpus and a stand-in provider (`cloud/api/test`): 68
-    checks — the five shared across products, keys and organisations, what counts and what does not, streams in
-    pieces of one to seven bytes, tool calls, reasoning, the provider's refusals, a slow start and a stall, a caller
-    who leaves, idempotency, members and people suspended, the record, and no credential reaching the provider.  The
-    console in Chromium (27 checks) and its key spent against the person's allowance.
+16. 66 core tests natively (the allowance: five then none until midnight, a new day, concurrency, unknown after the
+    lease and a late release that takes nothing back, replay and conflict, streams not replayed, release, suspension,
+    pruning — of a request never ended among them; the accounts: owners, members, a role changed under a suspension,
+    a key its maker owns, scopes, the model gate, funding, a schema-1 object migrated three times, the second cut
+    short; the models: the subset, an SDK's message given back, temperatures, the hash, the providers' terms, answers
+    by the protocol's fields at every depth, a stream cut at every byte, with a byte order mark and empty chunks; the
+    corpus's answers, ran and unsent).  The API and the gateway as built, in local workerd beside a stand-in corpus and
+    a stand-in provider (`cloud/api/test`): the five shared across products, keys and organisations, what counts and
+    what does not, streams in pieces of one to seven bytes, tool calls, reasoning, the provider's refusals (one long
+    and in Chinese), a slow start, late headers and a stall, a dropped connection and a trickled refusal, a byte order
+    mark and words after the end, a caller who leaves, a tool that failed and a corpus that went away, idempotency,
+    members and people suspended, the record and its scope, and no credential reaching the provider.  The runtime's
+    word whether a tool ran (pytest), the corpus Worker's unsent answers (node).  The console in Chromium (27 checks)
+    and its key spent against the person's allowance.
+
+    A security review of the change, by an agent apart from its author, found no way past five a day — admissions for
+    a person are one at a time in one object, a repeat runs nothing, every key, project, organisation, environment and
+    model counts in the one object — and found the ways a request could be released after it may have run (a gateway
+    that failed, a connection the provider dropped, a tool that failed while it ran, a corpus that went away), a panic
+    on a long Chinese refusal that took the gateway's shared instance down with other people's requests, unbounded
+    reads, a suspension lifted by a role change, a late release that took a count back, records never ended never
+    pruned, the first event's deadline given twice, fields of the provider's passed on at depth, and the stream
+    parser's three edge cases.  Each is fixed as written above, with its test.
 
 ## Where this departs from the proposal
 
 * **No call to the identity object per execution** (2): the members are vouched for to each organisation's object.
 * **No reserved state, no fence** (6): the lease first, then one admission that counts.
-* **A provider's outright refusal counts nothing** (7).
+* **A provider's or the corpus's outright refusal counts nothing** (7), and only when it is said: what may have run
+  counts.
 * **`MODEL_API = on`** at deployment, not `off` then a pilot: the owner asked for the relay; `pilot` and `off` remain.
 * **The organisation's test allowance is gone** (9), as the proposal's shared allowance implies.
 * **Output limits per model, 4,096 and 8,192** (12).

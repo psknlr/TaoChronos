@@ -583,8 +583,8 @@ a cookie, an address, a prompt or an answer.
 | `api req_…: corpus …` | the corpus failed that call (502, counted) |
 | `api req_…: user quota end …` | a request's end could not be recorded: its status reads `unknown` once its lease lapses — counted |
 | `api req_…: finish …` | the organisation's usage could not be recorded: its lease lapses — nothing charged |
-| `api req_…: gateway …` | the model gateway could not be reached (503 `model_unavailable`, not counted) |
-| `models req_…: minimax <status> <code>`, `… silent for <n> s`, `… unreachable` | the provider refused, failed or fell silent; the developer was given a code (10.2) |
+| `api req_…: gateway …` | the model gateway failed under the call or could not be reached (502 `model_error`, counted: whether it asked the provider is not known) |
+| `models req_…: minimax <status> <code>`, `… silent for <n> s`, `… unreachable`, `… body broken` | the provider refused, failed, fell silent or dropped the connection; the developer was given a code (10.2) |
 | `models req_…: minimax is not configured` | no MiniMax key: 3.8 |
 | `api req_…: admin token refused` | someone tried the owner's endpoints with another token |
 | `mail <template> <code>` | Email Service refused a mail (10.4) |
@@ -735,12 +735,12 @@ Every refusal before the call ran is **not counted** against the owner's five; t
 | 403 `member_suspended`, `user_suspended` | the key's owner is suspended in the organisation, or everywhere | 8.3 |
 | 403 `model_access` | `MODEL_API` is `pilot` and the organisation is not let in, or the key lacks `chat:completions` | 8.3; a key with the scope |
 | 404 `model_not_found` | a model not offered (`GET /v1/models` lists them) | `Tao-R1` |
-| 503 `model_unavailable` | no gateway, no provider key, or the provider down (not counted) | 3.8; 10.1 |
+| 503 `model_unavailable` | no gateway, no provider key, or the provider refusing the call (not counted) | 3.8; 10.1 |
 | 503 `model_api_disabled` | `MODEL_API = "off"` | 9.2 |
 | 429 `model_busy` | the provider's own limit (not counted) | wait |
-| 502 `model_error`, 504 `model_timeout` | the provider failed or fell silent past a deadline (counted) | the gateway's logs |
-| 503 `corpus`, `Retry-After` | the corpus is starting or busy — or not bound (not counted) | wait; 3.5 |
-| 502 `corpus`, 503 `corpus_timeout` | the corpus failed, or ran past its time (counted) | the corpus's logs |
+| 502 `model_error`, 504 `model_timeout`, `model_stalled` | the provider failed, the connection to it failed, or it fell silent past a deadline (counted: it may have run) | the gateway's logs |
+| 503 `corpus`, `Retry-After` | the corpus could not be started, is busy, or is not bound (not counted) — or went away under the call (counted) | wait; 3.5 |
+| 502 `corpus`, `tool_failed`, 503 `corpus_timeout` | the corpus failed, a tool failed while it ran, or it ran past its time (counted) | the corpus's logs |
 | 503 `accounts`, `quota` | an organisation's or a person's object could not be asked | retry; Workers Logs if it lasts |
 | 401 `invalid_key` | a key mistyped, cut short, or of no organisation | the key as it was shown |
 | 401 `revoked_key`, `expired_key` | — | a new key |

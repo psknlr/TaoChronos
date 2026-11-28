@@ -8,10 +8,13 @@
 //! what a paid call may cost is the API's to bound.
 //!
 //! The corpus answers a call with `{ok, tool, text, result, citations, summary, receipt}` — HTTP 200 whether the tool
-//! ran or refused (a tool's failure is a result the model reads).  So a call is *delivered* — and charged — only when
-//! the answer is 200 and `ok` is true; a tool that refused its arguments is the caller's 422, released; anything else
-//! is the service's failure, released.  What is passed on is the result, its citations, its summary and its text for a
-//! model; never the receipt (hashes of the harness's own run).
+//! ran or refused (a tool's failure is a result the model reads), and a failure says whether the tool ran (`ran`).  So
+//! a call is *delivered* only when the answer is 200 and `ok` is true.  What spends nobody's allowance is only what
+//! the corpus says ran nothing: a refusal before the tool ran (`ran: false`, or the runtime's 400 — the caller's 422),
+//! a corpus still starting or busy (429, or a 503 marked `X-TC-Call: unsent`).  Everything else may have run, and is
+//! counted: a tool that failed while it ran, or a failure that does not say (`ran` missing: a runtime older than the
+//! word), a corpus that stopped under the call, an answer that is not the protocol's.  What is passed on is the result,
+//! its citations, its summary and its text for a model; never the receipt (hashes of the harness's own run).
 
 use serde_json::{Map, Value as Json, json};
 
@@ -121,19 +124,27 @@ pub fn corpus_body(call: &Call) -> Json {
 pub enum Corpus {
     /// the tool ran: what the caller is given
     Delivered(Json),
-    /// the tool refused what it was asked: the caller's to change (422), not charged
+    /// the tool refused what it was asked before it ran: the caller's to change (422), not counted
     Refused(String),
-    /// the corpus is starting or full: try again (503), not charged
+    /// the corpus is starting or full, and was not given the call: try again (503), not counted
     Unavailable(i64),
-    /// anything else: the service's failure (502), not charged
+    /// the corpus stopped under the call (503): it may have run, counted
+    Gone(i64),
+    /// the tool failed while it ran, or failed without saying whether it ran: its words (502), counted
+    ToolFailed(String),
+    /// anything else: the service's failure (502), counted
     Failed,
 }
 
-/// The corpus's answer to a call, read.
-pub fn read_corpus(status: u16, body: &str, retry_after: Option<&str>) -> Corpus {
+/// The corpus's answer to a call, read.  `call`: the corpus Worker's `X-TC-Call` (`unsent`: the call never reached
+/// the corpus's runtime).
+pub fn read_corpus(status: u16, body: &str, retry_after: Option<&str>, call: Option<&str>) -> Corpus {
     let retry = retry_after.and_then(|r| r.trim().parse::<i64>().ok()).filter(|r| (1..=3600).contains(r)).unwrap_or(10);
-    if status == 503 || status == 429 {
+    if status == 429 || (status == 503 && call.map(str::trim) == Some("unsent")) {
         return Corpus::Unavailable(retry);
+    }
+    if status == 503 {
+        return Corpus::Gone(retry);
     }
     let Ok(v) = serde_json::from_str::<Json>(body) else {
         return Corpus::Failed;
@@ -152,9 +163,11 @@ pub fn read_corpus(status: u16, body: &str, retry_after: Option<&str>) -> Corpus
             "summary": v.get("summary").cloned().unwrap_or(Json::Null),
             "text": v.get("text").cloned().unwrap_or(Json::Null),
         })),
-        Some(false) => Corpus::Refused(
-            v.get("error").and_then(Json::as_str).unwrap_or("the tool refused the call").chars().take(500).collect(),
-        ),
+        Some(false) => {
+            let words: String =
+                v.get("error").and_then(Json::as_str).unwrap_or("the tool failed").chars().take(500).collect();
+            if v.get("ran") == Some(&Json::Bool(false)) { Corpus::Refused(words) } else { Corpus::ToolFailed(words) }
+        }
         None => Corpus::Failed,
     }
 }
@@ -257,21 +270,29 @@ mod tests {
     #[test]
     fn the_corpus_answer_is_read_for_what_it_is() {
         let ran = r#"{"ok":true,"tool":"classics.search","text":"t","result":{"hits":[1]},"citations":[{"passage_id":"p"}],"summary":"s","receipt":{"actor":"agent:chat"}}"#;
-        let Corpus::Delivered(d) = read_corpus(200, ran, None) else { panic!() };
+        let Corpus::Delivered(d) = read_corpus(200, ran, None, None) else { panic!() };
         assert_eq!(
             d,
             json!({ "result": { "hits": [1] }, "citations": [{ "passage_id": "p" }], "summary": "s", "text": "t" })
         );
         assert!(!d.to_string().contains("receipt") && !d.to_string().contains("agent:chat"));
+        // refused before it ran: the caller's, not counted; failed while it ran, or without saying: counted
+        let refused = r#"{"ok":false,"ran":false,"error":"invalid arguments: $.k: 500 > maximum 100"}"#;
         assert_eq!(
-            read_corpus(200, r#"{"ok":false,"error":"invalid arguments: $.k: 500 > maximum 100"}"#, None),
+            read_corpus(200, refused, None, None),
             Corpus::Refused("invalid arguments: $.k: 500 > maximum 100".into())
         );
-        assert_eq!(read_corpus(400, r#"{"error":"invalid JSON"}"#, None), Corpus::Refused("invalid JSON".into()));
-        assert_eq!(read_corpus(503, r#"{"starting":true}"#, Some("30")), Corpus::Unavailable(30));
-        assert_eq!(read_corpus(429, r#"{}"#, None), Corpus::Unavailable(10));
-        assert_eq!(read_corpus(500, r#"{"error":"Traceback …"}"#, None), Corpus::Failed);
-        assert_eq!(read_corpus(200, "<html>", None), Corpus::Failed);
-        assert_eq!(read_corpus(200, r#"{"result":1}"#, None), Corpus::Failed);
+        let raised = r#"{"ok":false,"ran":true,"error":"ValueError: bad"}"#;
+        assert_eq!(read_corpus(200, raised, None, None), Corpus::ToolFailed("ValueError: bad".into()));
+        let unsaid = r#"{"ok":false,"error":"result withheld by hook h: r"}"#;
+        assert_eq!(read_corpus(200, unsaid, None, None), Corpus::ToolFailed("result withheld by hook h: r".into()));
+        assert_eq!(read_corpus(400, r#"{"error":"invalid JSON"}"#, None, None), Corpus::Refused("invalid JSON".into()));
+        // a corpus not given the call, and one that stopped under it
+        assert_eq!(read_corpus(503, r#"{"starting":true}"#, Some("30"), Some("unsent")), Corpus::Unavailable(30));
+        assert_eq!(read_corpus(503, r#"{"starting":true}"#, Some("30"), None), Corpus::Gone(30));
+        assert_eq!(read_corpus(429, r#"{}"#, None, None), Corpus::Unavailable(10));
+        assert_eq!(read_corpus(500, r#"{"error":"Traceback …"}"#, None, None), Corpus::Failed);
+        assert_eq!(read_corpus(200, "<html>", None, None), Corpus::Failed);
+        assert_eq!(read_corpus(200, r#"{"result":1}"#, None, None), Corpus::Failed);
     }
 }

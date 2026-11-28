@@ -21,13 +21,19 @@ const KEPT = {
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { ...headers, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 
-/** What the page is told while the container cannot be reached. */
-export const unavailable = () =>
-  json({ error: "全量语料服务正在启动或暂不可用，请稍后再试", starting: true }, 503, { "Retry-After": "10", "X-TC-Corpus": "unavailable" });
+/**
+ * What the page is told while the container cannot be reached.  `unsent`: the call never reached the container (it
+ * could not be started) — `X-TC-Call: unsent`, so that a client that counts what it asks (the developer API's daily
+ * allowance, docs/adr/0039-model-relay-and-daily-allowance.md) counts nothing.  Without it the call may have reached
+ * the container before it went away.
+ */
+export const unavailable = (unsent = false) =>
+  json({ error: "全量语料服务正在启动或暂不可用，请稍后再试", starting: true }, 503,
+    { "Retry-After": "10", "X-TC-Corpus": "unavailable", ...(unsent ? { "X-TC-Call": "unsent" } : {}) });
 
 /** What the page is told when this Worker has no container (the account cannot run containers yet): as without it. */
 export const none = () =>
-  json({ error: "本站的全量语料服务未部署：网页改用内置运行环境的要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none" });
+  json({ error: "本站的全量语料服务未部署：网页改用内置运行环境的要籍语料", corpus: "none" }, 503, { "X-TC-Corpus": "none", "X-TC-Call": "unsent" });
 
 /**
  * The Durable Object's answer (call: its fetch).  It throws when its class has no container — the Worker was uploaded
@@ -66,7 +72,7 @@ export async function forwarded(box) {
     } catch (err) {
       box.mark(false);
       console.error("start", err?.message || err);
-      return unavailable();
+      return unavailable(true); // nothing was sent
     }
   }
   let res;

@@ -75,8 +75,11 @@ class InvalidArguments(ValueError):
 
 
 def shape(tool: str, ok: bool, result: Any, error: str | None = None, receipt: dict[str, Any] | None = None, *,
-          duration_ms: float = 0.0, max_chars: int = 16000) -> dict[str, Any]:
-    """A tool's outcome as the client receives it: ``text`` for the model, ``result`` and ``citations`` for the interface."""
+          duration_ms: float = 0.0, max_chars: int = 16000, ran: bool | None = None) -> dict[str, Any]:
+    """A tool's outcome as the client receives it: ``text`` for the model, ``result`` and ``citations`` for the interface.
+    A failure says, when it is known, whether the tool ran (``ran``): one refused before it ran — an unknown tool, its
+    arguments, a check before the call — cost nothing, and a client that counts what it asks of the server (the
+    developer API's daily allowance, docs/adr/0039-model-relay-and-daily-allowance.md) counts only what ran."""
     out: dict[str, Any] = {"ok": ok, "tool": tool, "duration_ms": round(duration_ms, 1)}
     if ok:
         # the model reads a research run's summary; the interface also shows its full report — and a result's charts
@@ -85,6 +88,8 @@ def shape(tool: str, ok: bool, result: Any, error: str | None = None, receipt: d
                    summary=summarize(result), receipt=to_jsonable(receipt or {}))
     else:
         out.update(text=f"ERROR: {error}", error=error, summary=(error or "")[:160], citations=[])
+        if ran is not None:
+            out["ran"] = ran
     return out
 
 
@@ -213,6 +218,7 @@ class ChatRuntime:
         among at most so many and is counted as a run."""
         started = time.perf_counter()
         tool, ok, result, error, receipt, repaired = name, False, None, None, {}, []
+        ran = False  # the tool itself began: a refusal before that (its name, its arguments, a check) ran nothing
         try:
             name = self._canonical(name)
             if name == "taochronos_call":
@@ -240,15 +246,20 @@ class ChatRuntime:
                 raise InvalidArguments(problem)
             repaired = halves + repaired
             if tool in ENGINE_NAMES:
+                ran = True
                 result, ok = self._engine_tool(tool, arguments), True
             else:
                 outcome = self.h.scheduler.execute(ToolCall(tool, arguments), actor=self.actor)
                 ok, result, error, receipt = outcome.ok, outcome.result, outcome.error, outcome.receipt
+                # the scheduler writes a receipt once the tool has run — its failure, or a result a check withheld,
+                # among them — and none for a call it refused first (a budget, a permission, a hook before the call)
+                ran = bool(receipt)
         except (UnknownTool, InvalidArguments) as exc:
             error = str(exc)
         except Exception as exc:  # a failing tool is data for the model, not a crash of the conversation
             error = f"{type(exc).__name__}: {exc}"
-        out = shape(tool, ok, result, error, receipt, duration_ms=(time.perf_counter() - started) * 1000, max_chars=max_chars)
+        out = shape(tool, ok, result, error, receipt, duration_ms=(time.perf_counter() - started) * 1000, max_chars=max_chars,
+                    ran=ran)
         if repaired:
             out["repaired"] = repaired
         for card in out.get("citations") or []:  # a row or passage of the user's data, as the page names it (for the page only)

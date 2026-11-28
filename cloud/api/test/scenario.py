@@ -73,7 +73,7 @@ def chat(key, content, stream=False, headers=None, **more):
     return out
 
 
-USER1, USER2, USER3, USER4 = ("usr_" + c * 26 for c in "abcd")
+USER1, USER2, USER3, USER4, USER5, USER6 = ("usr_" + c * 26 for c in "abcdef")
 ALL = ["evidence:search", "citations:verify", "usage:read", "chat:completions", "models:read"]
 
 # ------------------------------------------------------------------ an organisation of a registered person, two keys
@@ -209,6 +209,9 @@ check("a member the owner vouched for: their key runs", s == 200 and remaining(h
 ask("POST", f"/admin/orgs/{od}/members", {"user": USER3, "status": "suspended"}, key=TOKEN)
 s, r, _ = ask("POST", "/v1/citations/verify", {"quote": "x"}, key=kd["key"])
 check("a suspended member's key: 403 member_suspended", s == 403 and r["error"]["code"] == "member_suspended", (s, r))
+ask("POST", f"/admin/orgs/{od}/members", {"user": USER3, "role": "admin"}, key=TOKEN)
+s, r, _ = ask("POST", "/v1/citations/verify", {"quote": "x"}, key=kd["key"])
+check("given another role, a suspended member stays suspended", s == 403 and r["error"]["code"] == "member_suspended", (s, r))
 ask("POST", f"/admin/orgs/{od}/members", {"user": USER3, "status": "active"}, key=TOKEN)
 s, r, _ = ask("POST", f"/admin/users/{USER3}/suspend", {}, key=TOKEN)
 s, r, _ = ask("POST", "/v1/citations/verify", {"quote": "x"}, key=kd["key"])
@@ -279,6 +282,44 @@ s, r, _ = ask("GET", "/nowhere")
 check("an unknown path: 404 JSON", s == 404 and r["error"]["type"] == "not_found", r)
 s, r, _ = ask("GET", "/v1")
 check("the index names the products, the models and the daily allowance", s == 200 and r["models"] == ["Tao-R1"] and r["daily_allowance"]["limit"] == 5 and "chat.completions" in r["products"], r)
+
+# ------------------------------------------------------------------ what may have run counts; what is said to have run nothing does not
+s, org_f, _ = ask("POST", "/admin/orgs", {"name": "Sixth lab", "owner": USER5}, key=TOKEN)
+of = org_f["org"]["id"]
+s, kf, _ = ask("POST", f"/admin/orgs/{of}/keys", {"environment": "test", "name": "f", "scopes": ALL}, key=TOKEN)
+K5 = kf["key"]
+s, r, h = chat(K5, "zh-refusal")
+check("a long refusal in Chinese is read for its code: 400 model_rejected, not counted", s == 400 and r["error"]["code"] == "model_rejected" and remaining(h) == 5, (s, r, h))
+s, r, h = chat(K5, "drop-connection")
+check("a provider that drops the connection: 502 model_error, counted — it may have run", s == 502 and r["error"]["code"] == "model_error" and remaining(h) == 4, (s, r, h))
+t0 = time.time()
+s, r, h = chat(K5, "trickle-error")
+check("a refusal's body trickled is not waited for: 502 within seconds, counted", s == 502 and time.time() - t0 < 12 and remaining(h) == 3, (s, r, time.time() - t0, h))
+s, text, h = chat(K5, "bom", stream=True)
+data, _ = events(text)
+check("a stream begun with a byte order mark: its first event arrives", s == 200 and any("reasoning_details" in d for d in data) and data[-1] == "[DONE]" and remaining(h) == 2, (s, text[:300], h))
+s, text, h = chat(K5, "after-done", stream=True)
+data, _ = events(text)
+check("what a provider writes after the end is not passed on", s == 200 and data[-1] == "[DONE]" and "AFTER-DONE" not in text and remaining(h) == 1, (s, text[-300:], h))
+t0 = time.time()
+s, text, h = chat(K5, "late-headers", stream=True)
+data, _ = events(text)
+check("the first event's deadline runs from the ask, not again from late headers: model_timeout, counted", s == 200 and data and "model_timeout" in data[-1] and 4 < time.time() - t0 < 7 and remaining(h) == 0, (s, text[-300:], time.time() - t0, h))
+s, org_g, _ = ask("POST", "/admin/orgs", {"name": "Seventh lab", "owner": USER6}, key=TOKEN)
+og = org_g["org"]["id"]
+s, kg, _ = ask("POST", f"/admin/orgs/{og}/keys", {"environment": "test", "name": "g"}, key=TOKEN)
+K6 = kg["key"]
+s, r, h = ask("POST", "/v1/evidence/search", {"query": "raise"}, key=K6)
+check("a tool that failed while it ran: 502 tool_failed, counted", s == 502 and r["error"]["code"] == "tool_failed" and remaining(h) == 4, (s, r, h))
+s, r, h = ask("POST", "/v1/evidence/search", {"query": "gone"}, key=K6)
+check("a corpus that went away under the call: 503, counted", s == 503 and r["error"]["code"] == "corpus" and h.get("Retry-After") == "7" and remaining(h) == 3, (s, r, h))
+s, r, h = ask("POST", "/v1/evidence/search", {"query": "down"}, key=K6)
+check("a corpus that was never sent the call: 503, not counted", s == 503 and remaining(h) == 3, (s, r, h))
+s, kc_only, _ = ask("POST", f"/admin/orgs/{og}/keys", {"environment": "test", "name": "chat only", "scopes": ["chat:completions"]}, key=TOKEN)
+s, r, _ = ask("GET", "/v1/requests/" + h.get("X-Request-Id"), key=kc_only["key"])
+check("a key without usage:read reads no request's record: 403 scope", s == 403 and r["error"]["code"] == "scope", (s, r))
+s, r, _ = ask("GET", "/v1/requests/" + h.get("X-Request-Id"), key=K6)
+check("a key with it reads its owner's: released", s == 200 and r["state"] == "released" and not r["quota_consumed"], (s, r))
 
 # ------------------------------------------------------------------ nothing of a developer's reached the provider
 seen = json.loads(urllib.request.urlopen(PROVIDER + "/seen", timeout=10).read())

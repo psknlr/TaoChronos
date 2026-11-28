@@ -124,6 +124,7 @@ fn leak_code(c: &str) -> &'static str {
         "user",
         "status",
         "role",
+        "field",
     ];
     CODES.iter().copied().find(|k| *k == c).unwrap_or("refused")
 }
@@ -320,6 +321,12 @@ async fn request_status(req: &Request, env: &Env, rid: &str, id: &str) -> Result
         Ok(v) => v,
         Err(r) => return r,
     };
+    if me.get("records_read") != Some(&Json::Bool(true)) {
+        return refuse(
+            rid,
+            &refusal(403, "permission", "scope", "this key may not read requests' records (scope usage:read)"),
+        );
+    }
     let Some(owner) = me["owner"].as_str() else {
         return refuse(
             rid,
@@ -381,6 +388,19 @@ async fn product(req: &mut Request, env: &Env, rid: &str, product: Product) -> R
         .unwrap_or(60)
         .min(hold_ms / 1000 - 15)
         .max(5) as u64;
+    // the corpus's request made before anything is admitted: nothing that could fail is left between counting the
+    // request and asking
+    let headers = worker::Headers::new();
+    headers.set("Content-Type", "application/json")?;
+    headers.set("Accept", "application/json")?;
+    let mut init = RequestInit::new();
+    init.with_method(Method::Post).with_headers(headers).with_body(Some(api::corpus_body(&call_).to_string().into()));
+    let stop = AbortController::default();
+    let signal = stop.signal();
+    let sys: worker::web_sys::RequestInit = (&init).into();
+    sys.set_signal(Some(&*signal));
+    let asked: Request =
+        worker::web_sys::Request::new_with_str_and_init("https://corpus.internal/api/call", &sys)?.into();
     let path = req.path();
     let ex = Exec {
         rid,
@@ -402,30 +422,22 @@ async fn product(req: &mut Request, env: &Env, rid: &str, product: Product) -> R
         Gate::Done(r) => return Ok(r),
         Gate::Go(a) => a,
     };
-    let headers = worker::Headers::new();
-    headers.set("Content-Type", "application/json")?;
-    headers.set("Accept", "application/json")?;
-    let mut init = RequestInit::new();
-    init.with_method(Method::Post).with_headers(headers).with_body(Some(api::corpus_body(&call_).to_string().into()));
-    let stop = AbortController::default();
-    let signal = stop.signal();
-    let sys: worker::web_sys::RequestInit = (&init).into();
-    sys.set_signal(Some(&*signal));
-    let asked: Request =
-        worker::web_sys::Request::new_with_str_and_init("https://corpus.internal/api/call", &sys)?.into();
     let whole = async {
         let mut res = corpus.fetch_request(asked).await?;
         let status = res.status_code();
         let retry = res.headers().get("Retry-After")?;
+        let sent = res.headers().get("X-TC-Call")?;
         let text = res.text().await?;
-        Ok::<_, worker::Error>((status, text, retry))
+        Ok::<_, worker::Error>((status, text, retry, sent))
     };
     enum Came {
         Answer(Corpus),
         Late,
     }
     let came = match select(Box::pin(whole), Box::pin(Delay::from(Duration::from_secs(secs)))).await {
-        Either::Left((Ok((status, text, retry)), _)) => Came::Answer(api::read_corpus(status, &text, retry.as_deref())),
+        Either::Left((Ok((status, text, retry, sent)), _)) => {
+            Came::Answer(api::read_corpus(status, &text, retry.as_deref(), sent.as_deref()))
+        }
         Either::Left((Err(e), _)) => {
             worker::console_error!("api {rid}: corpus {e}");
             Came::Answer(Corpus::Failed)
@@ -436,7 +448,7 @@ async fn product(req: &mut Request, env: &Env, rid: &str, product: Product) -> R
         }
     };
     // what the caller is told, and whether the allowance was spent: a tool that ran (or may have) spends it; a tool
-    // that refused its arguments, or a corpus still starting, ran nothing and spends nothing
+    // that refused its arguments before it ran, or a corpus not given the call, ran nothing and spends nothing
     let error_body = |r: &Refusal| api::error(rid, r).to_string();
     let (end, outcome): (End, std::result::Result<Json, Refusal>) = match came {
         Came::Answer(Corpus::Delivered(data)) => {
@@ -459,8 +471,20 @@ async fn product(req: &mut Request, env: &Env, rid: &str, product: Product) -> R
             };
             (End::released(503, "corpus"), Err(r))
         }
+        Came::Answer(Corpus::Gone(s)) => {
+            let r = Refusal {
+                retry: Some(s),
+                ..refusal(503, "unavailable", "corpus", "the corpus stopped under the call; it was counted — try again")
+            };
+            (End::failed(503, "corpus", Some((503, error_body(&r)))), Err(r))
+        }
+        Came::Answer(Corpus::ToolFailed(msg)) => {
+            let r =
+                refusal(502, "unavailable", "tool_failed", format!("the tool failed while it ran: {msg} (counted)"));
+            (End::failed(502, "tool_failed", Some((502, error_body(&r)))), Err(r))
+        }
         Came::Answer(Corpus::Failed) => {
-            let r = refusal(502, "unavailable", "corpus", "the corpus failed; nothing was charged");
+            let r = refusal(502, "unavailable", "corpus", "the corpus failed while it answered; it was counted");
             (End::failed(502, "corpus", Some((502, error_body(&r)))), Err(r))
         }
         Came::Late => {

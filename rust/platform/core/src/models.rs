@@ -32,7 +32,7 @@ impl Provider {
 }
 
 /// A model as the API offers it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ModelSpec {
     /// its public id: the only name a developer sees
     pub id: &'static str,
@@ -46,6 +46,8 @@ pub struct ModelSpec {
     pub default_output: i64,
     pub max_output: i64,
     pub min_output: i64,
+    /// the temperatures it takes (least, most), or None: it takes none (a reasoning model's own)
+    pub temperature: Option<(f64, f64)>,
     /// the model's configuration, as a request's digest names it (a repeat of an Idempotency-Key under another
     /// configuration is another request)
     pub version: &'static str,
@@ -65,7 +67,9 @@ pub const KNOWN: &[ModelSpec] = &[
         default_output: 4096,
         max_output: 8192,
         min_output: 1,
-        version: "tao-r1.1",
+        // MiniMax-M3 takes (0, 1]: 0 is asked of it as the least it takes (upstream_request)
+        temperature: Some((0.0, 1.0)),
+        version: "tao-r1.2",
     },
     ModelSpec {
         id: "gpt-6-luna",
@@ -77,7 +81,9 @@ pub const KNOWN: &[ModelSpec] = &[
         max_output: 8192,
         // a reasoning model refuses a smaller output cap (the relay's OPENAI_MIN_OUTPUT)
         min_output: 2048,
-        version: "gpt-6-luna.1",
+        // nor does it take a temperature (the relay drops it)
+        temperature: None,
+        version: "gpt-6-luna.2",
     },
 ];
 
@@ -112,6 +118,11 @@ pub const MOST_TOOLS: usize = 32;
 pub const MOST_TOOL_CALLS: usize = 32;
 pub const MOST_STOPS: usize = 4;
 pub const MOST_REASONING_DETAILS: usize = 64;
+/// The least temperature MiniMax takes (it refuses 0).
+const MINIMAX_LEAST_TEMPERATURE: f64 = 0.01;
+/// Fields of an assistant's message that an SDK writes back as they came — empty, since this API never fills them —
+/// taken so, and not sent on.
+const ECHOED_EMPTY: [&str; 4] = ["refusal", "annotations", "audio", "function_call"];
 
 fn bad(code: &'static str, message: impl Into<String>) -> Refusal {
     Refusal { status: 400, kind: "invalid_request", code, message: message.into(), retry: None }
@@ -190,7 +201,27 @@ fn message(m: &Json, i: usize, spec: &ModelSpec) -> Result<(), Refusal> {
             content(o.get("content").unwrap_or(&Json::Null), &what, false)?;
         }
         "assistant" => {
-            only(o, &["role", "content", "name", "tool_calls", "reasoning_details"], &what)?;
+            only(
+                o,
+                &[
+                    "role",
+                    "content",
+                    "name",
+                    "tool_calls",
+                    "reasoning_details",
+                    "refusal",
+                    "annotations",
+                    "audio",
+                    "function_call",
+                ],
+                &what,
+            )?;
+            // an answer's message given back as an SDK writes it: fields of the protocol this API never fills, empty
+            for k in ECHOED_EMPTY {
+                if o.get(k).is_some_and(|v| !(v.is_null() || v.as_array().is_some_and(Vec::is_empty))) {
+                    return Err(bad("unsupported_field", format!("{what}.{k} is taken empty only (null)")));
+                }
+            }
             let calls = o.get("tool_calls").filter(|c| !c.is_null());
             content(o.get("content").unwrap_or(&Json::Null), &what, calls.is_some())?;
             if let Some(calls) = calls {
@@ -314,7 +345,8 @@ pub fn read_chat(body: &[u8], offered: &[&'static ModelSpec], cap: i64) -> Resul
             Some(_) => return Err(bad("type", "stream_options.include_usage is true or false")),
         };
     }
-    if o.contains_key("max_tokens") && o.contains_key("max_completion_tokens") {
+    let given = |k: &str| o.get(k).is_some_and(|v| !v.is_null());
+    if given("max_tokens") && given("max_completion_tokens") {
         return Err(bad("field", "max_tokens and max_completion_tokens are one limit: send one"));
     }
     let most = spec.max_output.min(cap.max(1));
@@ -326,14 +358,26 @@ pub fn read_chat(body: &[u8], offered: &[&'static ModelSpec], cap: i64) -> Resul
     };
     let mut out = Map::new();
     out.insert("model".into(), json!(spec.id));
-    out.insert("messages".into(), Json::Array(messages.clone()));
+    // the messages as they came, less what an SDK writes empty in an answer it is given back
+    let mut sent = messages.clone();
+    for m in sent.iter_mut() {
+        if let Some(mo) = m.as_object_mut() {
+            for k in ECHOED_EMPTY {
+                mo.remove(k);
+            }
+        }
+    }
+    out.insert("messages".into(), Json::Array(sent));
     out.insert("stream".into(), json!(stream));
     if include_usage {
         out.insert("stream_options".into(), json!({ "include_usage": true }));
     }
     out.insert("max_completion_tokens".into(), json!(max_output));
     if let Some(t) = o.get("temperature").filter(|v| !v.is_null()) {
-        out.insert("temperature".into(), json!(number(t, "temperature", 0.0, 2.0, false)?));
+        let Some((least, most)) = spec.temperature else {
+            return Err(bad("unsupported_field", format!("{} takes no temperature", spec.id)));
+        };
+        out.insert("temperature".into(), json!(number(t, "temperature", least, most, false)?));
     }
     if let Some(p) = o.get("top_p").filter(|v| !v.is_null()) {
         out.insert("top_p".into(), json!(number(p, "top_p", 0.0, 1.0, true)?));
@@ -399,12 +443,11 @@ pub fn read_chat(body: &[u8], offered: &[&'static ModelSpec], cap: i64) -> Resul
             Json::String(s) if matches!(s.as_str(), "none" | "auto" | "required") => {}
             Json::Object(c) => {
                 only(c, &["type", "function"], "tool_choice")?;
-                let name = c
-                    .get("function")
-                    .and_then(Json::as_object)
-                    .and_then(|f| f.get("name"))
-                    .and_then(Json::as_str)
-                    .unwrap_or("");
+                let f = c.get("function").and_then(Json::as_object);
+                if let Some(f) = f {
+                    only(f, &["name"], "tool_choice.function")?;
+                }
+                let name = f.and_then(|f| f.get("name")).and_then(Json::as_str).unwrap_or("");
                 if c.get("type").and_then(Json::as_str) != Some("function") || !tool_names.iter().any(|n| n == name) {
                     return Err(bad(
                         "value",
@@ -450,6 +493,10 @@ pub fn upstream_request(req: &ChatRequest, upstream_model: &str) -> Json {
     match spec.provider {
         Provider::MiniMax => {
             o.insert("reasoning_split".into(), json!(true));
+            // its temperature is above 0: a request for none of its randomness is asked with the least it takes
+            if o.get("temperature").and_then(Json::as_f64).is_some_and(|t| t < MINIMAX_LEAST_TEMPERATURE) {
+                o.insert("temperature".into(), json!(MINIMAX_LEAST_TEMPERATURE));
+            }
             if let Some(Json::Array(ms)) = o.get_mut("messages") {
                 for m in ms.iter_mut() {
                     if let Some(c) = m.get("content").cloned() {
@@ -537,6 +584,23 @@ pub const TIMEOUT: Failure = Failure {
     executed: true,
     retry: None,
 };
+/// The connection to the provider failed — before it took the request, or after: which is not known, and a request
+/// that may have run is counted (docs/adr/0039-model-relay-and-daily-allowance.md).
+pub const LOST: Failure = Failure {
+    status: 502,
+    code: "model_error",
+    message: "the connection to the model service failed; whether it took the request is not known, and it was counted",
+    executed: true,
+    retry: None,
+};
+/// An answer, whole or streamed, past what the API passes on.
+pub const TOO_LARGE: Failure = Failure {
+    status: 502,
+    code: "response_too_large",
+    message: "the answer was larger than the API passes on",
+    executed: true,
+    retry: None,
+};
 
 /// A provider's HTTP refusal, as the API tells it (its own words are never passed on: they name it and its models).
 pub fn failure_of(status: u16, provider_code: &str) -> Failure {
@@ -569,17 +633,21 @@ pub struct Seen {
     pub finish_reason: Option<String>,
 }
 
-const VENDOR_KEYS: [&str; 9] = [
-    "base_resp",
-    "input_sensitive",
-    "output_sensitive",
-    "input_sensitive_type",
-    "output_sensitive_type",
-    "output_sensitive_int",
-    "system_fingerprint",
-    "service_tier",
-    "obfuscation",
-];
+/// What of an answer the API passes on — the protocol's own fields, the ones a developer's next request may give back
+/// (`read_chat`) — and nothing else: a provider's other keys (its moderation flags, its fingerprints, its own names for
+/// the reasoning, its billing) would name it, and be refused when given back.
+const ANSWER_KEYS: [&str; 6] = ["id", "object", "created", "model", "choices", "usage"];
+const CHOICE_KEYS: [&str; 4] = ["index", "message", "delta", "finish_reason"];
+const MESSAGE_KEYS: [&str; 4] = ["role", "content", "tool_calls", "reasoning_details"];
+const TOOL_CALL_KEYS: [&str; 4] = ["index", "id", "type", "function"];
+const FUNCTION_KEYS: [&str; 2] = ["name", "arguments"];
+const USAGE_KEYS: [&str; 3] = ["prompt_tokens", "completion_tokens", "total_tokens"];
+
+fn keep(v: &mut Json, keys: &[&str]) {
+    if let Some(o) = v.as_object_mut() {
+        o.retain(|k, _| keys.contains(&k.as_str()));
+    }
+}
 
 fn rename_formats(v: &mut Json, prefix: &str) {
     if let Some(Json::Array(details)) = v.get_mut("reasoning_details") {
@@ -591,9 +659,31 @@ fn rename_formats(v: &mut Json, prefix: &str) {
     }
 }
 
+/// A message, or a stream's delta, as the API passes it on: its role, its text, its tool calls (their protocol's
+/// fields), its reasoning under the API's format names.
+fn message_out(m: &mut Json, spec: &ModelSpec) {
+    keep(m, &MESSAGE_KEYS);
+    if let Some(Json::Array(calls)) = m.get_mut("tool_calls") {
+        for c in calls.iter_mut() {
+            keep(c, &TOOL_CALL_KEYS);
+            if let Some(f) = c.get_mut("function") {
+                keep(f, &FUNCTION_KEYS);
+            }
+        }
+    }
+    match spec.reasoning_prefix {
+        Some(prefix) => rename_formats(m, prefix),
+        None => {
+            if let Some(o) = m.as_object_mut() {
+                o.remove("reasoning_details");
+            }
+        }
+    }
+}
+
 /// An answer (`chat.completion`) or one event of a stream (`chat.completion.chunk`) in the API's terms, in place:
-/// the public model and the API's request id, the provider's keys gone, the reasoning's formats renamed, the usage
-/// read (and dropped when the caller did not ask for it in a stream).  Nothing else of it is touched.
+/// the public model and the API's request id, only the protocol's fields (`ANSWER_KEYS` and below), the reasoning's
+/// formats renamed, the usage read (and dropped when the caller did not ask for it in a stream).
 pub fn normalize(v: &mut Json, spec: &ModelSpec, request_id: &str, keep_usage: bool) -> Seen {
     let mut seen = Seen::default();
     let Some(o) = v.as_object_mut() else {
@@ -609,9 +699,7 @@ pub fn normalize(v: &mut Json, spec: &ModelSpec, request_id: &str, keep_usage: b
         seen.failure = Some(FAILED);
         return seen;
     }
-    for k in VENDOR_KEYS {
-        o.remove(k);
-    }
+    o.retain(|k, _| ANSWER_KEYS.contains(&k.as_str()));
     if o.contains_key("model") || o.contains_key("choices") {
         o.insert("model".into(), json!(spec.id));
     }
@@ -620,19 +708,13 @@ pub fn normalize(v: &mut Json, spec: &ModelSpec, request_id: &str, keep_usage: b
     }
     if let Some(Json::Array(choices)) = o.get_mut("choices") {
         for c in choices.iter_mut() {
-            if let Some(co) = c.as_object_mut() {
-                for k in VENDOR_KEYS {
-                    co.remove(k);
-                }
-                if let Some(r) = co.get("finish_reason").and_then(Json::as_str) {
-                    seen.finish_reason = Some(r.to_string());
-                }
+            keep(c, &CHOICE_KEYS);
+            if let Some(r) = c.get("finish_reason").and_then(Json::as_str) {
+                seen.finish_reason = Some(r.to_string());
             }
-            if let Some(prefix) = spec.reasoning_prefix {
-                for part in ["delta", "message"] {
-                    if let Some(p) = c.get_mut(part) {
-                        rename_formats(p, prefix);
-                    }
+            for part in ["delta", "message"] {
+                if let Some(p) = c.get_mut(part) {
+                    message_out(p, spec);
                 }
             }
         }
@@ -640,9 +722,7 @@ pub fn normalize(v: &mut Json, spec: &ModelSpec, request_id: &str, keep_usage: b
     if let Some(u) = o.get_mut("usage").filter(|u| u.is_object()) {
         seen.input_tokens = u.get("prompt_tokens").and_then(Json::as_i64);
         seen.output_tokens = u.get("completion_tokens").and_then(Json::as_i64);
-        if let Some(uo) = u.as_object_mut() {
-            uo.remove("total_characters");
-        }
+        keep(u, &USAGE_KEYS);
     }
     let is_chunk = o.get("object").and_then(Json::as_str) == Some("chat.completion.chunk");
     if is_chunk && !keep_usage && o.contains_key("usage") {
@@ -682,14 +762,23 @@ pub struct SseParser {
     most: usize,
     /// a CR ended the last line: an LF that comes first in the next chunk is its pair, not an empty line
     after_cr: bool,
+    /// a line has been read: a byte order mark the stream begins with is behind
+    begun: bool,
 }
 
 impl SseParser {
     pub fn new(most: usize) -> Self {
-        SseParser { pending: Vec::new(), data: None, most, after_cr: false }
+        SseParser { pending: Vec::new(), data: None, most, after_cr: false, begun: false }
     }
 
     fn line(&mut self, line: &[u8], out: &mut Vec<SseItem>) -> Result<(), SseError> {
+        // the stream's first line may begin with a byte order mark, which is not the line's (the protocol's own rule)
+        let line = if self.begun {
+            line
+        } else {
+            self.begun = true;
+            line.strip_prefix(b"\xEF\xBB\xBF".as_slice()).unwrap_or(line)
+        };
         if line.is_empty() {
             if let Some(d) = self.data.take() {
                 out.push(if d == "[DONE]" { SseItem::Done } else { SseItem::Data(d) });
@@ -728,6 +817,9 @@ impl SseParser {
         let mut start = 0;
         let mut i = 0;
         let bytes = chunk;
+        if bytes.is_empty() {
+            return Ok(out); // nothing: a CR that ended the last chunk still waits for its LF
+        }
         if self.after_cr && bytes.first() == Some(&b'\n') {
             start = 1;
             i = 1;
@@ -1009,6 +1101,97 @@ mod tests {
         assert_eq!(read_meta("tao {\"end\":\"ok\"}"), Some(json!({ "end": "ok" })));
         assert_eq!(read_meta("keep-alive"), None);
         assert_eq!(sse_data("{}"), "data: {}\n\n");
+    }
+
+    #[test]
+    fn what_an_answer_holds_beyond_the_protocol_is_not_passed_on_and_what_is_passed_on_may_be_given_back() {
+        let spec = find("Tao-R1").unwrap();
+        // the provider's keys inside the message, its tool calls and its usage
+        let mut v: Json = serde_json::from_str(r#"{"id":"0a","object":"chat.completion","created":1,"model":"MiniMax-M3",
+            "system_fingerprint":"fp","choices":[{"index":0,"finish_reason":"stop","logprobs":null,"audio_content":"",
+              "message":{"role":"assistant","name":"MiniMax AI","content":"答","reasoning_content":"想","refusal":null,
+                "annotations":[],"audio_content":"","reasoning_details":[{"type":"reasoning.text","text":"想","format":"MiniMax-response-v1"}],
+                "tool_calls":[{"id":"c1","type":"function","extra":1,"function":{"name":"f","arguments":"{}","strict":true}}]}}],
+            "usage":{"prompt_tokens":3,"completion_tokens":4,"total_tokens":7,"total_characters":0,"prompt_tokens_details":{"cached_tokens":0}}}"#).unwrap();
+        normalize(&mut v, spec, "req_9", true);
+        let m = &v["choices"][0]["message"];
+        let keys = |j: &Json| j.as_object().unwrap().keys().cloned().collect::<Vec<_>>();
+        assert_eq!(keys(m), vec!["content", "reasoning_details", "role", "tool_calls"]);
+        assert_eq!(keys(&v["choices"][0]), vec!["finish_reason", "index", "message"]);
+        assert_eq!(keys(&m["tool_calls"][0]), vec!["function", "id", "type"]);
+        assert_eq!(keys(&m["tool_calls"][0]["function"]), vec!["arguments", "name"]);
+        assert_eq!(keys(&v["usage"]), vec!["completion_tokens", "prompt_tokens", "total_tokens"]);
+        assert!(v.get("system_fingerprint").is_none());
+        // the message given back in the next request, as it was passed on: taken
+        let next = json!({ "model": "Tao-R1", "messages": [{ "role": "user", "content": "x" }, m.clone(), { "role": "tool", "tool_call_id": "c1", "content": "[]" }] });
+        assert!(read(&next.to_string()).is_ok(), "{next}");
+        // a stream's delta the same
+        let mut d: Json = serde_json::from_str(
+            r#"{"id":"0a","object":"chat.completion.chunk","choices":[{"index":0,
+            "delta":{"role":"assistant","name":"MiniMax AI","reasoning_content":"想","content":"答"}}]}"#,
+        )
+        .unwrap();
+        normalize(&mut d, spec, "req_9", true);
+        assert_eq!(keys(&d["choices"][0]["delta"]), vec!["content", "role"]);
+        // an assistant's message as an SDK writes it back: the protocol's fields this API never fills, empty — taken,
+        // and not sent on; any of them filled is refused
+        let sdk = r#"{"model":"Tao-R1","messages":[{"role":"user","content":"x"},
+            {"role":"assistant","content":"答","refusal":null,"annotations":[],"audio":null,"function_call":null,"tool_calls":null},
+            {"role":"user","content":"y"}]}"#;
+        let r = read(sdk).unwrap();
+        assert_eq!(keys(&r.body["messages"][1]), vec!["content", "role", "tool_calls"]);
+        assert_eq!(code(read(&sdk.replace(r#""refusal":null"#, r#""refusal":"no""#))), "unsupported_field");
+        assert_eq!(code(read(&sdk.replace(r#""audio":null"#, r#""audio":{"id":"a"}"#))), "unsupported_field");
+    }
+
+    #[test]
+    fn a_models_own_terms_are_kept_the_temperature_its_range_and_tool_choice_its_fields() {
+        let base = r#"{"model":"Tao-R1","messages":[{"role":"user","content":"x"}]"#;
+        let with = |extra: &str| format!("{base},{extra}}}");
+        // MiniMax-M3 takes (0, 1]: 0 is the least it takes, past 1 is refused here, not counted against anyone there
+        let zero = read(&with(r#""temperature":0"#)).unwrap();
+        assert_eq!(zero.body["temperature"], 0.0);
+        assert_eq!(upstream_request(&zero, "MiniMax-M3")["temperature"], MINIMAX_LEAST_TEMPERATURE);
+        assert_eq!(upstream_request(&read(&with(r#""temperature":0.7"#)).unwrap(), "MiniMax-M3")["temperature"], 0.7);
+        assert_eq!(code(read(&with(r#""temperature":1.5"#))), "range");
+        let luna = with(r#""temperature":0.5"#).replace("Tao-R1", "gpt-6-luna");
+        assert_eq!(code(read(&luna)), "unsupported_field", "a reasoning model takes no temperature");
+        // a limit given as null is not given
+        assert!(read(&with(r#""max_tokens":null,"max_completion_tokens":64"#)).is_ok_and(|r| r.max_output == 64));
+        // tool_choice's function names a tool, and nothing else
+        let tools = r#""tools":[{"type":"function","function":{"name":"f"}}]"#;
+        assert!(
+            read(&with(&format!(r#"{tools},"tool_choice":{{"type":"function","function":{{"name":"f"}}}}"#))).is_ok()
+        );
+        assert_eq!(
+            code(read(&with(&format!(
+                r#"{tools},"tool_choice":{{"type":"function","function":{{"name":"f","arguments":"{{}}"}}}}"#
+            )))),
+            "unsupported_field"
+        );
+    }
+
+    #[test]
+    fn a_stream_begun_with_a_byte_order_mark_or_given_an_empty_chunk_between_cr_and_lf_reads_the_same() {
+        let stream = "\u{feff}data: {\"first\":1}\r\ndata: {\"more\":2}\r\n\r\ndata: [DONE]\n\n";
+        let want = vec![SseItem::Data("{\"first\":1}\n{\"more\":2}".into()), SseItem::Done];
+        let bytes = stream.as_bytes();
+        for cut in 0..=bytes.len() {
+            for empty in [false, true] {
+                let mut p = SseParser::new(1024);
+                let mut items = p.push(&bytes[..cut]).unwrap();
+                if empty {
+                    items.extend(p.push(b"").unwrap()); // an empty chunk: a CR before it still waits for its LF
+                }
+                items.extend(p.push(&bytes[cut..]).unwrap());
+                items.extend(p.finish().unwrap());
+                assert_eq!(items, want, "cut at {cut}, an empty chunk: {empty}");
+            }
+        }
+        // a byte order mark later in the stream is no mark: it is the line's
+        let mut p = SseParser::new(1024);
+        let items = p.push("data: a\n\n\u{feff}data: b\n\n".as_bytes()).unwrap();
+        assert_eq!(items, vec![SseItem::Data("a".into())]);
     }
 
     #[test]
