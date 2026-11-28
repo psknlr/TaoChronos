@@ -1,0 +1,12 @@
+{
+  "name": "taochronos-console",
+  "private": true,
+  "type": "module",
+  "description": "道乃久账户控制台: console.impf.ai, a Worker in Rust (rust/platform/console; see SETUP.md)",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.153.0"
+  }
+}

@@ -1,0 +1,82 @@
+# 道乃久账户控制台 — console.impf.ai: registering with an email code, passkeys, recovery codes, sessions, and an
+# organisation's keys and usage; a Worker written in Rust (rust/platform/console; its page in rust/platform/console/
+# public, served by the Worker itself; docs/adr/0038-accounts-keys-and-credits.md; SETUP.md here).  Built by
+# rust/platform/build.sh and deployed by .github/workflows/platform.yml after the API Worker (whose Account class it
+# binds).  Off until the owner sets its secret ACCOUNT_SECRET (32+ characters): without it every flow answers 503.
+name = "taochronos-console"
+main = "../../rust/platform/console/build/worker/shim.mjs"
+compatibility_date = "2025-09-01"
+workers_dev = false
+preview_urls = false
+
+[[routes]]
+pattern = "console.impf.ai"
+custom_domain = true
+
+[vars]
+# open: anyone may register · off: nobody (signing in still works).  Off until the owner has set up Email Service's
+# sending domain, turned its previews off, set ACCOUNT_SECRET and Turnstile (SETUP.md); deploy.sh opens it only then
+REGISTRATION = "off"
+# the passkeys' relying party: every impf.ai host may use them; CONSOLE_ORIGIN decides which page may make and use one
+RP_ID = "impf.ai"
+RP_NAME = "道乃久 TaoChronos"
+CONSOLE_ORIGIN = "https://console.impf.ai"
+MAIL_FROM = "noreply@impf.ai"
+MAIL_FROM_NAME = "道乃久 TaoChronos"
+# a code's life, a flow's, the wrong codes a flow takes, the wait before a resend and the mails a flow sends
+CODE_MINUTES = "10"
+FLOW_MINUTES = "30"
+CODE_ATTEMPTS = "5"
+RESEND_SECONDS = "60"
+FLOW_SENDS = "5"
+GRANT_MINUTES = "15"
+# mails an address an hour and a day; flows a network an hour — its own (an IPv4 address, an IPv6 /64) and the wider one
+# it is in (an IPv4 /24, an IPv6 /48: a /56 is 256 /64s); address changes an account an hour; and the service's mails in
+# all a day: Email Service starts an account on a small daily quota and publishes no number (SETUP.md: check it)
+MAILS_PER_ADDRESS_HOUR = "5"
+MAILS_PER_ADDRESS_DAY = "10"
+STARTS_PER_NETWORK_HOUR = "20"
+STARTS_PER_WIDE_NETWORK_HOUR = "100"
+EMAIL_CHANGES_PER_HOUR = "5"
+AUTH_MAILS_PER_DAY = "1000"
+SESSION_DAYS = "30"
+SESSION_IDLE_DAYS = "7"
+STEPUP_MINUTES = "5"
+FRESH_MINUTES = "10"
+# credits a new account's organisation is given, and trials a day at most whoever registers (0: none)
+TRIAL_CREDITS = "0"
+TRIALS_PER_DAY = "50"
+# Turnstile before every flow that sends mail (registering, signing in, changing an address): its site key here
+# (public), its secret as the Worker secret TURNSTILE_SECRET; without both, none — and then deploy.sh keeps registration
+# closed, whatever CONSOLE_REGISTRATION says
+TURNSTILE_SITE_KEY = ""
+
+# every change a page asks, per address, a minute: the edge's gate before the one identity object is asked anything
+[[ratelimits]]
+name = "AUTH_LIMIT"
+namespace_id = "7331"
+simple = { limit = 60, period = 60 }
+
+# the people: one object, in Asia-Pacific (identity_do.rs)
+[[durable_objects.bindings]]
+name = "IDENTITY"
+class_name = "Identity"
+
+# the organisations' accounts: the API Worker's class (taochronos-api must be deployed first)
+[[durable_objects.bindings]]
+name = "ACCOUNT"
+class_name = "Account"
+script_name = "taochronos-api"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Identity"]
+
+# Email Service: the mails this console sends, from MAIL_FROM alone, to whoever registers (Workers Paid, an onboarded
+# sending domain with its previews off: SETUP.md)
+[[send_email]]
+name = "AUTH_EMAIL"
+allowed_sender_addresses = ["noreply@impf.ai"]
+
+[observability]
+enabled = true

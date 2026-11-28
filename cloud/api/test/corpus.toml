@@ -1,0 +1,7 @@
+# the stand-in corpus (corpus.js) for cloud/api/test/run.sh, under the corpus Worker's own name
+name = "taochronos-corpus"
+main = "corpus.js"
+compatibility_date = "2025-09-01"
+# a request's signal, aborted when its caller gives it up: the scenario checks that a call past the API's time is ended
+# at the corpus too, not only abandoned by the API
+compatibility_flags = ["enable_request_signal"]

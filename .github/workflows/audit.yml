@@ -2,8 +2,8 @@ name: audit
 
 # The published advisories against everything this repository pins (docs/adr/0026-pinned-supply-chain-and-enforced-
 # policies.md): the Python lockfiles (requirements/, read by pip-audit against PyPI's advisory data), the Workers'
-# npm lockfiles (npm audit against the npm registry's) and TaoCore's Cargo.lock (cargo-deny against RustSec's, with its
-# rules on licences and sources: rust/deny.toml).  Every week — a new advisory changes nothing in the repository —
+# npm lockfiles (npm audit against the npm registry's), TaoCore's Cargo.lock and the platform's (cargo-deny against
+# RustSec's, with their rules on licences and sources: rust/deny.toml, rust/platform/deny.toml).  Every week — a new advisory changes nothing in the repository —
 # and on every change to what is pinned, Dependabot's pull requests among them.  A failure names the package, the
 # advisory and the release that fixes it: requirements/lock.sh --upgrade NAME (requirements/README.md), or Dependabot's
 # pull request for a Worker.  Nothing is installed from the lockfiles read here, and nothing is sent but package names
@@ -22,6 +22,10 @@ on:
       - "tools/typecheck/package-lock.json"
       - "rust/Cargo.lock"
       - "rust/deny.toml"
+      - "rust/platform/Cargo.lock"
+      - "rust/platform/deny.toml"
+      - "cloud/api/package-lock.json"
+      - "cloud/console/package-lock.json"
       - ".github/workflows/audit.yml"
   pull_request:
     paths:
@@ -33,6 +37,10 @@ on:
       - "tools/typecheck/package-lock.json"
       - "rust/Cargo.lock"
       - "rust/deny.toml"
+      - "rust/platform/Cargo.lock"
+      - "rust/platform/deny.toml"
+      - "cloud/api/package-lock.json"
+      - "cloud/console/package-lock.json"
       - ".github/workflows/audit.yml"
   workflow_dispatch:
 
@@ -69,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        worker: [relay, cloud/site, cloud/corpus, tools/typecheck]
+        worker: [relay, cloud/site, cloud/corpus, cloud/api, cloud/console, tools/typecheck]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,4 +103,7 @@ jobs:
       - name: Install cargo-deny
         run: rustup toolchain install --no-self-update && cargo install --locked cargo-deny@0.22.1
       - name: rust/Cargo.lock against the advisories, and rust/deny.toml's rules
+        run: cargo deny --locked check
+      - name: rust/platform/Cargo.lock against the advisories, and rust/platform/deny.toml's rules
+        working-directory: rust/platform
         run: cargo deny --locked check

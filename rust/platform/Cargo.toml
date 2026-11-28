@@ -1,0 +1,40 @@
+# The platform's Workers in Rust (docs/adr/0038-accounts-keys-and-credits.md): what is decided — identity, keys,
+# credits, what a request may cost — in one crate that compiles and is tested natively (core: tao-platform), and the
+# two Workers that carry it to Cloudflare (workers-rs): the developer API at api.impf.ai (api: tao-api, with the
+# accounts' Durable Object) and the account console at console.impf.ai (console: tao-console, with the identity's).
+# A workspace of its own, apart from TaoCore's (rust/Cargo.toml): its dependencies and its policy (deny.toml) are its
+# own, and TaoCore's committed module is built from a graph this one does not touch.  The compiler is the one
+# rust/rust-toolchain.toml pins (rustup reads it from here too).
+[workspace]
+members = ["core", "edge", "api", "console"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+publish = false
+
+[workspace.dependencies]
+tao-platform = { path = "core" }
+tao-edge = { path = "edge" }
+futures-util = { version = "0.3.34", default-features = false }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = { version = "0.11.2", default-features = false }
+hmac = { version = "0.13.0", default-features = false }
+p256 = { version = "0.14.0", default-features = false, features = ["ecdsa"] }
+ed25519-dalek = { version = "3.0.0", default-features = false }
+num-bigint = { version = "0.5.1", default-features = false }
+worker = "0.9.0"
+wasm-bindgen = "0.2.130"
+js-sys = "0.3.107"
+rusqlite = { version = "0.43.0", features = ["bundled"] }
+
+# the Workers' modules: small, and a panic traps (the runtime answers 500 and the next request gets a new instance)
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"  # (not true: wasm-bindgen reads the module's target_features section, which a full strip removes)

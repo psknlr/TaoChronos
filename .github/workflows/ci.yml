@@ -85,6 +85,28 @@ jobs:
       - name: The committed browser module is what the source builds, byte for byte
         run: ./wasm.sh --check
 
+  # the platform's Workers in Rust (rust/platform, docs/adr/0038-accounts-keys-and-credits.md): formatting, lints — the
+  # core natively, the Workers for wasm32 — and the core's tests, which are all of what decides (identity, passkeys,
+  # keys, credits); the Workers are built and run as built by the platform workflow, before it deploys them
+  platform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust/platform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The pinned toolchain
+        working-directory: rust
+        run: rustup toolchain install --no-self-update
+      - name: Format, lints (natively and for the Workers' target), tests
+        run: |
+          cargo fmt --all --check
+          cargo clippy --locked -p tao-platform --all-targets -- -D warnings
+          cargo clippy --locked --target wasm32-unknown-unknown -p tao-edge -p tao-api -p tao-console -- -D warnings
+          cargo test --locked -p tao-platform
+
   # TaoCore's CPython extension, built and then required (TAOCHRONOS_TAOCORE=require): the parity tests compare it with
   # the definitions, and a search that goes to the kernel — a large store's — fails rather than falls back to Python,
   # which a build that failed cannot pass for; the demonstration corpus's searches run in Python as everywhere.  Python

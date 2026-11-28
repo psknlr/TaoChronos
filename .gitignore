@@ -30,3 +30,6 @@ tools/typecheck/node_modules/
 .archive/
 _site/
 .wrangler/
+# the platform's Workers built by rust/platform/build.sh (workers-rs): never committed
+rust/platform/target/
+rust/platform/*/build/
