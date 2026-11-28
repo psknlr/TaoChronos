@@ -7,7 +7,8 @@
 English version: [deploy.md](deploy.md)。本手册汇总了以下较早的教程：[cloud/SETUP.md](../cloud/SETUP.md)、
 [cloud/README.md](../cloud/README.md)、[relay/SETUP.md](../relay/SETUP.md)、[security/README.md](../security/README.md)。
 背后的设计决定见 ADR [0012](adr/0012-default-service-relay.md)、[0016](adr/0016-site-and-full-corpus-on-cloudflare.md)、
-[0017](adr/0017-d1-backup.md)、[0018](adr/0018-sentinel-and-edge-rules.md)、[0023](adr/0023-workers-paid.md)。
+[0017](adr/0017-d1-backup.md)、[0018](adr/0018-sentinel-and-edge-rules.md)、[0023](adr/0023-workers-paid.md)。开发者接口与账户控制台
+（`api.impf.ai`、`console.impf.ai`）另有专门的配置教程（英文）：[platform.md](platform.md)。
 
 时间以 UTC 与新加坡时间（SGT，UTC+8）标示。Cloudflare 与 GitHub 的界面是英文，按钮与菜单名称照原文引用。
 

@@ -4,7 +4,7 @@ name: platform
 # account console (cloud/console: console.impf.ai) — docs/adr/0038-accounts-keys-and-credits.md.  Built with every tool
 # pinned (rust/platform/build.sh: worker-build and wasm-bindgen from crates.io by their lockfiles, esbuild from
 # wrangler's), the API run as built against a stand-in corpus (cloud/api/test/run.sh), then each deployed only once the
-# owner has set what it needs (cloud/api/README.md, cloud/console/SETUP.md):
+# owner has set what it needs (docs/platform.md, step by step):
 #   the API      repository variable API_ADMIN_TOKEN_SHA256 — the sha256 of the owner's token for /admin/…; the token
 #                itself is kept nowhere (as STORE_TOKEN_SHA256 is)
 #   the console  repository secret ACCOUNT_SECRET (32+ characters), after the API (it binds its Account class);
@@ -69,12 +69,12 @@ jobs:
           if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
             echo "::warning::nothing is deployed until CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set"
           elif [ -z "$ADMIN_SHA" ]; then
-            echo "::warning::the API is not deployed until the variable API_ADMIN_TOKEN_SHA256 is set (cloud/api/README.md)"
+            echo "::warning::the API is not deployed until the variable API_ADMIN_TOKEN_SHA256 is set (docs/platform.md, Part 3)"
           else
             api=1
             secret="$(printf '%s' "$ACCOUNT_SECRET" | tr -d '[:space:]')"
             if [ "${#secret}" -ge 32 ]; then console=1
-            else echo "::warning::the console is not deployed until the secret ACCOUNT_SECRET (32+ characters) is set (cloud/console/SETUP.md)"; fi
+            else echo "::warning::the console is not deployed until the secret ACCOUNT_SECRET (32+ characters) is set (docs/platform.md, Part 5)"; fi
           fi
           echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "console=$console" >> "$GITHUB_OUTPUT"

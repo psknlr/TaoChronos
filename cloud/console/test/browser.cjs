@@ -67,6 +67,7 @@ const codeFor = async (address, after) => CODE.exec((await mailFor(address, afte
   await page.waitForSelector(".stat");
   const stats = await page.$$eval(".stat b", (b) => b.map((x) => x.textContent));
   check("the organisation was provisioned with its trial: 40 credits", stats[0] === "40", stats);
+  check("the page shows the organisation's id, to quote when asking for credits", /Organisation id: org_[0-9a-z]{26} /.test(await page.textContent("#org-id")), await page.textContent("#org-id"));
   const cookies = await context.cookies();
   const session = cookies.find((c) => c.name === "__Host-tcs");
   check("the session is an HttpOnly, Secure, host-only cookie the page cannot read", session && session.httpOnly && session.secure && !session.domain.startsWith("."), session);

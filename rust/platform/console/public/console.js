@@ -15,7 +15,7 @@ const T = {
     recovery_title: "恢复码", recovery_why: "每个恢复码只能用一次。丢失通行密钥时，用邮箱验证码加一个恢复码登录。请现在保存，之后不会再显示。",
     saved: "我已保存", second_title: "这个账户受通行密钥保护", second_why: "只凭邮箱不能登录。请输入一个恢复码，或返回用通行密钥登录。",
     recovery_code: "恢复码", overview: "概览", keys: "API 密钥", usage: "用量", security: "安全",
-    org: "组织", credits: "可用额度", held: "进行中占用", today: "今天", calls: "调用", spent: "消耗",
+    org: "组织", org_id: "组织编号：{id}（申请额度或联系我们时请提供）", credits: "可用额度", held: "进行中占用", today: "今天", calls: "调用", spent: "消耗",
     new_key: "新建密钥", key_name: "名称", environment: "环境", live: "正式（消耗额度）", test: "测试（每天少量免费调用）",
     scopes: "权限", create: "创建", key_once: "这是密钥唯一一次显示。请保存在服务器的密钥管理中，不要放进网页或代码仓库。",
     copy: "复制", copied: "已复制", revoke: "撤销", revoked: "已撤销", never: "从未", name: "名称", shown: "密钥",
@@ -51,7 +51,7 @@ const T = {
     recovery_title: "Recovery codes", recovery_why: "Each code works once. If you lose your passkey, sign in with an email code and one of these. Save them now: they are not shown again.",
     saved: "I have saved them", second_title: "A passkey guards this account", second_why: "Your mailbox alone does not open it. Enter a recovery code, or go back and sign in with your passkey.",
     recovery_code: "Recovery code", overview: "Overview", keys: "API keys", usage: "Usage", security: "Security",
-    org: "Organisation", credits: "Available credits", held: "Held in flight", today: "Today", calls: "Calls", spent: "Spent",
+    org: "Organisation", org_id: "Organisation id: {id} (quote it when you ask for credits or write to us)", credits: "Available credits", held: "Held in flight", today: "Today", calls: "Calls", spent: "Spent",
     new_key: "New key", key_name: "Name", environment: "Environment", live: "Live (spends credits)", test: "Test (a few free calls a day)",
     scopes: "Scopes", create: "Create", key_once: "This is the only time the key is shown. Keep it in your server's secret store — never in a web page or a repository.",
     copy: "Copy", copied: "Copied", revoke: "Revoke", revoked: "Revoked", never: "never", name: "Name", shown: "Key",
@@ -366,7 +366,8 @@ function overview(panel, me) {
   const today = (o?.today || []).reduce((a, d) => ({ calls: a.calls + d.calls, credits: a.credits + d.credits }), { calls: 0, credits: 0 });
   panel.append(
     me.passkeys.length ? null : msg("warn", t("no_passkey_yet")),
-    h("section", { class: "card" }, h("h2", {}, `${t("org")} · ${o?.org?.name ?? "—"}`), o ? h("div", { class: "stats" },
+    h("section", { class: "card" }, h("h2", {}, `${t("org")} · ${o?.org?.name ?? "—"}`),
+      o?.org?.id ? h("p", { class: "muted small", id: "org-id" }, t("org_id", { id: o.org.id })) : null, o ? h("div", { class: "stats" },
       h("div", { class: "stat" }, t("credits"), h("b", {}, String(o.credits.available))),
       h("div", { class: "stat" }, t("held"), h("b", {}, String(o.credits.held))),
       h("div", { class: "stat" }, `${t("today")} · ${t("calls")}`, h("b", {}, String(today.calls))),

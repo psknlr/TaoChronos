@@ -175,9 +175,13 @@ async fn ask(env: &Env, op: &str, b: Json) -> std::result::Result<Json, Result<R
     }
 }
 
-/// Cloudflare Turnstile, when its secret is set: the token valid, for this host and this action — and seen once.
+/// Cloudflare Turnstile, when it is on — its site key and its secret both set, exactly when the page shows its widget
+/// (a secret left stored after the site key was taken away must not refuse every flow the page can no longer pass):
+/// the token valid, for this host and this action — and seen once.
 async fn turnstile(env: &Env, req: &Request, token: &str, action: &str) -> bool {
-    let Some(secret_key) = secret(env, "TURNSTILE_SECRET") else { return true };
+    let (Some(secret_key), Some(_)) = (secret(env, "TURNSTILE_SECRET"), var(env, "TURNSTILE_SITE_KEY")) else {
+        return true;
+    };
     if token.is_empty() || token.len() > 2048 {
         return false;
     }

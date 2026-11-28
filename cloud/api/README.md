@@ -149,7 +149,8 @@ const { data, usage } = await res.json();
 
 ## The owner's endpoints
 
-Organisations, credits and keys without the console — for a pilot's first developers, or a correction.  They answer
+Organisations, credits and keys without the console — for a pilot's first developers, or a correction.  Setting the
+API up, and these endpoints step by step: [docs/platform.md](../../docs/platform.md), Part 3.  They answer
 the token whose SHA-256 is the Worker's `ADMIN_TOKEN_SHA256` (the repository variable `API_ADMIN_TOKEN_SHA256`; the
 token itself is kept nowhere but by the owner), and are off without it.
 

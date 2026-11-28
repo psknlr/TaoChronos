@@ -254,7 +254,7 @@ itself (measured in workerd where it could be):
 * With the variable `API_ADMIN_TOKEN_SHA256` set, the platform workflow deploys **api.impf.ai**; the owner makes an
   organisation, grants it credits and issues its key with the token ([cloud/api/README.md](../../cloud/api/README.md)).
   With the secret `ACCOUNT_SECRET` set it deploys **console.impf.ai** too, registration off until the owner opens it,
-  after the steps of [cloud/console/SETUP.md](../../cloud/console/SETUP.md): Email Service's sending domain on Workers
+  after the steps of [docs/platform.md](../platform.md): Email Service's sending domain on Workers
   Paid, **its previews turned off before anything is sent**, its quota checked, Turnstile set.
 * The site, the relay and the corpus are unchanged; the API's calls take their share of the corpus's one instance,
   bounded by four in flight an organisation and the prices.

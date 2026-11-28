@@ -9,7 +9,8 @@ terms.
 简体中文（新加坡）版本：[deploy.zh-SG.md](deploy.zh-SG.md).  The older guides it gathers up: [cloud/SETUP.md](../cloud/SETUP.md),
 [cloud/README.md](../cloud/README.md), [relay/SETUP.md](../relay/SETUP.md), [security/README.md](../security/README.md).  The
 decisions behind it: ADRs [0012](adr/0012-default-service-relay.md), [0016](adr/0016-site-and-full-corpus-on-cloudflare.md),
-[0017](adr/0017-d1-backup.md), [0018](adr/0018-sentinel-and-edge-rules.md), [0023](adr/0023-workers-paid.md).
+[0017](adr/0017-d1-backup.md), [0018](adr/0018-sentinel-and-edge-rules.md), [0023](adr/0023-workers-paid.md).  The developer
+API and its console (`api.impf.ai`, `console.impf.ai`) have a tutorial of their own: [platform.md](platform.md).
 
 Times are in UTC and Singapore time (SGT, UTC+8).  Cloudflare's and GitHub's labels are quoted as they appear on screen.
 

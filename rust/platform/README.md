@@ -39,4 +39,5 @@ rust/platform/build.sh --install
 ```
 
 The Worker is then `api/build/worker/shim.mjs`, which `cloud/api/wrangler.toml` names; `cloud/api/test/run.sh` runs it
-in local workerd, and the platform workflow deploys it.  Likewise `console`.
+in local workerd, and the platform workflow deploys it.  Likewise `console`.  Deploying and configuring both, step by
+step: [docs/platform.md](../../docs/platform.md).
