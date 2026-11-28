@@ -2,8 +2,8 @@
 # The console end to end, as built, in a real browser: both Rust Workers (rust/platform/build.sh api and console) in
 # local workerd beside a stand-in corpus (cloud/api/test/corpus.js) — the console registers a person, provisions their
 # organisation with a trial in the API Worker's Account object, makes a live key (browser.cjs, Chromium through
-# Playwright); then the API Worker, on the same state, is asked a search with that key, which must be charged against
-# the trial.  A developer's check: it needs Playwright with Chromium (`require("playwright")`), which this repository
+# Playwright); then the API Worker, on the same state, is asked a search with that key, which must be counted against
+# the registered person's daily allowance.  A developer's check: it needs Playwright with Chromium (`require("playwright")`), which this repository
 # does not pin.  Local only — no mail leaves: wrangler dev's Email Service writes each mail to a file.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -50,6 +50,13 @@ stop
 dev=$!
 wait_for http://127.0.0.1:8787/v1
 out=$(curl -fsS -X POST http://127.0.0.1:8787/v1/evidence/search -H "Authorization: Bearer $(cat "$work/key.txt")" -H "Content-Type: application/json" -d '{"query":"桂枝汤"}')
-left=$(curl -fsS http://127.0.0.1:8787/v1/limits -H "Authorization: Bearer $(cat "$work/key.txt")" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['credits']['available'])")
-python3 -c "import json,sys; d=json.loads(sys.argv[1]); assert d['usage']['credits'] == 10, d; assert sys.argv[2] == '30', sys.argv[2]" "$out" "$left"
-echo "ok   the console's key is the API's: a search charged 10 of the trial's 40"
+limits=$(curl -fsS http://127.0.0.1:8787/v1/limits -H "Authorization: Bearer $(cat "$work/key.txt")")
+python3 - "$out" "$limits" <<'PY'
+import json, sys
+d, l = json.loads(sys.argv[1]), json.loads(sys.argv[2])["data"]
+assert d["usage"]["credits"] == 0, d                       # the daily allowance spends no credit
+assert l["credits"]["available"] == 40, l["credits"]       # the trial is untouched
+q = l["user_quota"]
+assert (q["used"], q["remaining"]) == (1, 4), q            # one of the registered person's five
+PY
+echo "ok   the console's key is the API's: a search counted against its owner's daily allowance (4 of 5 left), no credit spent"

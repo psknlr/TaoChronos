@@ -594,9 +594,11 @@ Claude 经官方 SDK 调用（自适应思考、服务端拒答回退）。本�
 用户可上传自己的资料请道乃久分析（[我的资料](docs/mydata.md)、[ADR 0022](docs/adr/0022-the-users-own-data.md)）：资料读取时即脱敏，
 不发送到网站的服务器，涉及资料的对话不发送记录。
 
-**开发者接口与账户控制台**（[ADR 0038](docs/adr/0038-accounts-keys-and-credits.md)；以 Rust 编写的两个 Cloudflare Worker，`rust/platform/`）：
-`api.impf.ai` 以 API 密钥提供全量语料的证据检索（`POST /v1/evidence/search`）与引文核验（`POST /v1/citations/verify`），
-按组织计额度、先预留后结算、只在工具确实运行时扣费，支持幂等重试（[cloud/api/README.md](cloud/api/README.md)）；
+**开发者接口与账户控制台**（[ADR 0038](docs/adr/0038-accounts-keys-and-credits.md)、[ADR 0039](docs/adr/0039-model-relay-and-daily-allowance.md)；以 Rust 编写的
+Cloudflare Worker，`rust/platform/`）：`api.impf.ai` 以 API 密钥提供兼容 OpenAI Chat Completions 的模型对话
+（`POST /v1/chat/completions`，模型 Tao-R1，经不设路由的私有模型网关转发，可流式输出）、全量语料的证据检索
+（`POST /v1/evidence/search`）与引文核验（`POST /v1/citations/verify`）；每位注册用户每个 UTC 日共五次调用，
+不论经由哪个密钥、项目或组织，未实际执行的请求不计，支持幂等重试（[cloud/api/README.md](cloud/api/README.md)）；
 `console.impf.ai` 以邮箱验证码注册、通行密钥（passkey）登录、恢复码、会话管理，并创建与撤销组织的 API 密钥
 （[cloud/console/SETUP.md](cloud/console/SETUP.md)）。验证码由密钥派生、不存储；会话、令牌、密钥都只存摘要。
 

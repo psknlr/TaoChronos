@@ -1,0 +1,22 @@
+[package]
+name = "tao-models"
+description = "taochronos-models: the private model gateway the developer API asks (docs/adr/0039-model-relay-and-daily-allowance.md)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+tao-platform.workspace = true
+tao-edge.workspace = true
+worker.workspace = true
+wasm-bindgen.workspace = true
+serde_json.workspace = true
+futures-util.workspace = true
+
+# worker-build: no wasm-opt (a binary it would download, unpinned: docs/adr/0026-pinned-supply-chain-and-enforced-policies.md)
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

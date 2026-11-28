@@ -1,0 +1,29 @@
+# 道乃久模型网关 — taochronos-models: the private Worker the developer API (cloud/api) asks a model's chat of; a Worker
+# written in Rust (rust/platform/models; docs/adr/0039-model-relay-and-daily-allowance.md).  It has no route and no
+# workers.dev or preview address: the API Worker's service binding MODEL_GATEWAY is the only way to it.  It holds the
+# providers' keys — the Worker secrets MINIMAX_API_KEY (Tao-R1) and OPENAI_API_KEY (gpt-6-luna, when offered), put by
+# deploy.sh — and a developer's API key never reaches it.  Built by rust/platform/build.sh models; deployed by
+# deploy.sh here, from .github/workflows/platform.yml, before the API.
+name = "taochronos-models"
+main = "../../rust/platform/models/build/worker/shim.mjs"
+compatibility_date = "2025-09-01"
+# the API's request aborted (its caller left, or its deadline passed) aborts the provider's: the incoming request's
+# signal, and its passing on to the provider's fetch
+compatibility_flags = ["enable_request_signal", "request_signal_passthrough"]
+workers_dev = false
+preview_urls = false
+
+[vars]
+# the models it answers for (cloud/api/wrangler.toml's MODELS names the same): Tao-R1, gpt-6-luna
+MODELS = "Tao-R1"
+# where each provider is asked, and its model's name there.  MiniMax's mainland platform is the website relay's (its
+# key, MINIMAX_API_KEY, is from it); an international key (platform.minimax.io) needs https://api.minimax.io/v1 —
+# deploy.sh writes GATEWAY_MINIMAX_BASE here when the repository has it.  An https address only: no other is asked,
+# and no redirect is followed
+MINIMAX_BASE = "https://api.minimax.cn/v1"
+MINIMAX_MODEL = "MiniMax-M3"
+OPENAI_BASE = "https://api.openai.com/v1"
+OPENAI_MODEL = "gpt-6-luna"
+
+[observability]
+enabled = true

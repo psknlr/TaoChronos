@@ -16,6 +16,7 @@ worker.workspace = true
 wasm-bindgen.workspace = true
 serde_json.workspace = true
 futures-util.workspace = true
+futures-channel.workspace = true
 
 # worker-build: no wasm-opt (a binary it would download, unpinned: docs/adr/0026-pinned-supply-chain-and-enforced-policies.md)
 [package.metadata.wasm-pack.profile.release]

@@ -1,27 +1,90 @@
 # 道乃久开发者接口 · TaoChronos API
 
-`https://api.impf.ai` — the classics' evidence for programs: a search of the full corpus and a check that a quotation
-is where it is said to be, each answered with the passages it rests on.  A Cloudflare Worker written in Rust
-(`rust/platform/api`); why it is built as it is: [ADR 0038](../../docs/adr/0038-accounts-keys-and-credits.md).
+`https://api.impf.ai` — a model's chat, and the classics' evidence for programs: a search of the full corpus and a check
+that a quotation is where it is said to be, each answered with the passages it rests on.  A Cloudflare Worker written
+in Rust (`rust/platform/api`); why it is built as it is: [ADR 0038](../../docs/adr/0038-accounts-keys-and-credits.md),
+[ADR 0039](../../docs/adr/0039-model-relay-and-daily-allowance.md).
 
 ## Keys
 
-Every call carries a key: `Authorization: Bearer tao_live_…`.  A key belongs to a project of an organisation, and is
-made in the [console](https://console.impf.ai) (or by the owner: below).  It is shown once; keep it where your server
-keeps its secrets — never in a web page, an app's bundle or a repository (the API sends no CORS headers: a browser
-cannot call it).
+Every call carries a key: `Authorization: Bearer tao_live_…`.  A key belongs to a project of an organisation, and to a
+**registered person** — its owner, whose daily allowance its calls spend.  It is made in the
+[console](https://console.impf.ai) (its owner: you) or by the owner of the service (below).  It is shown once; keep it
+where your server keeps its secrets — never in a web page, an app's bundle or a repository (the API sends no CORS
+headers: a browser cannot call it).
 
 | | `tao_live_…` | `tao_test_…` |
 |---|---|---|
-| spends | the organisation's credits | nothing |
-| allowance | the credits available | 100 calls a day for the organisation |
+| for | your service | trying things |
+| spends | your daily allowance | your daily allowance |
 
-Scopes, chosen when the key is made: `evidence:search`, `citations:verify`, `usage:read`.  A key that is mistyped or cut
-short is refused before anything is asked (its last seven characters are a checksum).
+Scopes, chosen when the key is made: `chat:completions`, `models:read`, `evidence:search`, `citations:verify`,
+`usage:read`.  A key made without naming them gets the last three only: model access is given by naming it.  A key that
+is mistyped or cut short is refused before anything is asked (its last seven characters are a checksum).
+
+## The daily allowance
+
+**Five execution requests a day for each registered person**, renewed at 00:00 UTC (08:00 in Singapore) — chat,
+evidence search and citation verification together, whichever of your keys, projects, organisations, models or
+environments they come through.  Another key does not add to it.
+
+* **Counted**: a request admitted and asked of the service — whether it answers, fails, runs out of time, or you leave
+  before its end.
+* **Not counted**: a request refused before it runs (its body, its scope, a limit), a repeat answered from before
+  (`Idempotency-Key`), and a request the service refused outright without running it (a model's provider refusing it,
+  busy or unavailable; the corpus starting; a tool refusing its arguments) — the answer then says so.
+* One of your requests runs at a time (`429 user_concurrency` while another does).
+
+Every answer to an execution carries what is left:
+
+```text
+X-Tao-Quota-Limit: 5
+X-Tao-Quota-Remaining: 3
+X-Tao-Quota-Reset: 1795910400        (the next 00:00 UTC, in Unix seconds)
+```
+
+and a spent allowance is `429 daily_quota_exceeded`, with `Retry-After` until midnight UTC.
 
 ## Products
 
-### `POST /v1/evidence/search`
+### `POST /v1/chat/completions` (scope `chat:completions`)
+
+A model's chat, in the Chat Completions format — a documented subset of it, read strictly: a field it does not take is
+refused (400 `unsupported_field`), never ignored.
+
+```json
+{
+  "model": "Tao-R1",
+  "messages": [{ "role": "user", "content": "桂枝汤主治何证？" }],
+  "max_tokens": 1024,
+  "stream": true
+}
+```
+
+| Field | | |
+|---|---|---|
+| `model` | `Tao-R1` | `GET /v1/models` lists those this key may call |
+| `messages` | 1–64 | `system`, `user`, `assistant`, `tool`; content is text or text parts (`{"type":"text","text":…}`, no images); an assistant's `tool_calls` and a tool's `tool_call_id`; an assistant's `reasoning_details` given back as the answer gave them |
+| `stream`, `stream_options.include_usage` | | server-sent events, as Chat Completions streams them; the usage in the last event when asked |
+| `max_tokens` or `max_completion_tokens` | 1–8,192 | one of them; 4,096 when neither — Tao-R1's reasoning counts against it |
+| `temperature` 0–2, `top_p` (0, 1], `stop` (1–4 texts) | | |
+| `tools` (1–32 functions), `tool_choice` | | the model's tool calls come back to you: your program runs the tool and sends its answer |
+| `n` | 1 | one answer a request |
+
+The answer is a `chat.completion` (or `chat.completion.chunk` events) with `"model": "Tao-R1"` and `"id"` your request's
+id (`X-Request-Id`).  Tao-R1 reasons: its reasoning comes in `reasoning_details` (format `Tao-…`); give them back with
+the assistant's message in the next turn of a tool loop.  A stream that fails after it began ends with an event
+`{"error": {…}}`.  Each request counts once: a tool loop of a question, a search and the answer is three.
+
+### `GET /v1/models` (scope `models:read`)
+
+```json
+{ "object": "list", "data": [{ "id": "Tao-R1", "object": "model", "capabilities": { "streaming": true, "tools": true, "reasoning": true }, "limits": { "max_output_tokens": 8192, "default_output_tokens": 4096, "max_messages": 64 } }] }
+```
+
+Free: it counts nothing.
+
+### `POST /v1/evidence/search` (scope `evidence:search`)
 
 ```json
 { "query": "桂枝汤 汗出 恶风", "k": 10, "after": 200, "before": 1600, "books": ["伤寒论"] }
@@ -34,7 +97,7 @@ short is refused before anything is asked (its last seven characters are a check
 | `after`, `before` | years, −5000–5000 | only passages dated within |
 | `books` | 1–20 titles | only these works |
 
-### `POST /v1/citations/verify`
+### `POST /v1/citations/verify` (scope `citations:verify`)
 
 ```json
 { "quote": "太阳之为病，脉浮，头项强痛而恶寒。", "passage_id": "shanghanlun:1" }
@@ -43,7 +106,7 @@ short is refused before anything is asked (its last seven characters are a check
 `quote` (1–2,000 characters) is looked for verbatim, then after variant normalisation; `passage_id` (optional) names
 where it is said to be.
 
-### The answer
+The two answer alike:
 
 ```json
 {
@@ -56,70 +119,85 @@ where it is said to be.
     "summary": "…",
     "text": "the result as a model reads it"
   },
-  "usage": { "credits": 10, "environment": "live", "price_version": "p1d0a3763" }
+  "usage": { "credits": 0, "environment": "live", "price_version": "p…" }
 }
 ```
 
 `data` is the corpus tool's own result (`classics.search`, `validation.verify_quote`): its shape follows the tool.
 `text` is the same result compacted for a language model, should you hand it one.
 
-A request is read strictly: a field a product does not take, or a value past its limit, is refused (400) — not ignored,
-not clamped.
-
-## What it costs
-
-| Product | Credits (live key) |
-|---|---|
-| `evidence.search` | 10 |
-| `citations.verify` | 2 |
-
-`GET /v1` lists the prices and their version.  A call is **charged only when the corpus ran it**: a refusal of its
-arguments (422), a corpus starting or busy (503), any failure of ours (502, 500) costs nothing.  A call's price is
-reserved when it is let through and settled when it ends, so calls arriving together never spend more than is available.
-
 ## Repeating a request
 
-Send `Idempotency-Key: <1–255 visible characters>` with a POST.  The same key with the same request, within a day, is
-answered with the first answer (`Idempotent-Replayed: true`) and charged once; with another request, 422
-(`idempotency_mismatch`); while the first is still running, 409 with `Retry-After: 1`.  A failed call is no answer: its
-repeat runs.
+Send `Idempotency-Key: <1–255 visible characters>` with a POST.  The same key with the same request, within a day, in
+the same project and environment, is answered with the first answer (`Idempotent-Replayed: true`) and counted once —
+whichever of your keys sends it.
 
-## Limits
+| | |
+|---|---|
+| another request under the same key | 422 `idempotency_conflict` |
+| the first still running | 409 `request_in_progress`, `Retry-After: 1` |
+| the first ended without a known outcome | 409 `request_outcome_unknown`: it is not run again |
+| the first was a stream | 409 `stream_replay_unavailable`: a stream is not kept, nor run again |
+| the first was refused before it ran (not counted) | the repeat runs |
 
-* 60 calls a minute and 2 in flight per key; 4 in flight per organisation; test keys 100 calls a day per organisation.
-* A project may have a monthly limit in credits (the console's owner sets it).
-* `GET /v1/limits` says what the key may do now; `GET /v1/usage?from=YYYY-MM-DD&to=YYYY-MM-DD` (scope `usage:read`) its
-  project's calls, credits, failures and refusals by day, product and environment.
+## Limits and records
+
+* Per key: 60 calls a minute, 2 in flight; per organisation: 4 in flight; per person: 1 in flight and the daily
+  allowance above.
+* `GET /v1/limits`: the key, its rate, what is in flight, how calls are paid (`funding`), and its owner's `user_quota`
+  (`limit`, `used`, `in_flight`, `remaining`, `reset_at`).
+* `GET /v1/usage?from=YYYY-MM-DD&to=YYYY-MM-DD` (scope `usage:read`): the key's project's calls, counted calls,
+  failures, refusals and tokens by day, product and environment.
+* `GET /v1/requests/{id}`: a request's record — its product, model, outcome (`succeeded`, `failed`, `cancelled`,
+  `unknown`, `released`), whether it was counted, its tokens — for seven days, to its owner's keys of its organisation.
 
 ## Errors
 
 ```json
-{ "id": "req_…", "error": { "type": "insufficient_credits", "code": "credits", "message": "evidence.search costs 10 credits; 5 are available" } }
+{ "id": "req_…", "error": { "type": "rate_limit", "code": "daily_quota_exceeded", "message": "your daily allowance of 5 requests is spent; it renews at 00:00 UTC" } }
 ```
 
 | Status | `type` | `code` (some) |
 |---|---|---|
-| 400 | `invalid_request` | `json`, `field`, `type`, `length`, `range`, `characters`, `idempotency_key` |
+| 400 | `invalid_request` | `json`, `field`, `unsupported_field`, `unsupported_content`, `type`, `length`, `range`, `value`, `idempotency_key`, `model_rejected` |
 | 401 | `authentication` | `missing_key`, `invalid_key`, `revoked_key`, `expired_key` |
-| 402 | `insufficient_credits` | `credits`, `project_limit` |
-| 403 | `permission` | `scope`, `project_archived`, `org_disabled` |
-| 409 | `conflict` | `idempotency_in_progress`, `idempotency_unavailable` |
+| 402 | `insufficient_credits` | `credits`, `project_limit` (when calls are paid in credits) |
+| 403 | `permission` | `scope`, `user_binding_required`, `member_suspended`, `user_suspended`, `model_access`, `project_archived`, `org_disabled` |
+| 404 | `not_found` | `model_not_found`, `request`, `path` |
+| 409 | `conflict` | `request_in_progress`, `request_outcome_unknown`, `stream_replay_unavailable`, `idempotency_unavailable` |
 | 413 | `invalid_request` | `too_large` (a body is at most 64 KiB) |
-| 422 | `invalid_request` | `tool_refused` (the corpus's own words), `idempotency_mismatch` |
-| 429 | `rate_limit` | `rate`, `concurrency`, `test_allowance`, `address` — with `Retry-After` |
-| 502, 503 | `unavailable` | `corpus`, `accounts` — with `Retry-After` on 503 |
+| 422 | `invalid_request` | `tool_refused` (the corpus's own words), `idempotency_conflict` |
+| 429 | `rate_limit` | `daily_quota_exceeded`, `user_concurrency`, `rate`, `concurrency`, `address`, `model_busy` — with `Retry-After` |
+| 502, 503, 504 | `unavailable` | `model_error`, `model_unavailable`, `model_api_disabled`, `model_timeout`, `corpus`, `corpus_timeout`, `accounts`, `quota` |
 
 Every answer carries `X-Request-Id`; quote it when you write to us.
 
 ## Examples
 
 ```bash
-curl -sS https://api.impf.ai/v1/evidence/search \
+curl -sS https://api.impf.ai/v1/chat/completions \
   -H "Authorization: Bearer $TAO_API_KEY" -H "Content-Type: application/json" \
-  -d '{"query": "桂枝汤 汗出 恶风", "k": 5}'
+  -d '{"model": "Tao-R1", "messages": [{"role": "user", "content": "桂枝汤主治何证？"}]}'
 ```
 
-Python, the standard library alone:
+```bash
+curl -sS --no-buffer https://api.impf.ai/v1/chat/completions \
+  -H "Authorization: Bearer $TAO_API_KEY" -H "Content-Type: application/json" -H "Idempotency-Key: q-2026-11-28-1" \
+  -d '{"model": "Tao-R1", "stream": true, "messages": [{"role": "user", "content": "麻黄汤与桂枝汤何别？"}]}'
+```
+
+Any Chat Completions client takes the API as its base — the OpenAI Python SDK:
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.impf.ai/v1", api_key=os.environ["TAO_API_KEY"])
+answer = client.chat.completions.create(model="Tao-R1", messages=[{"role": "user", "content": "桂枝汤主治何证？"}])
+print(answer.choices[0].message.content)
+```
+
+A search, the standard library alone:
 
 ```python
 import json, os, urllib.request
@@ -144,15 +222,16 @@ const res = await fetch("https://api.impf.ai/v1/citations/verify", {
   body: JSON.stringify({ quote: "太阳之为病，脉浮，头项强痛而恶寒。" }),
 });
 if (!res.ok) throw new Error(`${res.status} ${(await res.json()).error.code}`);
-const { data, usage } = await res.json();
+console.log(res.headers.get("X-Tao-Quota-Remaining"), "left today");
 ```
 
 ## The owner's endpoints
 
-Organisations, credits and keys without the console — for a pilot's first developers, or a correction.  Setting the
-API up, and these endpoints step by step: [docs/platform.md](../../docs/platform.md), Part 3.  They answer
-the token whose SHA-256 is the Worker's `ADMIN_TOKEN_SHA256` (the repository variable `API_ADMIN_TOKEN_SHA256`; the
-token itself is kept nowhere but by the owner), and are off without it.
+Organisations, members, credits and keys without the console — for a pilot's first developers, or a correction.  Setting
+the API up, and these endpoints step by step: [docs/platform.md](../../docs/platform.md), Part 3.  They answer the token
+whose SHA-256 is the Worker's `ADMIN_TOKEN_SHA256` (the repository variable `API_ADMIN_TOKEN_SHA256`; the token itself is
+kept nowhere but by the owner), and are off without it.  What they are told of people — a person's id, a member's role —
+is taken as said: the owner vouches for it.
 
 ```bash
 token=$(openssl rand -hex 32)                       # keep it in your password manager
@@ -161,33 +240,37 @@ printf '%s' "$token" | sha256sum | cut -d' ' -f1    # → the repository variabl
 
 | | |
 |---|---|
-| `POST /admin/orgs` `{"name"}` | a new organisation (its id, `org_…`, in the answer) |
-| `GET /admin/orgs/{org}` | its credits, projects, keys (never a key itself), today's usage, what lapsed |
+| `POST /admin/orgs` `{"name", "owner"}` | a new organisation; `owner`: a registered person's id (`usr_…`, the console's security page shows it) |
+| `GET /admin/orgs/{org}` | its members, credits, projects, keys (never a key itself), today's usage, what lapsed |
+| `POST /admin/orgs/{org}/members` `{"user", "role", "status"}` | a member added, or their role or status (`active`, `suspended`) changed |
 | `POST /admin/orgs/{org}/grants` `{"credits", "reference", "note"}` | credits in, once per reference |
 | `POST /admin/orgs/{org}/adjustments` `{"credits", "reference", "note"}` | a correction, either sign |
 | `POST /admin/orgs/{org}/projects` `{"name", "monthly_limit"}` | a project |
 | `POST /admin/orgs/{org}/projects/{project}/limit` `{"monthly_limit"}` | its limit (`null`: none) |
-| `POST /admin/orgs/{org}/keys` `{"environment", "name", "scopes", "project", "expires_days"}` | a key, shown once |
+| `POST /admin/orgs/{org}/keys` `{"environment", "name", "scopes", "project", "expires_days", "owner"}` | a key, shown once; `owner`: a member (the organisation's one owner when left out) |
+| `POST /admin/orgs/{org}/keys/{key}/owner` `{"user"}` | a key given to a member |
 | `POST /admin/orgs/{org}/keys/{key}/revoke` | revoked at once |
+| `POST /admin/orgs/{org}/models` `{"access"}` | the organisation let in while `MODEL_API` is `pilot` |
+| `GET /admin/users/{user}` | a person's allowance and latest requests |
+| `POST /admin/users/{user}/suspend`, `…/restore` | a person's executions stopped, or let go on — through every key |
 
 ```bash
-curl -sS -X POST https://api.impf.ai/admin/orgs -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{"name": "Pilot lab"}'
-curl -sS -X POST https://api.impf.ai/admin/orgs/org_…/grants -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{"credits": 10000, "reference": "pilot-2026-12", "note": "pilot"}'
+curl -sS -X POST https://api.impf.ai/admin/orgs -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{"name": "Pilot lab", "owner": "usr_…"}'
 curl -sS -X POST https://api.impf.ai/admin/orgs/org_…/keys -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{"environment": "live", "name": "lab server"}'
+  -d '{"environment": "live", "name": "lab server", "scopes": ["chat:completions", "models:read", "evidence:search", "citations:verify", "usage:read"]}'
 ```
 
 ## Here
 
 | | |
 |---|---|
-| `wrangler.toml` | the Worker: prices, limits, its Durable Object (`Account`), the edge's rate limits |
-| `deploy.sh` | deploys it with the corpus's Worker bound when the account has it, and the owner's token by its digest |
-| `test/run.sh` | the API as built, in local workerd beside a stand-in corpus (`test/corpus.js`): `test/scenario.py`'s checks |
+| `wrangler.toml` | the Worker: the daily allowance, the models, limits, its Durable Objects (`Account`, `UserQuota`), the edge's rate limits |
+| `deploy.sh` | deploys it with the corpus's Worker and the model gateway bound when the account has them, and the owner's token by its digest |
+| `test/run.sh` | the API and the model gateway as built, in local workerd beside a stand-in corpus (`test/corpus.js`) and a stand-in model provider (`test/provider.mjs`): `test/scenario.py`'s checks |
+| `../models/` | the private model gateway: its configuration and deployment |
 
 ```bash
-rust/platform/build.sh --install && (cd cloud/api && npm ci --ignore-scripts --no-audit --no-fund) && rust/platform/build.sh api
+rust/platform/build.sh --install && (cd cloud/api && npm ci --ignore-scripts --no-audit --no-fund) && rust/platform/build.sh api && rust/platform/build.sh models
 ```
 
 ```bash

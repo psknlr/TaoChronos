@@ -423,7 +423,9 @@ async fn provision(env: &Env, user: &Json, orgs: &Json) {
     for o in orgs.as_array().into_iter().flatten() {
         let org = o["org"].as_str().unwrap_or("");
         let Ok(stub) = account(env, org) else { continue };
-        let ok = matches!(call(&stub, "provision", &json!({ "org": org, "name": o["name"] })).await, Ok((200, v)) if v.get("refused").is_none());
+        // its owner is the person who registered it: a member, whose daily allowance its keys spend
+        let asked = json!({ "org": org, "name": o["name"], "owner": user.as_str(), "by": "console" });
+        let ok = matches!(call(&stub, "provision", &asked).await, Ok((200, v)) if v.get("refused").is_none());
         let trial = o["trial"].as_i64().unwrap_or(0);
         let granted = trial <= 0
             || matches!(call(&stub, "credit", &json!({ "kind": "grant", "credits": trial, "reference": format!("trial:{}", user.as_str().unwrap_or(org)),
@@ -451,6 +453,12 @@ async fn org(req: &mut Request, env: &Env, path: &str, body: &Json, token: &str)
     let (user, strong, role) =
         (m["user"].as_str().unwrap_or(""), m["strong"] == json!(true), m["role"].as_str().unwrap_or(""));
     let stub = account(env, &org_id)?;
+    // every call says who asks: the member this session is, in their role — the object keeps it (accounts.rs: members)
+    let vouched = |mut b: Json| -> Json {
+        b["member"] = json!(user);
+        b["role"] = json!(role);
+        b
+    };
     let relay = |res: Result<(u16, Json)>| -> Result<Response> {
         match res {
             Ok((200, v)) => match v.get("refused") {
@@ -466,13 +474,18 @@ async fn org(req: &mut Request, env: &Env, path: &str, body: &Json, token: &str)
     };
     let manage = matches!(role, "owner" | "admin");
     match (req.method() == Method::Post, path) {
-        (false, "/console/org") => relay(call(&stub, "summary", &json!({})).await),
+        (false, "/console/org") => relay(call(&stub, "summary", &vouched(json!({}))).await),
+        // the person's own daily allowance and their latest requests (nobody else's: the session's member)
+        (false, "/console/allowance") => {
+            let q = env.durable_object("USER_QUOTA")?.id_from_name(&format!("user-quota:{user}"))?.get_stub()?;
+            relay(call(&q, "recent", &json!({ "n": 20 })).await)
+        }
         (false, "/console/usage") => {
             let url = req.url()?;
             let q = |k: &str| url.query_pairs().find(|(n, _)| n == k).map(|(_, v)| v.into_owned());
             let today = tao_platform::time::day(now());
             let from = q("from").unwrap_or_else(|| tao_platform::time::day(now() - 29 * tao_platform::time::DAY));
-            relay(call(&stub, "org_usage", &json!({ "from": from, "to": q("to").unwrap_or(today) })).await)
+            relay(call(&stub, "org_usage", &vouched(json!({ "from": from, "to": q("to").unwrap_or(today) }))).await)
         }
         (true, "/console/keys") => {
             if !matches!(role, "owner" | "admin" | "developer") {
@@ -482,8 +495,8 @@ async fn org(req: &mut Request, env: &Env, path: &str, body: &Json, token: &str)
                 call(
                     &stub,
                     "create_key",
-                    &json!({ "project": body.get("project"), "environment": s("environment"), "name": s("name"),
-                "scopes": body.get("scopes"), "expires_days": body.get("expires_days"), "by": user, "touched": strong }),
+                    &vouched(json!({ "project": body.get("project"), "environment": s("environment"), "name": s("name"),
+                "scopes": body.get("scopes"), "expires_days": body.get("expires_days"), "by": user, "owner": user, "touched": strong })),
                 )
                 .await,
             )
@@ -494,17 +507,23 @@ async fn org(req: &mut Request, env: &Env, path: &str, body: &Json, token: &str)
             if !matches!(role, "owner" | "admin" | "developer") {
                 return refused(403, "role");
             }
-            relay(call(&stub, "revoke_key", &json!({ "key": s("id"), "touched": strong })).await)
+            relay(call(&stub, "revoke_key", &vouched(json!({ "key": s("id"), "touched": strong }))).await)
         }
         (true, "/console/projects") if manage => relay(
-            call(&stub, "create_project", &json!({ "name": s("name"), "monthly_limit": body.get("monthly_limit") }))
-                .await,
+            call(
+                &stub,
+                "create_project",
+                &vouched(json!({ "name": s("name"), "monthly_limit": body.get("monthly_limit") })),
+            )
+            .await,
         ),
         (true, "/console/projects/limit") if manage => relay(
             call(
                 &stub,
                 "set_limit",
-                &json!({ "project": s("project"), "monthly_limit": body.get("monthly_limit"), "touched": strong }),
+                &vouched(
+                    json!({ "project": s("project"), "monthly_limit": body.get("monthly_limit"), "touched": strong }),
+                ),
             )
             .await,
         ),

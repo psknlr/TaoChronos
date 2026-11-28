@@ -104,7 +104,7 @@ jobs:
         run: |
           cargo fmt --all --check
           cargo clippy --locked -p tao-platform --all-targets -- -D warnings
-          cargo clippy --locked --target wasm32-unknown-unknown -p tao-edge -p tao-api -p tao-console -- -D warnings
+          cargo clippy --locked --target wasm32-unknown-unknown -p tao-edge -p tao-api -p tao-console -p tao-models -- -D warnings
           cargo test --locked -p tao-platform
 
   # TaoCore's CPython extension, built and then required (TAOCHRONOS_TAOCORE=require): the parity tests compare it with

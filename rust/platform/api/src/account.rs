@@ -1,8 +1,9 @@
-//! `Account` — one Durable Object an organisation, named by its id: its keys, its credits, its calls in flight
-//! (tao_platform::accounts).  It has no route: the API Worker reaches it, and the console Worker through a binding to
+//! `Account` — one Durable Object an organisation, named by its id: its members, its keys, its credits, its calls in
+//! flight (tao_platform::accounts).  It has no route: the API Worker reaches it, and the console Worker through a binding to
 //! this class (`script_name`).  Its protocol is JSON over `POST https://do/<op>`; whoever calls has already decided who
 //! may ask (the gateway: the key's digest, which the object itself checks; the owner: the admin token; the console:
-//! a session and its membership).
+//! a session and its membership — and it says who that member is, `member` and `role` in the body, which the object
+//! keeps: the members are known to the object by being vouched for, never by what a request to the API says).
 //!
 //! The request is read whole before anything is decided; then the core runs — synchronous, so nothing else runs in
 //! this object until it has written what it decided.
@@ -10,7 +11,7 @@
 use serde_json::{Value as Json, json};
 use tao_edge::{DoSql, JsEntropy, json as answer, now};
 use tao_platform::accounts::{
-    AccountConfig, AccountCore, Authorize, Authorized, Error, Idem, Outcome, Product, Settled, refused,
+    AccountConfig, AccountCore, Admit, Error, Finish, ModelGate, Outcome, Product, Settled, refused,
 };
 use tao_platform::keys::KeyEnv;
 use worker::{DurableObject, Env, Request, Response, Result, State, durable_object};
@@ -71,45 +72,66 @@ impl DurableObject for Account {
     }
 }
 
+fn int(v: &Json, k: &str) -> i64 {
+    v.get(k).and_then(Json::as_i64).unwrap_or(0)
+}
+
+fn flag(v: &Json, k: &str) -> bool {
+    v.get(k) == Some(&Json::Bool(true))
+}
+
 impl Account {
     fn run(&self, core: &AccountCore, op: &str, b: &Json, t: i64) -> Outcome<Json> {
         if op == "provision" {
-            return core.provision(s(b, "org"), s(b, "name"), &JsEntropy, t);
+            let by = opt_s(b, "by").unwrap_or("console");
+            return core.provision(s(b, "org"), s(b, "name"), opt_s(b, "owner"), by, &JsEntropy, t);
         }
         // an object never provisioned answers and writes nothing (accounts.rs: ready)
         if !core.ready()? {
             return Err(match op {
-                "authorize" | "limits" | "usage" => {
+                "admit" | "whoami" | "limits" | "usage" => {
                     refused(401, "authentication", "invalid_key", "the API key is not valid")
                 }
                 _ => refused(404, "not_found", "org", "no such organisation"),
             });
         }
+        core.migrate(t)?;
         core.sweep(t)?;
+        // the console says who asks: a member, in their role (kept; their status is the owner's to change)
+        if let Some(user) = opt_s(b, "member") {
+            core.vouch(user, s(b, "role"), "console", t)?;
+        }
         match op {
-            "authorize" => {
+            "admit" => {
                 let product = Product::parse(s(b, "product"))
                     .ok_or_else(|| refused(400, "invalid_request", "product", "no such product"))?;
-                let idem = opt_s(b, "idem_key").map(|key| Idem { key, request: s(b, "idem_request") });
-                let a = Authorize { digest: s(b, "digest"), product, request_id: s(b, "request_id"), idem };
-                Ok(match core.authorize(&a, t)? {
-                    Authorized::Go { reservation, key_id, project_id, env, credits, price_version } => json!({ "go": {
-                        "reservation": reservation, "key": key_id, "project": project_id, "environment": env.as_str(),
-                        "credits": credits, "price_version": price_version } }),
-                    Authorized::Replay { status, body } => json!({ "replay": { "status": status, "body": body } }),
-                })
+                let a = Admit {
+                    digest: s(b, "digest"),
+                    product,
+                    request_id: s(b, "request_id"),
+                    hold_ms: int(b, "hold_ms"),
+                    models: ModelGate::parse(s(b, "models")),
+                };
+                let l = core.admit(&a, t)?;
+                Ok(json!({ "lease": l.lease, "key": l.key_id, "project": l.project_id, "environment": l.env.as_str(),
+                    "owner": l.owner, "credits": l.credits, "price_version": l.price_version }))
             }
-            "settle" => {
-                let delivered = b.get("delivered").filter(|d| d.is_object());
-                let d = delivered.map(|d| (d.get("status").and_then(Json::as_u64).unwrap_or(200) as u16, s(d, "body")));
-                let out = core.settle(s(b, "reservation"), d, t)?;
-                Ok(json!({ "settled": match out {
+            "finish" => {
+                let f = Finish {
+                    executed: flag(b, "executed"),
+                    ok: flag(b, "ok"),
+                    refused: flag(b, "refused"),
+                    input_tokens: int(b, "input_tokens"),
+                    output_tokens: int(b, "output_tokens"),
+                };
+                Ok(json!({ "settled": match core.finish(s(b, "lease"), &f, t)? {
                     Settled::Charged(n) => format!("charged:{n}"),
                     Settled::Released => "released".into(),
                     Settled::Already(state) => format!("already:{state}"),
                     Settled::Unknown => "unknown".into(),
                 } }))
             }
+            "whoami" => core.whoami(s(b, "digest"), ModelGate::parse(s(b, "models")), t),
             "limits" => core.limits(s(b, "digest"), t),
             "usage" => {
                 let key = core.authenticate(s(b, "digest"), t)?;
@@ -167,6 +189,7 @@ impl Account {
                     scopes.as_deref(),
                     expires,
                     s(b, "by"),
+                    opt_s(b, "owner"),
                     touched(b),
                     &JsEntropy,
                     t,
@@ -175,6 +198,19 @@ impl Account {
             }
             "revoke_key" => Ok(json!({ "revoked": core.revoke_key(s(b, "key"), touched(b), t)? })),
             "keys" => Ok(json!({ "keys": core.keys()? })),
+            // the owner's
+            "set_member" => {
+                core.set_member(s(b, "user"), opt_s(b, "status").unwrap_or("active"), opt_s(b, "role"), "owner", t)?;
+                Ok(json!({ "members": core.members()? }))
+            }
+            "bind_key" => {
+                core.bind_key(s(b, "key"), s(b, "user"), opt_s(b, "by").unwrap_or("owner"), t)?;
+                Ok(json!({ "keys": core.keys()? }))
+            }
+            "set_model_access" => {
+                core.set_model_access(flag(b, "on"))?;
+                Ok(json!({ "model_access": flag(b, "on") }))
+            }
             _ => Err(refused(404, "not_found", "op", "no such operation")),
         }
     }

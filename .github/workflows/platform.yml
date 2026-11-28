@@ -1,12 +1,15 @@
 name: platform
 
-# 道乃久开发者接口与账户控制台 — rust/platform's two Workers, in Rust: the developer API (cloud/api: api.impf.ai) and the
-# account console (cloud/console: console.impf.ai) — docs/adr/0038-accounts-keys-and-credits.md.  Built with every tool
+# 道乃久开发者接口与账户控制台 — rust/platform's three Workers, in Rust: the developer API (cloud/api: api.impf.ai), the
+# account console (cloud/console: console.impf.ai) and the private model gateway the API asks a model's chat of
+# (cloud/models: no route) — docs/adr/0038-accounts-keys-and-credits.md, docs/adr/0039-model-relay-and-daily-allowance.md.  Built with every tool
 # pinned (rust/platform/build.sh: worker-build and wasm-bindgen from crates.io by their lockfiles, esbuild from
 # wrangler's), the API run as built against a stand-in corpus (cloud/api/test/run.sh), then each deployed only once the
 # owner has set what it needs (docs/platform.md, step by step):
 #   the API      repository variable API_ADMIN_TOKEN_SHA256 — the sha256 of the owner's token for /admin/…; the token
-#                itself is kept nowhere (as STORE_TOKEN_SHA256 is)
+#                itself is kept nowhere (as STORE_TOKEN_SHA256 is).  With it, first, the model gateway, keyed by the
+#                secret MINIMAX_API_KEY (the website relay's; or GATEWAY_MINIMAX_API_KEY, with the variable
+#                GATEWAY_MINIMAX_BASE for MiniMax's international platform), and OPENAI_API_KEY when it is set
 #   the console  repository secret ACCOUNT_SECRET (32+ characters), after the API (it binds its Account class);
 #                optional: variables CONSOLE_REGISTRATION ("open"), CONSOLE_TRIAL_CREDITS, TURNSTILE_SITE_KEY with the
 #                secret TURNSTILE_SECRET
@@ -20,6 +23,7 @@ on:
       - "rust/rust-toolchain.toml"
       - "cloud/api/**"
       - "cloud/console/**"
+      - "cloud/models/**"
       - ".github/workflows/platform.yml"
   workflow_dispatch:
 
@@ -51,11 +55,12 @@ jobs:
         run: |
           (cd cloud/api && npm ci --ignore-scripts --no-audit --no-fund)
           (cd cloud/console && npm ci --ignore-scripts --no-audit --no-fund)
+          (cd cloud/models && npm ci --ignore-scripts --no-audit --no-fund)
       - name: Install worker-build and wasm-bindgen, pinned (crates.io, --locked)
         run: rust/platform/build.sh --install
-      - name: Build both Workers
-        run: rust/platform/build.sh api && rust/platform/build.sh console
-      - name: The developer API as built, end to end, against a stand-in corpus (local workerd)
+      - name: Build the three Workers
+        run: rust/platform/build.sh api && rust/platform/build.sh console && rust/platform/build.sh models
+      - name: The developer API and the model gateway as built, end to end, against a stand-in corpus and provider (local workerd)
         run: cloud/api/test/run.sh
       - name: What may be deployed?
         id: ready
@@ -78,6 +83,17 @@ jobs:
           fi
           echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "console=$console" >> "$GITHUB_OUTPUT"
+      - name: Deploy the private model gateway (taochronos-models), before the API that binds it
+        if: steps.ready.outputs.api == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          GATEWAY_MINIMAX_API_KEY: ${{ secrets.GATEWAY_MINIMAX_API_KEY }}
+          GATEWAY_MINIMAX_BASE: ${{ vars.GATEWAY_MINIMAX_BASE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WRANGLER_SEND_METRICS: "false"
+        run: bash cloud/models/deploy.sh
       - name: Deploy the developer API (api.impf.ai)
         if: steps.ready.outputs.api == '1'
         env:

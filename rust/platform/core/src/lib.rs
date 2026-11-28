@@ -15,6 +15,8 @@ pub mod email;
 pub mod identity;
 pub mod keys;
 pub mod mail;
+pub mod models;
+pub mod quota;
 pub mod sql;
 pub mod time;
 pub mod webauthn;

@@ -1,6 +1,7 @@
 # ADR 0038 — Accounts, keys and credits: the developer API and its console, in Rust
 
-**Status:** accepted · 2026-11-27 · amends [ADR 0023](0023-workers-paid.md) (of its "sessions in place of addresses",
+**Status:** accepted · 2026-11-27 · amended by [ADR 0039](0039-model-relay-and-daily-allowance.md) (every execution
+one of its owner's five a day; keys owned by a member; the test keys' day and the credits' spending set aside) · amends [ADR 0023](0023-workers-paid.md) (of its "sessions in place of addresses",
 the signed sessions — for the API and the console, not yet for the site), [ADR 0026](0026-pinned-supply-chain-and-enforced-policies.md)
 (a second Rust workspace, and a build tool that downloads nothing), [ADR 0034](0034-what-the-site-ships.md) (the console's
 page is public) and [ADR 0036](0036-taocore.md) (Rust beside TaoCore, apart from it)

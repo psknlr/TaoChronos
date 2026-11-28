@@ -15,6 +15,13 @@ const T = {
     recovery_title: "恢复码", recovery_why: "每个恢复码只能用一次。丢失通行密钥时，用邮箱验证码加一个恢复码登录。请现在保存，之后不会再显示。",
     saved: "我已保存", second_title: "这个账户受通行密钥保护", second_why: "只凭邮箱不能登录。请输入一个恢复码，或返回用通行密钥登录。",
     recovery_code: "恢复码", overview: "概览", keys: "API 密钥", usage: "用量", security: "安全",
+    allowance: "每日调用额度", allowance_used: "已用", allowance_flight: "进行中", allowance_left: "可用", allowance_reset: "重置",
+    allowance_why: "对话、证据检索和引文核验共用这份额度：每天 {n} 次，按 UTC 零点（新加坡时间 08:00）重置。多建密钥、项目或组织都不会增加额度。",
+    allowance_off: "这个账户的调用已暂停。", account_id: "账户编号：{id}", owner: "归属", you: "你", unbound: "未绑定（请新建一个密钥）",
+    key_quota_note: "用这个密钥的调用记在你的每日额度上；再建一个密钥不会增加额度。", recent: "最近的请求", product_model: "产品 · 模型",
+    outcome: "结果", counted: "计入额度", tokens: "Token（入 / 出）", yes: "是", no: "否", unknown: "未知",
+    st_succeeded: "成功", st_failed: "失败", st_cancelled: "已取消", st_unknown: "结果未知", st_admitted: "进行中", st_released: "未执行",
+    no_requests: "还没有请求。",
     org: "组织", org_id: "组织编号：{id}（申请额度或联系我们时请提供）", credits: "可用额度", held: "进行中占用", today: "今天", calls: "调用", spent: "消耗",
     new_key: "新建密钥", key_name: "名称", environment: "环境", live: "正式（消耗额度）", test: "测试（每天少量免费调用）",
     scopes: "权限", create: "创建", key_once: "这是密钥唯一一次显示。请保存在服务器的密钥管理中，不要放进网页或代码仓库。",
@@ -51,6 +58,13 @@ const T = {
     recovery_title: "Recovery codes", recovery_why: "Each code works once. If you lose your passkey, sign in with an email code and one of these. Save them now: they are not shown again.",
     saved: "I have saved them", second_title: "A passkey guards this account", second_why: "Your mailbox alone does not open it. Enter a recovery code, or go back and sign in with your passkey.",
     recovery_code: "Recovery code", overview: "Overview", keys: "API keys", usage: "Usage", security: "Security",
+    allowance: "Daily API allowance", allowance_used: "Used", allowance_flight: "In flight", allowance_left: "Available", allowance_reset: "Resets",
+    allowance_why: "Chat, evidence search and citation verification share this allowance: {n} a day, renewed at 00:00 UTC (08:00 in Singapore). More keys, projects or organisations do not add to it.",
+    allowance_off: "Executions are suspended for this account.", account_id: "Account id: {id}", owner: "Owner", you: "you", unbound: "unbound (create a new key)",
+    key_quota_note: "Calls with this key count against your daily allowance; another key does not add to it.", recent: "Recent requests", product_model: "Product · model",
+    outcome: "Outcome", counted: "Counted", tokens: "Tokens (in / out)", yes: "yes", no: "no", unknown: "unknown",
+    st_succeeded: "succeeded", st_failed: "failed", st_cancelled: "cancelled", st_unknown: "outcome unknown", st_admitted: "running", st_released: "not run",
+    no_requests: "No requests yet.",
     org: "Organisation", org_id: "Organisation id: {id} (quote it when you ask for credits or write to us)", credits: "Available credits", held: "Held in flight", today: "Today", calls: "Calls", spent: "Spent",
     new_key: "New key", key_name: "Name", environment: "Environment", live: "Live (spends credits)", test: "Test (a few free calls a day)",
     scopes: "Scopes", create: "Create", key_once: "This is the only time the key is shown. Keep it in your server's secret store — never in a web page or a repository.",
@@ -361,11 +375,29 @@ async function dashboard(me, tab = state.tab) {
   await views[tab](panel, me, orgId);
 }
 
-function overview(panel, me) {
+async function allowanceCard(orgId) {
+  const r = orgId ? await api("GET", `/console/allowance?org=${encodeURIComponent(orgId)}`) : null;
+  const q = r?.ok ? r.quota : null;
+  if (!q) return { card: h("section", { class: "card" }, h("h2", {}, t("allowance")), msg("warn", t("e_unavailable"))), requests: [] };
+  const reset = new Date(q.reset * 1000).toLocaleTimeString(lang === "zh" ? "zh-CN" : "en-GB", { hour: "2-digit", minute: "2-digit" });
+  return {
+    card: h("section", { class: "card", id: "allowance" }, h("h2", {}, t("allowance")), q.suspended ? msg("error", t("allowance_off")) : null,
+      h("div", { class: "stats" },
+        h("div", { class: "stat" }, t("allowance_used"), h("b", {}, `${q.used} / ${q.limit}`)),
+        h("div", { class: "stat" }, t("allowance_flight"), h("b", {}, String(q.in_flight))),
+        h("div", { class: "stat" }, t("allowance_left"), h("b", {}, String(q.remaining))),
+        h("div", { class: "stat" }, t("allowance_reset"), h("b", {}, reset))),
+      h("p", { class: "muted small" }, t("allowance_why", { n: q.limit }))),
+    requests: r.requests || [],
+  };
+}
+
+async function overview(panel, me, orgId) {
+  const { card } = await allowanceCard(orgId);
   const o = state.org;
   const today = (o?.today || []).reduce((a, d) => ({ calls: a.calls + d.calls, credits: a.credits + d.credits }), { calls: 0, credits: 0 });
   panel.append(
-    me.passkeys.length ? null : msg("warn", t("no_passkey_yet")),
+    me.passkeys.length ? null : msg("warn", t("no_passkey_yet")), card,
     h("section", { class: "card" }, h("h2", {}, `${t("org")} · ${o?.org?.name ?? "—"}`),
       o?.org?.id ? h("p", { class: "muted small", id: "org-id" }, t("org_id", { id: o.org.id })) : null, o ? h("div", { class: "stats" },
       h("div", { class: "stat" }, t("credits"), h("b", {}, String(o.credits.available))),
@@ -379,7 +411,7 @@ function keys(panel, me, orgId) {
   const out = h("div");
   const name = h("input", { type: "text", id: "key-name", maxlength: 64, required: true, value: "server" });
   const env = h("select", { id: "key-env" }, h("option", { value: "test" }, t("test")), h("option", { value: "live" }, t("live")));
-  const scopes = ["evidence:search", "citations:verify", "usage:read"].map((s) => h("label", { class: "row small" },
+  const scopes = ["chat:completions", "models:read", "evidence:search", "citations:verify", "usage:read"].map((s) => h("label", { class: "row small" },
     h("input", { type: "checkbox", value: s, checked: true }), s));
   const form = h("form", { class: "stack", onsubmit: async (e) => {
     e.preventDefault();
@@ -390,7 +422,7 @@ function keys(panel, me, orgId) {
     const fresh = await api("GET", `/console/org?org=${encodeURIComponent(orgId)}`);
     if (fresh.ok) { state.org = fresh; list.replaceChildren(keyTable(orgId)); }
   } }, h("h2", {}, t("new_key")), h("label", { for: "key-name" }, t("key_name")), name, h("label", { for: "key-env" }, t("environment")), env,
-  h("div", {}, h("label", {}, t("scopes")), scopes), h("button", { type: "submit", class: "primary" }, t("create")), out);
+  h("div", {}, h("label", {}, t("scopes")), scopes), h("p", { class: "muted small" }, t("key_quota_note")), h("button", { type: "submit", class: "primary" }, t("create")), out);
   const list = h("div", {}, keyTable(orgId));
   panel.append(h("section", { class: "card" }, form), h("section", { class: "card" }, h("h2", {}, t("keys")), o ? list : msg("warn", t("e_unavailable"))));
 }
@@ -398,9 +430,12 @@ function keys(panel, me, orgId) {
 function keyTable(orgId) {
   const all = state.org?.keys || [];
   if (!all.length) return h("p", { class: "muted" }, t("no_keys"));
-  return h("div", { class: "scroll" }, h("table", {}, h("thead", {}, h("tr", {}, [t("name"), t("shown"), t("env"), t("last_used"), t("status"), ""].map((x) => h("th", {}, x)))),
+  const mine = state.me?.user?.id;
+  const ownerOf = (k) => (k.owner_binding !== "bound" ? h("span", { class: "tag off" }, t("unbound")) : k.owner === mine ? t("you") : h("code", {}, k.owner));
+  return h("div", { class: "scroll" }, h("table", {}, h("thead", {}, h("tr", {}, [t("name"), t("shown"), t("env"), t("owner"), t("last_used"), t("status"), ""].map((x) => h("th", {}, x)))),
     h("tbody", {}, all.map((k) => h("tr", {},
       h("td", {}, k.name), h("td", {}, h("code", {}, k.shown)), h("td", {}, h("span", { class: `tag ${k.environment}` }, k.environment)),
+      h("td", { class: "small" }, ownerOf(k)),
       h("td", { class: "small" }, when(k.last_used)), h("td", {}, k.revoked ? h("span", { class: "tag off" }, t("revoked")) : t("active")),
       h("td", {}, k.revoked ? null : h("button", { type: "button", class: "danger", onclick: async () => {
         const r = await withTouch(() => api("POST", "/console/keys/revoke", { org: orgId, id: k.id }));
@@ -412,11 +447,19 @@ function keyTable(orgId) {
 async function usage(panel, me, orgId) {
   const r = await api("GET", `/console/usage?org=${encodeURIComponent(orgId)}`);
   const rows = r.ok ? r.data : [];
+  // the person's own latest requests: what ran, how it ended, whether it was counted
+  const { requests } = await allowanceCard(orgId);
+  const tokens = (u) => (u ? `${u.input_tokens ?? "?"} / ${u.output_tokens ?? "?"}` : t("unknown"));
+  panel.append(h("section", { class: "card", id: "recent" }, h("h2", {}, t("recent")), !requests.length ? h("p", { class: "muted" }, t("no_requests")) :
+    h("div", { class: "scroll" }, h("table", {}, h("thead", {}, h("tr", {}, [t("day"), t("product_model"), t("outcome"), t("counted"), t("tokens")].map((x) => h("th", {}, x)))),
+      h("tbody", {}, requests.map((q) => h("tr", {}, h("td", { class: "small" }, when(q.created)),
+        h("td", {}, q.model ? `${q.product} · ${q.model}` : q.product), h("td", {}, t(`st_${q.state}`)),
+        h("td", {}, q.quota_consumed ? t("yes") : t("no")), h("td", { class: "small" }, tokens(q.usage)))))))));
   panel.append(h("section", { class: "card" }, h("h2", {}, t("usage")), !r.ok ? msg("error", errorText(r)) : !rows.length ? h("p", { class: "muted" }, t("no_usage")) :
-    h("div", { class: "scroll" }, h("table", {}, h("thead", {}, h("tr", {}, [t("day"), t("product"), t("env"), t("calls"), t("spent"), t("failed"), t("refused")]
+    h("div", { class: "scroll" }, h("table", {}, h("thead", {}, h("tr", {}, [t("day"), t("product"), t("env"), t("calls"), t("counted"), t("spent"), t("failed"), t("refused")]
       .map((x, i) => h("th", { class: i > 2 ? "num" : "" }, x)))),
     h("tbody", {}, rows.slice().reverse().map((d) => h("tr", {}, h("td", {}, d.day), h("td", {}, d.product), h("td", {}, d.environment),
-      ...[d.calls, d.credits, d.failed, d.refused].map((n) => h("td", { class: "num" }, String(n))))))))));
+      ...[d.calls, d.quota_consumed ?? 0, d.credits, d.failed, d.refused].map((n) => h("td", { class: "num" }, String(n))))))))));
 }
 
 async function security(panel, me) {
@@ -461,7 +504,8 @@ async function security(panel, me) {
   } }, h("label", { for: "new-email" }, t("new_email")), email, box, h("button", { type: "submit" }, t("change_email")));
   const events = await api("GET", "/account/events");
   panel.append(
-    h("section", { class: "card" }, h("h2", {}, t("passkeys")), me.passkeys.length ? h("table", {}, h("tbody", {}, passkeyRows)) : msg("warn", t("no_passkey_yet")),
+    h("section", { class: "card" }, h("h2", {}, t("passkeys")), h("p", { class: "muted small", id: "account-id" }, t("account_id", { id: me.user.id })),
+      me.passkeys.length ? h("table", {}, h("tbody", {}, passkeyRows)) : msg("warn", t("no_passkey_yet")),
       h("div", { class: "row" }, passkeysWork() ? h("button", { type: "button", class: "primary", onclick: addPasskey }, t("add_passkey")) : msg("warn", t("unsupported")),
         me.passkeys.length ? h("button", { type: "button", onclick: async () => {
           const r = await withTouch(() => api("POST", "/account/recovery/renew", {}));

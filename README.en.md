@@ -692,10 +692,13 @@ sources' licences) are not published with the site: they reach it through the se
 for 道乃久 to analyse ([your own data](docs/mydata.md), [ADR 0022](docs/adr/0022-the-users-own-data.md)): it is made
 anonymous as it is read, never sent to the site's servers, and a conversation touching it is never recorded.
 
-**Developer API and account console** ([ADR 0038](docs/adr/0038-accounts-keys-and-credits.md); two Cloudflare Workers
-written in Rust, `rust/platform/`): `api.impf.ai` serves the full corpus's evidence search (`POST /v1/evidence/search`)
-and citation verification (`POST /v1/citations/verify`) to API keys, with an organisation's credits reserved before a
-call, settled after it, charged only when the tool ran, and idempotent retries ([cloud/api/README.md](cloud/api/README.md));
+**Developer API and account console** ([ADR 0038](docs/adr/0038-accounts-keys-and-credits.md),
+[ADR 0039](docs/adr/0039-model-relay-and-daily-allowance.md); Cloudflare Workers written in Rust, `rust/platform/`):
+`api.impf.ai` serves an OpenAI-compatible model chat (`POST /v1/chat/completions`, the model Tao-R1, through a private
+model gateway with no route of its own, streamed or whole), the full corpus's evidence search
+(`POST /v1/evidence/search`) and citation verification (`POST /v1/citations/verify`) to API keys — five calls a UTC
+day for each registered person, whichever key, project or organisation they come through, a call refused before it
+ran not counted, and idempotent retries ([cloud/api/README.md](cloud/api/README.md));
 `console.impf.ai` registers with an emailed code, signs in with passkeys, keeps recovery codes and sessions, and makes
 and revokes an organisation's keys ([cloud/console/SETUP.md](cloud/console/SETUP.md)).  Codes are derived, never
 stored; sessions, grants and keys are kept as digests only.

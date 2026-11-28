@@ -991,6 +991,7 @@ dependencies = [
 name = "tao-api"
 version = "0.1.0"
 dependencies = [
+ "futures-channel",
  "futures-util",
  "serde_json",
  "tao-edge",
@@ -1018,6 +1019,18 @@ dependencies = [
  "futures-util",
  "js-sys",
  "serde_json",
+ "tao-platform",
+ "wasm-bindgen",
+ "worker",
+]
+
+[[package]]
+name = "tao-models"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "serde_json",
+ "tao-edge",
  "tao-platform",
  "wasm-bindgen",
  "worker",

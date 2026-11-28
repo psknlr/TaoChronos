@@ -14,16 +14,36 @@ pattern = "api.impf.ai"
 custom_domain = true
 
 [vars]
-# credits a call costs, of a live key (a test key's calls cost none; they are counted against TEST_CALLS_PER_DAY).  The
-# prices' version (a digest of them) is kept with every reservation and charge: a price changed later rewrites none
+# credits a call costs a live key when executions are paid in credits (FUNDING_POLICY = credits; a test key's calls
+# cost none).  The prices' version (a digest of them) is kept with every lease and charge: a price changed later
+# rewrites none
 PRICE_EVIDENCE_SEARCH = "10"
 PRICE_CITATIONS_VERIFY = "2"
-# per key a minute (exact, in the organisation's object; the edge's KEY_LIMIT below is a coarser first gate), in flight
-# per key and per organisation, and the test keys' calls per organisation a day
+PRICE_CHAT_COMPLETIONS = "20"
+# how executions are paid: daily_allowance — the person's allowance alone, no credits spent; credits — the
+# organisation's credits as well (a live key's price, as above).  The daily allowance applies either way
+FUNDING_POLICY = "daily_allowance"
+# a registered person's executions a UTC day — chat, search and verification together, whichever keys, projects,
+# organisations or models they come through — and theirs in flight at once (docs/adr/0039-model-relay-and-daily-allowance.md);
+# how long a request's record is kept (its status, the console's list)
+DAILY_REQUEST_LIMIT = "5"
+USER_EXECUTION_CONCURRENCY = "1"
+REQUEST_RECORD_DAYS = "7"
+# per key a minute (exact, in the organisation's object; the edge's KEY_LIMIT below is a coarser first gate), and in
+# flight per key and per organisation
 KEY_RATE_PER_MINUTE = "60"
 KEY_CONCURRENCY = "2"
 ORG_CONCURRENCY = "4"
-TEST_CALLS_PER_DAY = "100"
+# the models: on — every key with the scope chat:completions; pilot — only organisations the owner let in
+# (POST /admin/orgs/{org}/models); off — none.  MODELS: those offered (cloud/models/wrangler.toml names the same).
+# An answer's output tokens at the most; the gateway's deadlines: the first event of a stream, the silence between two,
+# the whole answer
+MODEL_API = "on"
+MODELS = "Tao-R1"
+MODEL_MAX_OUTPUT_TOKENS = "8192"
+MODEL_FIRST_EVENT_TIMEOUT_SECONDS = "30"
+MODEL_IDLE_TIMEOUT_SECONDS = "30"
+MODEL_TOTAL_TIMEOUT_SECONDS = "180"
 # a reservation nobody settles lapses after this (released, not charged); the corpus is given at most
 # CORPUS_TIMEOUT_SECONDS for its whole answer, and never more than HOLD_SECONDS less fifteen, and a call past it is
 # aborted.  The corpus runs one instance for the site and the API alike (docs/adr/0037-what-a-call-may-cost.md):
@@ -36,15 +56,25 @@ MAX_KEYS = "50"
 # The token itself is kept nowhere here: register its sha256 as the repository variable API_ADMIN_TOKEN_SHA256
 ADMIN_TOKEN_SHA256 = ""
 
-# one object an organisation, named by its id: its keys, credits and calls in flight (SQLite).  The console's Worker
-# (cloud/console) binds this class too (script_name = "taochronos-api")
+# one object an organisation, named by its id: its members, keys, credits and calls in flight (SQLite).  The console's
+# Worker (cloud/console) binds this class too (script_name = "taochronos-api")
 [[durable_objects.bindings]]
 name = "ACCOUNT"
 class_name = "Account"
 
+# one object a registered person, named user-quota:<user_id>: their daily allowance and their requests' records.  Never
+# renamed: a new class would be a fresh allowance for everyone.  The console binds it too, for the person's own view
+[[durable_objects.bindings]]
+name = "USER_QUOTA"
+class_name = "UserQuota"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Account"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["UserQuota"]
 
 # the edge's own gates before any object is asked: per address (servers call from few addresses; a flood from one is
 # refused here) and per key

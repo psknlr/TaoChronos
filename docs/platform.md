@@ -41,33 +41,45 @@ over a day, because the sending domain's DNS and the mail tests take waiting.
 ```text
 a developer's server ── Authorization: Bearer tao_live_… ──▶ api.impf.ai          Worker taochronos-api
                                                               ├─ Account objects, one an organisation:
-                                                              │  its keys, credits, calls in flight
-                                                              └─ CORPUS (service binding) ──▶ taochronos-corpus
+                                                              │  its members, keys, credits, calls in flight
+                                                              ├─ UserQuota objects, one a registered person:
+                                                              │  five calls a UTC day, whichever key
+                                                              ├─ CORPUS (service binding) ──▶ taochronos-corpus
+                                                              └─ MODEL_GATEWAY (service binding) ──▶ taochronos-models
+                                                                   (no route; the providers' keys) ──▶ MiniMax
 
 a developer's browser ── passkeys, a session cookie ────────▶ console.impf.ai      Worker taochronos-console
                                                               ├─ the Identity object: people, codes, sessions,
                                                               │  and the mail outbox ──▶ Email Service ──▶ inboxes
-                                                              └─ ACCOUNT: taochronos-api's Account class
+                                                              └─ ACCOUNT, USER_QUOTA: taochronos-api's classes
 ```
 
-One workflow, **platform** (`.github/workflows/platform.yml`), builds both Workers, tests them, and deploys each only
-once what it needs is set.  It runs on every push to `main` that touches the platform, and whenever you run it.  The
-Durable Objects, the rate limits and the two Custom Domains are made by the deploy itself from the Workers'
-`wrangler.toml`: there is nothing to create by hand in Cloudflare but the sending domain and the Turnstile widget.
+One workflow, **platform** (`.github/workflows/platform.yml`), builds the three Workers, tests them, and deploys each
+only once what it needs is set — the model gateway first, then the API, then the console.  It runs on every push to
+`main` that touches the platform, and whenever you run it.  The Durable Objects, the rate limits and the two Custom
+Domains are made by the deploy itself from the Workers' `wrangler.toml`: there is nothing to create by hand in
+Cloudflare but the sending domain and the Turnstile widget.
+
+Every execution — a model's chat, an evidence search, a citation check — is one of the **five a day of the key's owner**,
+the registered person the key belongs to, renewed at 00:00 UTC, whichever of their keys, projects or organisations it
+comes through ([ADR 0039](adr/0039-model-relay-and-daily-allowance.md)).  No credit is spent on it, unless you choose
+credits as well (3.7).
 
 | You set | Then |
 |---|---|
-| the variable `API_ADMIN_TOKEN_SHA256` | the API is deployed, with the owner's endpoints on (Part 3) |
+| the variable `API_ADMIN_TOKEN_SHA256` | the API is deployed, with the owner's endpoints on (Part 3) — and the model gateway before it, keyed by the secret `MINIMAX_API_KEY` the website's relay already has (3.8) |
 | a sending domain, its previews off | the console's mail can leave (Part 4) |
 | the secret `ACCOUNT_SECRET` | the console is deployed too — with registration **off** (Part 5) |
 | the variable `TURNSTILE_SITE_KEY` and the secret `TURNSTILE_SECRET` | a human check before every step that sends mail (Part 6) |
 | the variable `CONSOLE_REGISTRATION` = `open` | anyone may register — and only with Turnstile on (Part 7) |
 | the variable `CONSOLE_TRIAL_CREDITS` | each new organisation starts with that many credits (Part 7) |
 
-Everything else — prices, limits, lifetimes — is in the two `wrangler.toml` files, with defaults that work (Part 9).
+Everything else — the allowance, the models, prices, limits, lifetimes — is in the Workers' `wrangler.toml` files,
+with defaults that work (Part 9).
 
-The order matters twice: the API before the console (the console binds the API's class; the workflow keeps this
-order), and the sending domain, with its previews off, **before** the console sends its first mail.
+The order matters twice: the model gateway before the API and the API before the console (each binds the one before
+it; the workflow keeps this order), and the sending domain, with its previews off, **before** the console sends its
+first mail.
 
 ---
 
@@ -91,7 +103,7 @@ The deploy token of [deploy.md 2.2](deploy.md#22-the-cloudflare-deploy-token) al
 
 | Scope | Permission | Level | For |
 |---|---|---|---|
-| Account | Workers Scripts | Edit | both Workers, their Durable Objects and rate limits |
+| Account | Workers Scripts | Edit | the three Workers, their Durable Objects and rate limits |
 | Account | Account Settings | Read | wrangler |
 | Zone (`impf.ai`) | Workers Routes | Edit | the Custom Domains `api.impf.ai` and `console.impf.ai` |
 
@@ -104,7 +116,7 @@ Editing a token's permissions keeps its value; nothing changes in GitHub.
 
 The workflow deploys from `main`, and GitHub offers **Run workflow** only for a workflow that is on the default
 branch.  If the platform's code is still on a branch, merge it into `main` through a pull request first.  Merging is
-safe before anything below is set: the run it starts builds and tests both Workers, deploys nothing, and says why —
+safe before anything below is set: the run it starts builds and tests the Workers, deploys nothing, and says why —
 **Actions → platform →** the run **→ Annotations**:
 
 ```text
@@ -187,9 +199,9 @@ Pages → taochronos-api → Settings → Domains & Routes** lists `api.impf.ai`
 
 ### 3.5 The corpus
 
-The API's two products are the full corpus's own tools.  `cloud/api/deploy.sh` binds the corpus's Worker
-(`taochronos-corpus`) when the account has it **at the time of the deploy**.  Without it every paid call is answered
-503 (`corpus`) — nothing is reserved, nothing charged.  If the corpus is deployed later
+The API's search and verification are the full corpus's own tools.  `cloud/api/deploy.sh` binds the corpus's Worker
+(`taochronos-corpus`) when the account has it **at the time of the deploy**.  Without it every search and verification
+is answered 503 (`corpus`) — not counted against anyone's five, nothing charged.  If the corpus is deployed later
 ([deploy.md Part 3](deploy.md#part-3-the-whole-corpus)), run the platform workflow once more so that the API binds it.
 
 ### 3.6 A first organisation, its credits and its keys
@@ -205,16 +217,24 @@ export TAO_ADMIN='…'
 A=https://api.impf.ai/admin; H=(-H "Authorization: Bearer $TAO_ADMIN" -H "Content-Type: application/json")
 ```
 
-**An organisation** (it is given a project named `default`); its id is printed:
+Every call is a registered person's — one of their five a day — so an organisation the owner makes has a registered
+owner: ask the developer to register at https://console.impf.ai first and to send you their **account id**, which the
+console's security page shows (`usr_` and 26 characters).  Their own organisation, made when they registered, is often
+all they need: give it credits or keys by its id (the console's overview shows it).
+
+**An organisation** for them (it is given a project named `default`); its id is printed:
 
 ```bash
-org=$(curl -fsS -X POST "$A/orgs" "${H[@]}" -d '{"name": "Pilot lab"}' | python3 -c 'import json, sys; print(json.load(sys.stdin)["org"]["id"])') && echo "$org"
+org=$(curl -fsS -X POST "$A/orgs" "${H[@]}" -d '{"name": "Pilot lab", "owner": "usr_…"}' | python3 -c 'import json, sys; print(json.load(sys.stdin)["org"]["id"])') && echo "$org"
 ```
 
 `org_` and 26 characters.  Note it with the organisation's name: it is how you name the organisation from now on.
+An organisation made without an owner is given one later — `POST $A/orgs/$org/members` with
+`{"user": "usr_…", "role": "owner"}` — and until it has one, a key must name its owner (400 `owner_required`).
 
 **Credits**, once per reference — the same reference again adds nothing, so a request repeated after a lost answer is
-safe:
+safe.  On the daily allowance (`FUNDING_POLICY = daily_allowance`, 3.7) calls spend none; credits matter once calls are
+paid in them (`credits`):
 
 ```bash
 curl -fsS -X POST "$A/orgs/$org/grants" "${H[@]}" -d '{"credits": 10000, "reference": "pilot-2026-12", "note": "pilot, December"}'
@@ -222,23 +242,30 @@ curl -fsS -X POST "$A/orgs/$org/grants" "${H[@]}" -d '{"credits": 10000, "refere
 
 `{"added":true,"credits":{"available":10000,"held":0,"net":10000}}`.
 
-**A key** — a test key first: it spends nothing, and the organisation's test keys make a hundred calls a day in all.
+**A key** — its owner the organisation's one owner when none is named (`"owner": "usr_…"` names a member):
 
 ```bash
-curl -fsS -X POST "$A/orgs/$org/keys" "${H[@]}" -d '{"environment": "test", "name": "lab laptop"}'
+curl -fsS -X POST "$A/orgs/$org/keys" "${H[@]}" -d '{"environment": "test", "name": "lab laptop", "scopes": ["chat:completions", "models:read", "evidence:search", "citations:verify", "usage:read"]}'
 ```
 
 `{"environment":"test","id":"key_…","key":"tao_test_…","shown":"tao_test_…wxyz"}`.  **The key is in this answer
 only**: nobody can show it again.  Give it to the developer by something better than plain mail or chat if you can (a
 password manager's sharing, an end-to-end encrypted message).  A live key is the same with `"environment": "live"`.
-Optional fields: `"scopes"` — a list from `evidence:search`, `citations:verify`, `usage:read` (all three if left out);
-`"project"` — a project's id; `"expires_days"` — 1 to 3650.
+Optional fields: `"scopes"` — a list from `chat:completions`, `models:read`, `evidence:search`, `citations:verify`,
+`usage:read` (the last three only if left out: model access is given by naming it); `"project"` — a project's id;
+`"expires_days"` — 1 to 3650; `"owner"` — a member's id.
 
 **Try it** as the developer will:
 
 ```bash
 curl -sS https://api.impf.ai/v1/evidence/search -H "Authorization: Bearer tao_test_…" -H "Content-Type: application/json" -d '{"query": "桂枝汤 汗出 恶风", "k": 3}'
 ```
+
+```bash
+curl -sS -D - https://api.impf.ai/v1/chat/completions -H "Authorization: Bearer tao_test_…" -H "Content-Type: application/json" -d '{"model": "Tao-R1", "messages": [{"role": "user", "content": "桂枝汤主治何证？"}]}'
+```
+
+The headers say what is left of the owner's five: `X-Tao-Quota-Remaining`.
 
 **See the organisation** — its credits, projects, keys (never a key itself), today's usage, what lapsed:
 
@@ -248,12 +275,33 @@ curl -fsS "$A/orgs/$org" -H "Authorization: Bearer $TAO_ADMIN" | python3 -m json
 
 Every owner's endpoint: [cloud/api/README.md, *The owner's endpoints*](../cloud/api/README.md#the-owners-endpoints).
 
-### 3.7 Prices and limits
+### 3.7 The allowance, prices and limits
 
-They are in `cloud/api/wrangler.toml`, under `[vars]` (Part 9.2).  Change them there, through a pull request: the push
-to `main` deploys them.  Not in the dashboard — every deploy replaces a Worker's variables with its file's.  A change
-of price changes the prices' version (`p` and 8 hexadecimal characters), kept with every reservation and charge; a
-call in flight keeps the price it was let through at.
+They are in `cloud/api/wrangler.toml`, under `[vars]` (Part 9.2): `DAILY_REQUEST_LIMIT` (5), `FUNDING_POLICY`
+(`daily_allowance`: no credit spent; `credits`: a live key's price charged as well — the allowance holds either way),
+the prices, the rates.  Change them there, through a pull request: the push to `main` deploys them.  Not in the
+dashboard — every deploy replaces a Worker's variables with its file's.  A change of price changes the prices' version
+(`p` and 8 hexadecimal characters), kept with every lease and charge; a call in flight keeps the price it was let
+through at.
+
+### 3.8 The model gateway
+
+`taochronos-models` (`cloud/models`) is the private Worker the API asks a model's chat of: no route, no address of its
+own — the API's service binding is the only way to it — and the providers' keys are its secrets, nobody else's.  The
+workflow deploys it before the API, with **the website relay's own MiniMax key** (the repository secret
+`MINIMAX_API_KEY`, already set), for **Tao-R1** on MiniMax's mainland platform as the relay asks it.  Nothing else is
+needed; the deploy step says `Tao-R1: keyed`.  Without a key it is deployed all the same, and every chat is answered
+503 `model_unavailable` — counted against nobody.
+
+For Singapore and the other international regions, MiniMax's international platform answers from nearer: a key from
+platform.minimax.io as the **secret** `GATEWAY_MINIMAX_API_KEY` and the **variable** `GATEWAY_MINIMAX_BASE` =
+`https://api.minimax.io/v1`; then run the workflow.  The relay keeps its own key and platform.
+
+Who may call a model: `MODEL_API` in `cloud/api/wrangler.toml` — `on` (every key with the scope `chat:completions`),
+`pilot` (only the organisations you let in: `POST $A/orgs/<org>/models` `{"access": true}`), `off`.  Which models:
+`MODELS`, in both `cloud/api/wrangler.toml` and `cloud/models/wrangler.toml` (Tao-R1).
+
+Check it with a test key of yours (3.6): a chat answers with `"model": "Tao-R1"`, and `GET /v1/models` lists it.
 
 ---
 
@@ -344,7 +392,7 @@ openssl rand -base64 48
 
 (or `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`).  GitHub → **Settings → Secrets and variables →
 Actions → Secrets → New repository secret**: **Name** `ACCOUNT_SECRET`, **Secret** the value.  You need not keep it
-anywhere else: changing it later only stops the codes in flight (8.2).
+anywhere else: changing it later only stops the codes in flight (8.3).
 
 ### 5.2 Deploy
 
@@ -480,39 +528,64 @@ curl -fsS -X POST "$A/orgs/org_…/grants" "${H[@]}" -d '{"credits": 5000, "refe
 ```
 
 A reference counts once per organisation, so a repeated request never adds twice; use one you can find again — an
-invoice's number, an order's.  A correction, of either sign: `…/adjustments`, with the same fields.
+invoice's number, an order's.  A correction, of either sign: `…/adjustments`, with the same fields.  While calls are
+paid by the daily allowance (`FUNDING_POLICY = daily_allowance`) credits are kept but not spent.
 
-### 8.2 Day to day
+### 8.2 The keys made before the allowance
+
+A key the console made already belongs to the person who made it: the API's first call after this deploy notes it.
+A key made with the owner's token before the allowance has no owner yet, and every call it makes is refused, 403
+`user_binding_required`, until it is given one — a member of its organisation:
+
+```bash
+curl -fsS -X POST "$A/orgs/org_…/keys/key_…/owner" "${H[@]}" -d '{"user": "usr_…"}'
+```
+
+`GET $A/orgs/org_…` lists the organisation's keys with their owners (`owner: null`) and its members.  A person not yet
+a member is added first: `POST $A/orgs/org_…/members` with `{"user": "usr_…", "role": "developer"}`.
+
+### 8.3 Day to day
 
 | Task | How |
 |---|---|
 | A key has leaked | `POST $A/orgs/<org>/keys/<key id>/revoke` (the key's id from `GET $A/orgs/<org>`) — or its owner revokes it in the console.  Refused from then on |
+| A person's allowance and latest requests | `GET $A/users/usr_…` |
+| Stop a person's calls, through every key | `POST $A/users/usr_…/suspend`; `…/restore` lets them go on.  For one organisation only: `POST $A/orgs/<org>/members` with `{"user": "usr_…", "status": "suspended"}` |
+| Give a key to another member | `POST $A/orgs/<org>/keys/<key id>/owner` with `{"user": "usr_…"}` |
+| Let only some organisations call the model | `MODEL_API = "pilot"` (9.2), then `POST $A/orgs/<org>/models` with `{"access": true}` for each |
+| Stop the model at once | `MODEL_API = "off"` through a pull request; or take its key away: the gateway's secret `MINIMAX_API_KEY` deleted in the dashboard answers 503 `model_unavailable`, counted against nobody |
 | A project's monthly limit | `POST $A/orgs/<org>/projects/<project>/limit` with `{"monthly_limit": 2000}`; `null` for none |
 | An organisation's state | `GET $A/orgs/<org>` |
 | Rotate `ACCOUNT_SECRET` | a new value (5.1) → the secret → **Run workflow**.  Only codes in flight stop working: sessions, keys and recovery codes are kept as digests that need no secret |
 | Rotate the owner's token | a new token (3.1) → its SHA-256 in `API_ADMIN_TOKEN_SHA256` → **Run workflow**: the old token stops working when the deploy ends |
 | Turn the owner's endpoints off | set `API_ADMIN_TOKEN_SHA256` to `off` → **Run workflow**: the API stays deployed; `/admin/…` answers 404 |
-| Change prices or limits | `[vars]` in the Worker's `wrangler.toml`, through a pull request (Part 9) |
+| Change the allowance, prices or limits | `[vars]` in the Worker's `wrangler.toml`, through a pull request (Part 9) |
 | A developer reports an error | ask for the answer's `X-Request-Id` (`req_…`) and look for it in `taochronos-api`'s Workers Logs |
 | Roll a Worker back | **Workers & Pages →** the Worker **→ Deployments →** an earlier version **→ Rollback** |
 
-### 8.3 What not to do
+### 8.4 What not to do
 
-* **Do not rename or delete the two Workers, or rename their classes** `Account` and `Identity`: every organisation's
-  keys and credits, and every person's account, are in their Durable Objects.
+* **Do not rename or delete the API's or the console's Worker, or rename their classes** `Account`, `UserQuota` and
+  `Identity`: every organisation's keys and credits, every person's allowance and records, and every person's account,
+  are in their Durable Objects.  A `UserQuota` renamed would be a fresh allowance for everyone.
+* **Do not give the model gateway a route**: it is private by design — the API's binding is the only way to it.
 * **Do not set variables in the dashboard**: the next deploy replaces them with `wrangler.toml`'s.
 * **Do not give another Worker a rate limit with namespace 7321, 7322 or 7331**: bindings with the same namespace id
   share one count across the account.
 
-### 8.4 What the Workers log
+### 8.5 What the Workers log
 
-Workers Logs is on for both Workers (each Worker's **Logs** in **Workers & Pages**).  No line holds a key, a code, a
-cookie or an address.
+Workers Logs is on for the three Workers (each Worker's **Logs** in **Workers & Pages**).  No line holds a key, a code,
+a cookie, an address, a prompt or an answer.
 
 | Line | Means |
 |---|---|
-| `api req_…: corpus …` | the corpus failed that call (502, not charged) |
-| `api req_…: settle …` | a result could not be settled: its reservation lapses — released, not charged |
+| `api req_…: corpus …` | the corpus failed that call (502, counted) |
+| `api req_…: user quota end …` | a request's end could not be recorded: its status reads `unknown` once its lease lapses — counted |
+| `api req_…: finish …` | the organisation's usage could not be recorded: its lease lapses — nothing charged |
+| `api req_…: gateway …` | the model gateway could not be reached (503 `model_unavailable`, not counted) |
+| `models req_…: minimax <status> <code>`, `… silent for <n> s`, `… unreachable` | the provider refused, failed or fell silent; the developer was given a code (10.2) |
+| `models req_…: minimax is not configured` | no MiniMax key: 3.8 |
 | `api req_…: admin token refused` | someone tried the owner's endpoints with another token |
 | `mail <template> <code>` | Email Service refused a mail (10.4) |
 | `provision org_…: not yet` | a new organisation's account could not be made ready yet; the person's next visit does it |
@@ -531,6 +604,10 @@ cookie or an address.
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | secrets | the deploy token, the account's id | every Worker's deploy |
 | `API_ADMIN_TOKEN_SHA256` | variable | 64 hexadecimal characters (3.1) | deploys the API; the owner's endpoints on (anything else: off) |
 | `ACCOUNT_SECRET` | secret | 32 characters or more (5.1) | deploys the console |
+| `MINIMAX_API_KEY` | secret | the website relay's MiniMax key (already set) | the model gateway's key for Tao-R1… |
+| `GATEWAY_MINIMAX_API_KEY` | secret | optional: a key of MiniMax's international platform | …this one in its place |
+| `GATEWAY_MINIMAX_BASE` | variable | optional: `https://api.minimax.io/v1` | the platform that key is from |
+| `OPENAI_API_KEY` | secret | optional | a second provider, when offered |
 | `TURNSTILE_SITE_KEY` | variable | the widget's site key | Turnstile on — with… |
 | `TURNSTILE_SECRET` | secret | the widget's secret key | …this; without both, no Turnstile |
 | `CONSOLE_REGISTRATION` | variable | `open` | registration open, if Turnstile is on |
@@ -544,23 +621,46 @@ A value below its least, or not a number, is ignored and the default applies.
 |---|---|---|---|
 | `PRICE_EVIDENCE_SEARCH` | 10 | 0 | credits a search costs a live key |
 | `PRICE_CITATIONS_VERIFY` | 2 | 0 | credits a verification costs a live key |
+| `PRICE_CHAT_COMPLETIONS` | 20 | 0 | credits a chat costs a live key |
+| `FUNDING_POLICY` | `daily_allowance` | — | `daily_allowance`: no credit spent; `credits`: a live key's price charged as well.  The allowance applies either way |
+| `DAILY_REQUEST_LIMIT` | 5 | 0 (at most 100000) | a registered person's executions a UTC day: chat, search and verification together, whichever key, project or organisation |
+| `USER_EXECUTION_CONCURRENCY` | 1 | 1 | a person's executions in flight at once |
+| `REQUEST_RECORD_DAYS` | 7 | 2 (at most 90) | how long a request's record (its status, the console's list) is kept |
+| `MODEL_API` | `on` | — | `on`: every key with `chat:completions`; `pilot`: the organisations let in (8.3); `off`: none |
+| `MODELS` | `Tao-R1` | — | the models offered — the gateway's `MODELS` names the same |
+| `MODEL_MAX_OUTPUT_TOKENS` | 8192 | 1 | an answer's output tokens at the most |
+| `MODEL_FIRST_EVENT_TIMEOUT_SECONDS`, `MODEL_IDLE_TIMEOUT_SECONDS`, `MODEL_TOTAL_TIMEOUT_SECONDS` | 30, 30, 180 | 1 | the gateway's deadlines: a stream's first event, the silence between two, the whole answer |
 | `KEY_RATE_PER_MINUTE` | 60 | 1 | calls a key may make a minute |
 | `KEY_CONCURRENCY` | 2 | 1 | a key's calls in flight |
 | `ORG_CONCURRENCY` | 4 | 1 | an organisation's calls in flight — its share of the corpus's one instance |
-| `TEST_CALLS_PER_DAY` | 100 | 0 | the calls an organisation's test keys make a day, together |
-| `HOLD_SECONDS` | 120 | 10 | a reservation nobody settles lapses after this: released, not charged |
+| `HOLD_SECONDS` | 120 | 10 | a lease nobody ends lapses after this: its request reads `unknown`, counted, not charged |
 | `CORPUS_TIMEOUT_SECONDS` | 60 | 5 (at most 90) | the corpus's time for a call — never more than `HOLD_SECONDS` less 15 — then it is aborted |
-| `IDEMPOTENCY_HOURS` | 24 | 1 | how long an `Idempotency-Key`'s answer is kept |
+| `IDEMPOTENCY_HOURS` | 24 | 1 | how long an `Idempotency-Key`'s answer is kept (a stream's is not) |
 | `MAX_KEYS` | 50 | 1 | an organisation's keys not revoked |
 | `ADMIN_TOKEN_SHA256` | empty | — | leave it empty: `deploy.sh` writes the variable's value into the deployed copy |
 | `DOCS_URL` | this repository's `cloud/api/README.md` | — | optional: the documentation `GET /v1` points to |
 
-Bindings: `ACCOUNT` — the Durable Object class `Account` (migration `v1`); `IP_LIMIT` — 600 requests a minute from one
-address (namespace 7321); `KEY_LIMIT` — 120 a minute for one key (namespace 7322); `CORPUS` — added by `deploy.sh`
-when `taochronos-corpus` exists.  The edge's limits are approximate and kept per Cloudflare location; the exact ones
-(the key's rate, in flight, credits) are the Account object's.
+Bindings: `ACCOUNT` — the Durable Object class `Account` (migration `v1`); `USER_QUOTA` — the class `UserQuota`
+(migration `v2`), one object a registered person; `IP_LIMIT` — 600 requests a minute from one address (namespace
+7321); `KEY_LIMIT` — 120 a minute for one key (namespace 7322); `CORPUS` and `MODEL_GATEWAY` — added by `deploy.sh`
+when `taochronos-corpus` and `taochronos-models` exist.  The edge's limits are approximate and kept per Cloudflare
+location; the exact ones are the objects': the key's rate and in flight the Account's, the daily allowance the
+person's UserQuota.
 
-### 9.3 The console — `cloud/console/wrangler.toml`, `[vars]`
+### 9.3 The model gateway — `cloud/models/wrangler.toml`
+
+| Name | Kind | Default | What |
+|---|---|---|---|
+| `MODELS` | variable | `Tao-R1` | the models it answers for (the API's `MODELS` names the same) |
+| `MINIMAX_BASE` | variable | `https://api.minimax.cn/v1` | where Tao-R1 is asked.  `deploy.sh` writes the repository variable `GATEWAY_MINIMAX_BASE` here: `https://api.minimax.io/v1` for an international key |
+| `MINIMAX_MODEL` | variable | `MiniMax-M3` | its name there |
+| `MINIMAX_API_KEY` | Worker secret | — | put by `deploy.sh` from the repository secret `GATEWAY_MINIMAX_API_KEY`, or else `MINIMAX_API_KEY` (the website relay's) |
+| `OPENAI_BASE`, `OPENAI_MODEL`, `OPENAI_API_KEY` | variables, secret | — | a second provider, when it is offered |
+
+No route, no workers.dev address, no preview address; the compatibility flags `enable_request_signal` and
+`request_signal_passthrough` stop the provider's answer when the developer leaves.
+
+### 9.4 The console — `cloud/console/wrangler.toml`, `[vars]`
 
 | Name | Default | Least | What |
 |---|---|---|---|
@@ -591,8 +691,8 @@ when `taochronos-corpus` exists.  The edge's limits are approximate and kept per
 | `TRIALS_PER_DAY` | 50 | 0 | trials given a day, in all |
 | `TURNSTILE_SITE_KEY` | empty | — | written by `deploy.sh` from the variable |
 
-Bindings: `IDENTITY` — the Durable Object class `Identity` (migration `v1`); `ACCOUNT` — `taochronos-api`'s `Account`
-class; `AUTH_EMAIL` — Email Service, `allowed_sender_addresses = ["noreply@impf.ai"]`; `AUTH_LIMIT` — 60 changes a
+Bindings: `IDENTITY` — the Durable Object class `Identity` (migration `v1`); `ACCOUNT` and `USER_QUOTA` —
+`taochronos-api`'s `Account` and `UserQuota` classes (a person's own allowance, on the overview); `AUTH_EMAIL` — Email Service, `allowed_sender_addresses = ["noreply@impf.ai"]`; `AUTH_LIMIT` — 60 changes a
 minute from one address (namespace 7331), before the identity object is asked anything.  The Worker's secrets,
 put by `deploy.sh`: `ACCOUNT_SECRET`, `TURNSTILE_SECRET`.
 
@@ -608,26 +708,44 @@ put by `deploy.sh`: `ACCOUNT_SECRET`, `TURNSTILE_SECRET`.
 | `the API is not deployed until the variable API_ADMIN_TOKEN_SHA256 is set` | — | 3.1–3.2 |
 | `the console is not deployed until the secret ACCOUNT_SECRET (32+ characters) is set` | missing, or shorter than 32 | 5.1 |
 | `API_ADMIN_TOKEN_SHA256 is not 64 hex characters: the owner's endpoints stay off` | a typo, or a value with spaces in it | 3.1 (the API is deployed all the same) |
-| `the full corpus's Worker is not deployed: every paid call is answered 503` | no `taochronos-corpus` on the account | [deploy.md Part 3](deploy.md#part-3-the-whole-corpus), then run again |
+| `the full corpus's Worker is not deployed: every search and verification is answered 503 …` | no `taochronos-corpus` on the account | [deploy.md Part 3](deploy.md#part-3-the-whole-corpus), then run again |
+| `the model gateway is not deployed: every chat is answered 503 …` | the gateway's step failed or was skipped | its step's log; run again |
+| `no MiniMax key (GATEWAY_MINIMAX_API_KEY or MINIMAX_API_KEY) …` | neither secret set | 3.8 |
+| `GATEWAY_MINIMAX_BASE is not an https address: the default is kept` | a typo | 3.8 |
 | `CONSOLE_REGISTRATION is open but Turnstile is not set …` | — | Part 6 |
 | `externally managed DNS records`, or a Custom Domain refused | `api` or `console` has a DNS record of its own | delete that record (2.1), run again |
 | `Authentication error [code: 10000]` | the token or the account id is wrong | [deploy.md 2.2](deploy.md#22-the-cloudflare-deploy-token) |
 | `No access to the specified resource` | the token's zone resources lack `impf.ai` | edit the token |
 | the console's deploy fails on its `ACCOUNT` binding | the API's deploy did not succeed | the API's step first |
 | the console's deploy refused at the `send_email` binding | a permission (it names one), or the sending domain | 2.2, or 4.2 |
-| the step **The developer API as built, end to end** fails | the API as built failed a check (the log lists it) | not configuration: nothing was deployed |
+| the step **The developer API and the model gateway as built, end to end** fails | the build failed a check (the log lists it) | not configuration: nothing was deployed |
 
 ### 10.2 What a developer's program sees
 
 | Answer | Cause | Fix |
 |---|---|---|
-| 503 `corpus`, `Retry-After` | the corpus is starting or busy — or not bound | wait; 3.5 |
-| 502 `corpus` | the corpus failed (nothing charged) | the corpus's logs |
-| 503 `accounts` | the organisation's object could not be asked | retry; Workers Logs if it lasts |
+Every refusal before the call ran is **not counted** against the owner's five; the headers `X-Tao-Quota-Remaining` and
+`X-Tao-Quota-Reset` say what is left and when it renews.
+
+| Answer | Cause | Fix |
+|---|---|---|
+| 429 `daily_quota_exceeded`, `Retry-After` | the key's owner made their five today | 00:00 UTC; `DAILY_REQUEST_LIMIT` (9.2) |
+| 429 `user_concurrency` | the owner has a call in flight already, through some key | wait for it; `USER_EXECUTION_CONCURRENCY` |
+| 403 `user_binding_required` | a key without an owner — made with the owner's token before the allowance | 8.2 |
+| 403 `member_suspended`, `user_suspended` | the key's owner is suspended in the organisation, or everywhere | 8.3 |
+| 403 `model_access` | `MODEL_API` is `pilot` and the organisation is not let in, or the key lacks `chat:completions` | 8.3; a key with the scope |
+| 404 `model_not_found` | a model not offered (`GET /v1/models` lists them) | `Tao-R1` |
+| 503 `model_unavailable` | no gateway, no provider key, or the provider down (not counted) | 3.8; 10.1 |
+| 503 `model_api_disabled` | `MODEL_API = "off"` | 9.2 |
+| 429 `model_busy` | the provider's own limit (not counted) | wait |
+| 502 `model_error`, 504 `model_timeout` | the provider failed or fell silent past a deadline (counted) | the gateway's logs |
+| 503 `corpus`, `Retry-After` | the corpus is starting or busy — or not bound (not counted) | wait; 3.5 |
+| 502 `corpus`, 503 `corpus_timeout` | the corpus failed, or ran past its time (counted) | the corpus's logs |
+| 503 `accounts`, `quota` | an organisation's or a person's object could not be asked | retry; Workers Logs if it lasts |
 | 401 `invalid_key` | a key mistyped, cut short, or of no organisation | the key as it was shown |
 | 401 `revoked_key`, `expired_key` | — | a new key |
-| 402 `credits`, `project_limit` | not enough credits; the project's month spent | 8.1; 8.2 |
-| 429 `rate`, `concurrency`, `test_allowance`, `address` | a key's minute, calls in flight, the test keys' day, the edge's per-address limit | 9.2 |
+| 402 `credits`, `project_limit` | only with `FUNDING_POLICY = credits`: not enough credits; the project's month spent | 8.1; 8.3 |
+| 429 `rate`, `concurrency`, `address` | a key's minute, its or its organisation's calls in flight, the edge's per-address limit | 9.2 |
 | 404 on `/admin/…` | the owner's endpoints are off | 3.2–3.3 |
 | 401 `admin` | not the token whose SHA-256 is set — often hashed with `echo` | 3.1 |
 
@@ -650,7 +768,7 @@ put by `deploy.sh`: `ACCOUNT_SECRET`, `TURNSTILE_SECRET`.
 | In the console's Workers Logs | Means | Fix |
 |---|---|---|
 | `mail … E_SENDER_DOMAIN_NOT_AVAILABLE`, `E_SENDER_DOMAIN_NOT_CONFIGURED` | `MAIL_FROM`'s domain is not onboarded, or not verified yet | 4.2 |
-| `mail … E_SENDER_NOT_VERIFIED` | `MAIL_FROM` is not in `allowed_sender_addresses` | make them the same (9.3) |
+| `mail … E_SENDER_NOT_VERIFIED` | `MAIL_FROM` is not in `allowed_sender_addresses` | make them the same (9.4) |
 | `mail … E_RECIPIENT_PLAN_RESTRICTED` | the account is not on Workers Paid: verified addresses only | 2.1 |
 | `mail … E_RECIPIENT_SUPPRESSED` | the address bounced or complained before | the Activity log; the person uses another address |
 | `mail … E_ACCOUNT_SUSPENDED` | — | Cloudflare's support |

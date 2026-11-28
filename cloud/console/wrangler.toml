@@ -68,6 +68,13 @@ name = "ACCOUNT"
 class_name = "Account"
 script_name = "taochronos-api"
 
+# a person's daily allowance and their requests' records: the API Worker's class too — the console shows the person
+# whose session asks their own, and nobody else's
+[[durable_objects.bindings]]
+name = "USER_QUOTA"
+class_name = "UserQuota"
+script_name = "taochronos-api"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Identity"]

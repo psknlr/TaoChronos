@@ -1,0 +1,12 @@
+{
+  "name": "taochronos-models",
+  "private": true,
+  "type": "module",
+  "description": "道乃久模型网关: taochronos-models, the private Worker the developer API asks a model's chat of (rust/platform/models)",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.153.0"
+  }
+}

@@ -14,7 +14,7 @@ updates:
 
   # the Workers' toolchain: wrangler, and under it undici, sharp, workerd (the deployment's P1 of 2026-10-26)
   - package-ecosystem: npm
-    directories: ["/relay", "/cloud/site", "/cloud/corpus", "/cloud/api", "/cloud/console"]
+    directories: ["/relay", "/cloud/site", "/cloud/corpus", "/cloud/api", "/cloud/console", "/cloud/models"]
     schedule:
       interval: weekly
     groups:

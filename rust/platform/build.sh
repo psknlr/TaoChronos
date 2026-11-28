@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds one of the platform's Workers (rust/platform/api or rust/platform/console) into <crate>/build/worker/, where
+# Builds one of the platform's Workers (rust/platform/api, console or models) into <crate>/build/worker/, where
 # cloud/<worker>/wrangler.toml's `main` reads it — with worker-build (workers-rs's), and every tool worker-build would
 # otherwise download at build time, unpinned and unchecked, replaced by one pinned here
 # (docs/adr/0026-pinned-supply-chain-and-enforced-policies.md; docs/adr/0038-accounts-keys-and-credits.md):
@@ -14,6 +14,7 @@
 #   rust/platform/build.sh --install   install the pinned worker-build and wasm-bindgen (into ~/.cargo/bin)
 #   rust/platform/build.sh api         → rust/platform/api/build/worker/shim.mjs
 #   rust/platform/build.sh console     → rust/platform/console/build/worker/shim.mjs
+#   rust/platform/build.sh models      → rust/platform/models/build/worker/shim.mjs (the private model gateway)
 set -euo pipefail
 cd "$(dirname "$0")"
 WORKER_BUILD=0.9.0
@@ -33,8 +34,8 @@ fi
 
 crate="${1:-}"
 case "$crate" in
-  api | console) ;;
-  *) echo "usage: rust/platform/build.sh --install | api | console" >&2; exit 2 ;;
+  api | console | models) ;;
+  *) echo "usage: rust/platform/build.sh --install | api | console | models" >&2; exit 2 ;;
 esac
 
 version() { "$1" --version 2>/dev/null | awk '{ print $NF }'; }

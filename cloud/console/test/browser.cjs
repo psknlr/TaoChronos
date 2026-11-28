@@ -65,8 +65,10 @@ const codeFor = async (address, after) => CODE.exec((await mailFor(address, afte
   check("the authenticator holds one discoverable passkey for localhost", creds.credentials.length === 1 && creds.credentials[0].isResidentCredential && creds.credentials[0].rpId === "localhost", creds);
   await page.getByRole("button", { name: "I have saved them" }).click();
   await page.waitForSelector(".stat");
-  const stats = await page.$$eval(".stat b", (b) => b.map((x) => x.textContent));
+  const stats = await page.$$eval("section:has(#org-id) .stat b", (b) => b.map((x) => x.textContent));
   check("the organisation was provisioned with its trial: 40 credits", stats[0] === "40", stats);
+  const allowance = await page.$$eval("#allowance .stat b", (b) => b.map((x) => x.textContent));
+  check("the overview shows the person's daily allowance: none used of five", allowance[0] === "0 / 5" && allowance[2] === "5", allowance);
   check("the page shows the organisation's id, to quote when asking for credits", /Organisation id: org_[0-9a-z]{26} /.test(await page.textContent("#org-id")), await page.textContent("#org-id"));
   const cookies = await context.cookies();
   const session = cookies.find((c) => c.name === "__Host-tcs");
@@ -81,6 +83,8 @@ const codeFor = async (address, after) => CODE.exec((await mailFor(address, afte
   const key = (await page.textContent(".secret")).trim();
   check("a live key, shown once", /^tao_live_[0-9a-z]{26}_[0-9a-z]{46}$/.test(key), key);
   check("it is listed by its shown form only", (await page.textContent("table")).includes(`tao_live_…${key.slice(-4)}`) && !(await page.textContent("table")).includes(key.slice(9, 40)));
+  const owners = await page.$$eval("table tbody tr td:nth-child(4)", (td) => td.map((x) => x.textContent));
+  check("and as the person's own: its owner is you", owners[0] === "you", owners);
   fs.writeFileSync(OUT, key);
   // sign out; sign in with the passkey alone
   await page.click("#signout");
@@ -93,6 +97,7 @@ const codeFor = async (address, after) => CODE.exec((await mailFor(address, afte
   await page.waitForSelector("text=Signed-in devices");
   const sec = await page.textContent("main");
   check("the security page: the passkey, ten recovery codes, this device, the events", /Recovery codes left: 10/.test(sec) && /this device/.test(sec) && /Passkey added/.test(sec) && /Registered/.test(sec), sec.slice(0, 600));
+  check("and the account's id, to quote when the owner assigns a key", /Account id: usr_[0-9a-z]{26}/.test(await page.textContent("#account-id")), await page.textContent("#account-id"));
   // another person, in a browser of their own: an account without a passkey
   const theirs = await browser.newContext({ locale: "en-US" });
   const other = await theirs.newPage();

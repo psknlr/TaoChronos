@@ -58,6 +58,8 @@ pub fn read_request(product: Product, body: &[u8]) -> Result<Call, Refusal> {
     let allowed: &[&str] = match product {
         Product::Search => &["query", "k", "before", "after", "books"],
         Product::Verify => &["quote", "passage_id"],
+        // a model's chat is read by models.rs: it is no corpus tool
+        Product::Chat => return Err(bad("product", "chat.completions is not a corpus tool")),
     };
     if let Some(extra) = obj.keys().find(|k| !allowed.contains(&k.as_str())) {
         return Err(bad(
@@ -100,6 +102,7 @@ pub fn read_request(product: Product, body: &[u8]) -> Result<Call, Refusal> {
             }
             Ok(Call { product, tool: "validation.verify_quote", arguments: Json::Object(args) })
         }
+        Product::Chat => Err(bad("product", "chat.completions is not a corpus tool")),
     }
 }
 

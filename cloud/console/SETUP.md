@@ -27,8 +27,10 @@ Register with a code sent to their address; make a passkey (or not: the mailbox 
 says so); keep ten recovery codes; sign in with the passkey alone, or with a code and — when a passkey guards the
 account — a recovery code; see and end their sessions; change their address (a code to the new one, a notice to the
 old; an address that already has an account is sent a notice instead, and the page answers alike either way); add and
-remove passkeys; make test keys, and live keys after a passkey's touch; see their organisation's credits and usage by
-day.  What is kept of them: ADR 0038, *Consequences*.
+remove passkeys; make test keys, and live keys after a passkey's touch — each key theirs, its calls among their own
+five a day; see what is left of today's five and their latest requests, their organisation's credits and usage by
+day, and their account id (the security page), for the owner to name them by.  What is kept of them: ADR 0038,
+*Consequences*, and ADR 0039.
 
 ## Checking it here
 
