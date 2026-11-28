@@ -159,8 +159,9 @@ impl Account {
             "create_key" => {
                 let env = KeyEnv::parse(s(b, "environment"))
                     .ok_or_else(|| refused(400, "invalid_request", "environment", "environment is live or test"))?;
-                // scopes: none named, all of them; a list, exactly it (an empty one is refused by the core); anything
-                // else refused — a value that is not what it should be is never read as the widest it could be
+                // scopes: none named, the three a key had before the models (the core's LEGACY_SCOPES: model access
+                // is given by naming it); a list, exactly it (an empty one is refused by the core); anything else
+                // refused — a value that is not what it should be is never read as the widest it could be
                 let scopes: Option<Vec<String>> = match b.get("scopes") {
                     None | Some(Json::Null) => None,
                     Some(Json::Array(a)) if a.iter().all(Json::is_string) => {

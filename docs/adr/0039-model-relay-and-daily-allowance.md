@@ -169,6 +169,6 @@ Read against the code and the deployment as they stood:
   owner, and spend no credit; balances stay for a credits policy later.  A key the owner's token made before the
   change is refused (`user_binding_required`) until the owner gives it to a member.
 * `api.impf.ai` answers `POST /v1/chat/completions` with Tao-R1 for every key that names `chat:completions` — new
-  console keys do; earlier keys need a new key or the scope.
+  console keys do; a key's scopes are fixed when it is made, so an earlier key's owner makes a new one.
 * What is kept of a person, beyond ADR 0038's: their requests' records for seven days (product, model, outcome,
   counted, tokens — no prompt, no answer), and an idempotent request's answer for a day.
